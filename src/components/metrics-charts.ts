@@ -295,7 +295,7 @@ export class MetricsCharts extends LitElement {
           legend: {
             display: true,
             labels: {
-              color: "#431407",
+              color: "#111111",
               font: { family: '"Inter", system-ui, sans-serif', size: 12 },
             },
           },
@@ -304,20 +304,20 @@ export class MetricsCharts extends LitElement {
           y: {
             beginAtZero: true,
             ticks: {
-              color: "#7c2d12",
+              color: "#4b5563",
               font: { family: '"Inter", system-ui, sans-serif' },
             },
             grid: {
-              color: "rgba(253, 186, 116, 0.1)",
+              color: "rgba(0, 0, 0, 0.06)",
             },
           },
           x: {
             ticks: {
-              color: "#7c2d12",
+              color: "#4b5563",
               font: { family: '"Inter", system-ui, sans-serif' },
             },
             grid: {
-              color: "rgba(253, 186, 116, 0.1)",
+              color: "rgba(0, 0, 0, 0.06)",
             },
           },
         },
