@@ -24,7 +24,7 @@ export class MetricsCharts extends LitElement {
 
   declare data: MetricsData | null;
 
-  private charts: Map<string, Chart> = new Map();
+  private charts: Map<string, Chart<any>> = new Map();
 
   constructor() {
     super();
