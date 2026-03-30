@@ -26,10 +26,10 @@
   --color-border-strong: #fb923c;
   --color-code-bg: #fff1e6;
 
-  --radius-sm: 0.75rem;
-  --radius-md: 1rem;
-  --radius-lg: 1.5rem;
-  --radius-xl: 2rem;
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
 
   --shadow-sm: 0 10px 30px rgba(154, 52, 18, 0.08);
   --shadow-md: 0 20px 45px rgba(154, 52, 18, 0.12);
