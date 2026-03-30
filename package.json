@@ -9,6 +9,10 @@
     "check": "vp check",
     "preview": "vp preview"
   },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "tailwindcss": "^4.2.2"
+  },
   "devDependencies": {
     "typescript": "~5.9.3",
     "vite": "npm:@voidzero-dev/vite-plus-core@latest",
