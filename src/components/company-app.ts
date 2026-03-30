@@ -162,7 +162,8 @@ export class CompanyApp extends LitElement {
       }
     });
 
-    return Array.from(spaceMap.entries()).map(([id, name]) => ({
+    const entries = Array.from(spaceMap.entries());
+    return entries.map(([id, name]) => ({
       id,
       name,
     }));
