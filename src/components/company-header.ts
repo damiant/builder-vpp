@@ -7,8 +7,8 @@ export class CompanyHeader extends LitElement {
     selectedCompanyId: { attribute: false },
   };
 
-  companies: CompanyConfig[] = [];
-  selectedCompanyId = "";
+  accessor companies: CompanyConfig[] = [];
+  accessor selectedCompanyId = "";
 
   createRenderRoot() {
     return this;
