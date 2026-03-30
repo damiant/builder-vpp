@@ -253,11 +253,11 @@ export class CompanyApp extends LitElement {
       this.connectionResult = {
         status: response.status,
         ok: response.ok,
-        message: response.ok ? "Connection successful" : (
-          data && typeof data === "object" && "message" in data
+        message: response.ok
+          ? "Connection successful"
+          : data && typeof data === "object" && "message" in data
             ? String((data as { message?: unknown }).message)
-            : `Request failed with status ${response.status}`
-        ),
+            : `Request failed with status ${response.status}`,
         data: data,
         url: url.toString(),
         headers: headers,
