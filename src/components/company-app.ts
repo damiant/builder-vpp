@@ -143,28 +143,29 @@ export class CompanyApp extends LitElement {
     this.selectedSpaceId = event.detail.spaceId;
   };
 
-  private getUniqueSpaces(): Array<{ id: string; name: string }> {
+  private getUniqueSpaces() {
     if (!this.metricsData || !Array.isArray(this.metricsData)) {
       return [];
     }
 
     const spaceMap = new Map<string, string>();
+    const items = this.metricsData as any[];
 
-    for (const item of this.metricsData) {
+    items.forEach((item) => {
       const spaces = item.metrics?.spaces || [];
-      for (const space of spaces) {
-        if (space?.id && space?.name) {
-          spaceMap.set(space.id, space.name);
-        }
+      if (Array.isArray(spaces)) {
+        spaces.forEach((space) => {
+          if (space && space.id && space.name) {
+            spaceMap.set(space.id, space.name);
+          }
+        });
       }
-    }
+    });
 
-    const result: Array<{ id: string; name: string }> = [];
-    for (const [id, name] of spaceMap.entries()) {
-      result.push({ id, name });
-    }
-
-    return result;
+    return Array.from(spaceMap.entries()).map(([id, name]) => ({
+      id,
+      name,
+    }));
   }
 
   private getMetricsDateRange() {
