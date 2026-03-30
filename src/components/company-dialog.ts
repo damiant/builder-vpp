@@ -22,6 +22,24 @@ export class CompanyDialog extends LitElement {
   }
 
   protected updated(changedProperties: PropertyValues<this>) {
+    // Sync input values when company or open state changes
+    if (changedProperties.has("company") || changedProperties.has("open")) {
+      const company = this.company ?? {
+        id: "company",
+        name: "Company",
+        publicKey: "",
+        privateKey: "",
+      };
+
+      const nameInput = this.companyNameInput;
+      const publicKeyInput = this.companyPublicKeyInput;
+      const privateKeyInput = this.companyPrivateKeyInput;
+
+      if (nameInput) nameInput.value = company.name;
+      if (publicKeyInput) publicKeyInput.value = company.publicKey;
+      if (privateKeyInput) privateKeyInput.value = company.privateKey;
+    }
+
     if (!changedProperties.has("open")) {
       return;
     }
@@ -167,7 +185,7 @@ export class CompanyDialog extends LitElement {
                 class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 type="text"
                 placeholder="Enter company name"
-                .value=${company.name}
+                value=${company.name}
               />
             </label>
 
@@ -178,7 +196,7 @@ export class CompanyDialog extends LitElement {
                 class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 type="text"
                 placeholder="Enter public key"
-                .value=${company.publicKey}
+                value=${company.publicKey}
               />
             </label>
 
@@ -189,7 +207,7 @@ export class CompanyDialog extends LitElement {
                 class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 type="password"
                 placeholder="Enter private key"
-                .value=${company.privateKey}
+                value=${company.privateKey}
               />
             </label>
           </div>
