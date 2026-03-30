@@ -1,2 +1,1 @@
 - Build after code changes: bun run check (this will format, lint and typecheck the code). Fix any errors afterwards
-
