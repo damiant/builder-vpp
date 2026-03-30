@@ -138,8 +138,6 @@ export class CompanyApp extends LitElement {
 
   private handleSpaceChange = (event: CustomEvent<{ spaceId: string }>) => {
     this.selectedSpaceId = event.detail.spaceId;
-    // Reset space selection when space changes - no need to refetch,
-    // just re-render with filtered data
   };
 
   private getUniqueSpaces(): Array<{ id: string; name: string }> {
