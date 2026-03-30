@@ -135,11 +135,6 @@ export class SelectedCompanyCard extends LitElement {
           </div>
 
           <div class="w-64 space-y-4 border-l border-[var(--color-border-subtle)] pl-8">
-            <div>
-              <p class="brand-heading text-sm font-medium text-[var(--color-text-secondary)]">
-                Filters
-              </p>
-            </div>
             <div class="flex flex-col gap-4">
               <div>
                 <date-range-selector
