@@ -17,6 +17,7 @@ import "./company-summary";
 import "./companies-table";
 import "./connection-result-dialog";
 import "./metrics-charts";
+import "./selected-company-card";
 
 type ConnectionResult = {
   status: number;
@@ -64,6 +65,7 @@ export class CompanyApp extends LitElement {
   override connectedCallback() {
     super.connectedCallback();
     void this.restoreCompanies();
+    void this.fetchMetrics();
   }
 
   private get selectedCompany() {
@@ -83,7 +85,43 @@ export class CompanyApp extends LitElement {
 
   private handleCompanyChange = (event: CustomEvent<{ companyId: string }>) => {
     this.selectedCompanyId = event.detail.companyId;
+    void this.fetchMetrics();
   };
+
+  private async fetchMetrics() {
+    const company = this.selectedCompany;
+
+    if (!company.privateKey) {
+      console.warn("Private key is required to fetch metrics.");
+      return;
+    }
+
+    const { startDate, endDate } = getMetricsDates();
+    const url = buildMetricsUrl(startDate, endDate);
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${company.privateKey}`,
+    };
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: headers,
+      });
+
+      if (!response.ok) {
+        console.error(`Metrics fetch failed with status ${response.status}`);
+        return;
+      }
+
+      const data = await response.json();
+      if (Array.isArray(data)) {
+        this.metricsData = data;
+      }
+    } catch (error) {
+      console.error("Failed to fetch metrics:", error);
+    }
+  }
 
   private openDialog = () => {
     this.dialogCompany = { ...this.selectedCompany };
