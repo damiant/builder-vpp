@@ -42,29 +42,37 @@ export class CompanyHeader extends LitElement {
 
   render() {
     return html`
-      <header class="border-b border-slate-200 bg-white/90 px-6 py-4 backdrop-blur">
+      <header
+        class="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-6 py-4 backdrop-blur"
+      >
         <div
           class="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
-              Fusion metrics
+            <p
+              class="brand-heading text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-text-muted)]"
+            >
+              Fusion Metrics
             </p>
-            <h1 class="mt-1 text-xl font-semibold text-slate-900">Company connection</h1>
+            <h1 class="mt-1 text-xl font-semibold text-[var(--color-text-primary)]">
+              Company connection
+            </h1>
           </div>
 
           <div class="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-violet-500"
+              class="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-[var(--color-text-inverse)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--color-brand-strong)]"
               @click=${this.addCompany}
             >
               Add company
             </button>
-            <label class="flex items-center gap-2 text-sm font-medium text-slate-600">
+            <label
+              class="flex items-center gap-2 text-sm font-medium text-[var(--color-text-secondary)]"
+            >
               <span>Company</span>
               <select
-                class="min-w-44 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+                class="min-w-44 rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-[var(--shadow-sm)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 .value=${this.selectedCompanyId}
                 @change=${this.handleCompanyChange}
               >
@@ -76,7 +84,7 @@ export class CompanyHeader extends LitElement {
 
             <button
               type="button"
-              class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-400 hover:bg-slate-50"
+              class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-4 py-2 text-sm font-medium text-[var(--color-text-secondary)] shadow-[var(--shadow-sm)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]"
               @click=${this.openEditor}
             >
               Edit

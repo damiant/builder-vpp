@@ -132,7 +132,7 @@ export class CompanyApp extends LitElement {
 
   render() {
     return html`
-      <div class="min-h-screen bg-slate-50 text-slate-900">
+      <div class="min-h-screen bg-[var(--color-canvas)] text-[var(--color-text-primary)]">
         <company-header
           .companies=${this.companies}
           .selectedCompanyId=${this.selectedCompanyId}

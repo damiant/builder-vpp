@@ -116,22 +116,26 @@ export class CompanyDialog extends LitElement {
     return html`
       <dialog
         id="company-dialog"
-        class="w-[min(92vw,36rem)] rounded-3xl border border-slate-200 bg-white p-0 shadow-2xl backdrop:bg-slate-900/50"
+        class="w-[min(92vw,36rem)] rounded-[var(--radius-xl)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-md)]"
         @close=${this.handleNativeClose}
       >
         <div class="p-6 sm:p-8">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">
+              <p
+                class="brand-heading text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-text-muted)]"
+              >
                 Company settings
               </p>
-              <h2 class="mt-2 text-2xl font-semibold tracking-tight text-slate-900">
+              <h2
+                class="mt-2 text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]"
+              >
                 Edit company
               </h2>
             </div>
             <button
               type="button"
-              class="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+              class="rounded-full p-2 text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
               aria-label="Close dialog"
               @click=${this.closeDialog}
             >
@@ -140,33 +144,33 @@ export class CompanyDialog extends LitElement {
           </div>
 
           <div class="mt-6 grid gap-4">
-            <label class="grid gap-2 text-sm font-medium text-slate-700">
+            <label class="grid gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
               <span>Company name</span>
               <input
                 id="company-name"
-                class="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+                class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 type="text"
                 placeholder="Enter company name"
                 .value=${company.name}
               />
             </label>
 
-            <label class="grid gap-2 text-sm font-medium text-slate-700">
+            <label class="grid gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
               <span>Public Key</span>
               <input
                 id="company-public-key"
-                class="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+                class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 type="text"
                 placeholder="Enter public key"
                 .value=${company.publicKey}
               />
             </label>
 
-            <label class="grid gap-2 text-sm font-medium text-slate-700">
+            <label class="grid gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
               <span>Private Key</span>
               <input
                 id="company-private-key"
-                class="rounded-xl border border-slate-300 px-4 py-3 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-200"
+                class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 type="password"
                 placeholder="Enter private key"
                 .value=${company.privateKey}
@@ -174,7 +178,7 @@ export class CompanyDialog extends LitElement {
             </label>
           </div>
 
-          <p class="mt-4 text-xs leading-5 text-slate-500">
+          <p class="mt-4 text-xs leading-5 text-[var(--color-text-muted)]">
             The private key is sent as the Bearer token in the Authorization header, matching the
             Fusion Metrics API docs.
           </p>
@@ -182,21 +186,21 @@ export class CompanyDialog extends LitElement {
           <div class="mt-8 flex flex-wrap justify-end gap-3">
             <button
               type="button"
-              class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
               @click=${this.closeDialog}
             >
               Cancel
             </button>
             <button
               type="button"
-              class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
               @click=${this.saveCompany}
             >
               Save
             </button>
             <button
               type="button"
-              class="rounded-lg bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500"
+              class="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-inverse)] transition hover:bg-[var(--color-brand-strong)]"
               @click=${this.connectCompany}
             >
               Connect
