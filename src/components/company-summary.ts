@@ -31,7 +31,13 @@ export class CompanySummary extends LitElement {
     };
 
     return html`
-      <main class="mx-auto flex max-w-6xl flex-1 items-center px-6 py-12">
+      <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-8 px-6 py-12">
+        ${this.metricsData ? html`
+          <section class="w-full">
+            <metrics-charts .data=${this.metricsData}></metrics-charts>
+          </section>
+        ` : ""}
+
         <section
           class="w-full rounded-[var(--radius-xl)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-8 shadow-[var(--shadow-md)]"
         >
@@ -98,8 +104,6 @@ export class CompanySummary extends LitElement {
             <span class="font-medium text-[var(--color-text-primary)]">Connect endpoint:</span>
             <span class="ml-1 break-all">https://cdn.builder.io/api/v1/orgs/fusion/metrics</span>
           </div>
-
-          <metrics-charts .data=${this.metricsData}></metrics-charts>
         </section>
       </main>
     `;
