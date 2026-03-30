@@ -56,17 +56,27 @@ export class MetricsCharts extends LitElement {
     return this;
   }
 
-  override updated() {
-    if (!this.data) return;
+  override updated(changedProperties: Map<string, unknown>) {
+    const dataChanged = changedProperties.has("data");
+    const usersContextChanged =
+      changedProperties.has("company") ||
+      changedProperties.has("selectedMonth") ||
+      changedProperties.has("selectedYear");
 
-    // Destroy existing charts
-    this.charts.forEach((chart) => chart.destroy());
-    this.charts.clear();
+    // Only recreate charts when data changes
+    if (dataChanged) {
+      if (!this.data) return;
+      this.charts.forEach((chart) => chart.destroy());
+      this.charts.clear();
+    }
 
-    // Fetch users data if company is available
-    if (this.company && this.company.privateKey) {
+    // Only fetch users when company or date range changes (not when usersData changes)
+    if (usersContextChanged && this.company && this.company.privateKey) {
+      this.usersData = null;
       void this.fetchUsersData();
     }
+
+    if (!dataChanged) return;
 
     const chartConfigs = [
       {
