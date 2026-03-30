@@ -5,15 +5,15 @@ import heroImg from "./assets/hero.png";
 import { setupCounter } from "./counter.ts";
 
 document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
-<section id="center">
+<section id="center" class="flex grow flex-col items-center justify-center gap-[25px] text-center max-lg:gap-[18px] max-lg:px-5 max-lg:pt-8 max-lg:pb-6">
   <div class="hero">
     <img src="${heroImg}" class="base" width="170" height="179">
     <img src="${typescriptLogo}" class="framework" alt="TypeScript logo"/>
     <img src=${viteLogo} class="vite" alt="Vite logo" />
   </div>
-  <div>
-    <h1>Get started</h1>
-    <p>Edit <code>src/main.ts</code> and save to test <code>HMR</code></p>
+  <div class="max-w-[40rem]">
+    <h1 class="my-8 font-medium tracking-[-1.68px] text-[56px] max-lg:my-5 max-lg:text-[36px]">Get started</h1>
+    <p class="m-0">Edit <code>src/main.ts</code> and save to test <code>HMR</code></p>
   </div>
   <button id="counter" type="button" class="counter"></button>
 </section>
