@@ -1,17 +1,21 @@
 import { LitElement, html } from "lit";
 import type { CompanyConfig } from "../lib/company-store";
 import { maskSecret } from "../lib/company-store";
+import "./metrics-charts";
 
 export class CompanySummary extends LitElement {
   static properties = {
     company: { attribute: false },
+    metricsData: { attribute: false },
   };
 
   declare company: CompanyConfig | null;
+  declare metricsData: unknown[] | null;
 
   constructor() {
     super();
     this.company = null;
+    this.metricsData = null;
   }
 
   createRenderRoot() {
@@ -94,6 +98,8 @@ export class CompanySummary extends LitElement {
             <span class="font-medium text-[var(--color-text-primary)]">Connect endpoint:</span>
             <span class="ml-1 break-all">https://cdn.builder.io/api/v1/orgs/fusion/metrics</span>
           </div>
+
+          <metrics-charts .data=${this.metricsData}></metrics-charts>
         </section>
       </main>
     `;

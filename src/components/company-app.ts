@@ -16,6 +16,7 @@ import "./company-header";
 import "./company-summary";
 import "./companies-table";
 import "./connection-result-dialog";
+import "./metrics-charts";
 
 type ConnectionResult = {
   status: number;
@@ -34,6 +35,7 @@ export class CompanyApp extends LitElement {
     dialogCompany: { attribute: false },
     connectionResult: { attribute: false },
     resultDialogOpen: { type: Boolean, attribute: false },
+    metricsData: { attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -42,6 +44,7 @@ export class CompanyApp extends LitElement {
   declare dialogCompany: CompanyConfig | null;
   declare connectionResult: ConnectionResult | null;
   declare resultDialogOpen: boolean;
+  declare metricsData: unknown[] | null;
 
   constructor() {
     super();
@@ -51,6 +54,7 @@ export class CompanyApp extends LitElement {
     this.dialogCompany = null;
     this.connectionResult = null;
     this.resultDialogOpen = false;
+    this.metricsData = null;
   }
 
   createRenderRoot() {
@@ -153,7 +157,8 @@ export class CompanyApp extends LitElement {
       };
 
       this.resultDialogOpen = true;
-      if (response.ok) {
+      if (response.ok && Array.isArray(data)) {
+        this.metricsData = data;
         setTimeout(() => this.closeDialog(), 1000);
       }
     } catch (error) {
@@ -197,7 +202,10 @@ export class CompanyApp extends LitElement {
           @edit-company=${this.openDialog}
         ></company-header>
 
-        <company-summary .company=${this.selectedCompany}></company-summary>
+        <company-summary
+          .company=${this.selectedCompany}
+          .metricsData=${this.metricsData}
+        ></company-summary>
 
         <company-dialog
           .company=${this.dialogCompany ?? this.selectedCompany}
