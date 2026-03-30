@@ -331,7 +331,7 @@ function render() {
     }
 
     const { startDate, endDate } = getMetricsDates();
-    const url = new URL("https://cdn.builder.io/api/v1/orgs/fusion/metrics");
+    const url = new URL("https://builder.io/api/v1/orgs/fusion/metrics");
     url.searchParams.set("startDate", startDate);
     url.searchParams.set("endDate", endDate);
 
@@ -344,10 +344,15 @@ function render() {
         },
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => null);
 
       if (!response.ok) {
-        console.error(result);
+        const message =
+          result && typeof result === "object" && "message" in result
+            ? String((result as { message?: unknown }).message)
+            : `Request failed with status ${response.status}`;
+
+        console.error(`Connection failed: ${message}`);
         return;
       }
 
