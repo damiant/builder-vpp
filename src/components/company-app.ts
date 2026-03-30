@@ -112,10 +112,13 @@ export class CompanyApp extends LitElement {
     };
 
     try {
+      console.log("Fetching metrics from:", url.toString());
       const response = await fetch(url, {
         method: "GET",
         headers: headers,
       });
+
+      console.log("Response status:", response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -123,41 +126,66 @@ export class CompanyApp extends LitElement {
           errorData && typeof errorData === "object" && "message" in errorData
             ? String((errorData as { message?: unknown }).message)
             : `Request failed with status ${response.status}`;
+        console.error("API Error:", message);
         this.metricsError = message;
         this.metricsData = null;
         return;
       }
 
       const data = await response.json();
-      console.log("Metrics API response:", data);
+      console.log("Raw metrics API response:", data);
 
-      // Transform API response to expected format
-      if (Array.isArray(data)) {
-        const transformedData = data.map((item: any) => {
-          // Handle both nested metrics object and flat structure
-          const metrics = item.metrics || item;
-          return {
-            period: item.period || item.date || "",
-            metrics: {
-              userPrompts:
-                metrics.userPrompts ||
-                metrics.events?.filter((e: any) => e.event === "prompt").length ||
-                0,
-              totalLines: metrics.totalLines || metrics.linesAccepted || 0,
-              creditsUsed: metrics.creditsUsed || 0,
-              designsExported: metrics.designsExported || 0,
-              prsMerged: metrics.prsMerged || 0,
-            },
-          };
-        });
-        console.log("Transformed metrics:", transformedData);
-        this.metricsData = transformedData;
-        this.metricsError = null;
+      if (!data) {
+        this.metricsError = "No data returned from API";
+        this.metricsData = null;
+        return;
+      }
+
+      // If data is already in the right format (array with period and metrics)
+      if (Array.isArray(data) && data.length > 0) {
+        const firstItem = data[0];
+        console.log("First item:", firstItem);
+
+        // Check if it's already in the right format
+        if (firstItem.period && firstItem.metrics) {
+          console.log("Data is already in correct format");
+          this.metricsData = data;
+          this.metricsError = null;
+          return;
+        }
+
+        // Otherwise, try to transform it
+        try {
+          const transformedData = data.map((item: any) => {
+            const metrics = item.metrics || item;
+            return {
+              period: item.period || item.date || "",
+              metrics: {
+                userPrompts: metrics.userPrompts || 0,
+                totalLines: metrics.totalLines || metrics.linesAccepted || 0,
+                creditsUsed: metrics.creditsUsed || 0,
+                designsExported: metrics.designsExported || 0,
+                prsMerged: metrics.prsMerged || 0,
+              },
+            };
+          });
+          console.log("Transformed metrics:", transformedData);
+          this.metricsData = transformedData;
+          this.metricsError = null;
+        } catch (transformError) {
+          console.error("Error transforming metrics:", transformError);
+          this.metricsError = "Failed to process metrics data";
+          this.metricsData = null;
+        }
+      } else {
+        this.metricsError = "Invalid metrics data format";
+        this.metricsData = null;
       }
     } catch (error) {
-      this.metricsError = error instanceof Error ? error.message : "Failed to fetch metrics";
+      const message = error instanceof Error ? error.message : "Unknown error";
+      console.error("Metrics fetch failed:", message, error);
+      this.metricsError = `Failed to fetch metrics: ${message}`;
       this.metricsData = null;
-      console.error("Metrics fetch error:", error);
     }
   }
 
@@ -225,11 +253,11 @@ export class CompanyApp extends LitElement {
       this.connectionResult = {
         status: response.status,
         ok: response.ok,
-        message: response.ok
-          ? "Connection successful"
-          : data && typeof data === "object" && "message" in data
+        message: response.ok ? "Connection successful" : (
+          data && typeof data === "object" && "message" in data
             ? String((data as { message?: unknown }).message)
-            : `Request failed with status ${response.status}`,
+            : `Request failed with status ${response.status}`
+        ),
         data: data,
         url: url.toString(),
         headers: headers,
