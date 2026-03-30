@@ -223,10 +223,22 @@ export class CompanyApp extends LitElement {
           );
       }
 
+      const toNumber = (val: any): number => {
+        const num = Number(val);
+        return isNaN(num) ? 0 : num;
+      };
+
       return {
         period: item.period || item.date || "",
         metrics: {
           ...metrics,
+          userPrompts: toNumber(metrics.userPrompts),
+          totalLines: toNumber(metrics.totalLines || metrics.linesAccepted),
+          creditsUsed: toNumber(metrics.creditsUsed),
+          designsExported: toNumber(metrics.designExports ?? metrics.designsExported),
+          prsMerged: toNumber(metrics.prsMerged),
+          events: toNumber(metrics.events),
+          users: toNumber(metrics.users),
           spaceIds: spaceIds,
           spaces: spaces,
         },
