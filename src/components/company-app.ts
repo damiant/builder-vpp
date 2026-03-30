@@ -104,9 +104,7 @@ export class CompanyApp extends LitElement {
     // Filter data to only include the selected space
     const mapped = this.metricsData.map((item: any) => {
       const spaces = item.metrics?.spaces || [];
-      const hasSelectedSpace = spaces.some(
-        (space: any) => space.id === this.selectedSpaceId,
-      );
+      const hasSelectedSpace = spaces.some((space: any) => space.id === this.selectedSpaceId);
 
       if (!hasSelectedSpace) {
         return null;
@@ -213,15 +211,13 @@ export class CompanyApp extends LitElement {
       const rawSpaces = Array.isArray(metrics.spaces) ? metrics.spaces : [];
       if (rawSpaces.length > 0) {
         // API returns spaces with spaceId and spaceName
-        spaceIds = rawSpaces
-          .map((space: any) => space.spaceId)
-          .filter(Boolean);
+        spaceIds = rawSpaces.map((space: any) => space.spaceId).filter(Boolean);
         spaces = rawSpaces
           .map((space: any) => ({
             id: space.spaceId,
             name: space.spaceName,
           }))
-          .filter((space) => space.id && space.name);
+          .filter((space: { id: string; name: string }) => space.id && space.name);
       }
 
       const transformed = {
@@ -240,10 +236,10 @@ export class CompanyApp extends LitElement {
       };
       if (spaceIds.length > 0) {
         const period = item.period || item.date;
-        console.log(
-          `Period ${period}: found ${spaceIds.length} unique spaces:`,
-          { spaceIds, spaces },
-        );
+        console.log(`Period ${period}: found ${spaceIds.length} unique spaces:`, {
+          spaceIds,
+          spaces,
+        });
       }
       return transformed;
     });
@@ -318,10 +314,7 @@ export class CompanyApp extends LitElement {
       const firstDataItem = Array.isArray(data) ? data[0] : data.data?.[0];
       if (firstDataItem) {
         console.log("First item keys:", Object.keys(firstDataItem));
-        const spaceIds =
-          firstDataItem.spaceIds ||
-          firstDataItem.metrics?.spaceIds ||
-          "NOT FOUND";
+        const spaceIds = firstDataItem.spaceIds || firstDataItem.metrics?.spaceIds || "NOT FOUND";
         console.log("First item spaceIds field:", spaceIds);
       }
 
@@ -365,8 +358,7 @@ export class CompanyApp extends LitElement {
         this.metricsError = null;
       } catch (transformError) {
         console.error("Error transforming metrics:", transformError);
-        const errMsg =
-          transformError instanceof Error ? transformError.message : "unknown error";
+        const errMsg = transformError instanceof Error ? transformError.message : "unknown error";
         this.metricsError = `Failed to process metrics data: ${errMsg}`;
         this.metricsData = null;
       }
