@@ -257,7 +257,7 @@ export class CompanyApp extends LitElement {
           userPrompts: toNumber(metrics.userPrompts),
           totalLines: toNumber(metrics.totalLines || metrics.linesAccepted),
           creditsUsed: toNumber(metrics.creditsUsed),
-          designsExported: toNumber(metrics.designsExported),
+          designsExported: toNumber(metrics.designExports ?? metrics.designsExported),
           prsMerged: toNumber(metrics.prsMerged),
           events: toNumber(metrics.events),
           users: toNumber(metrics.users),
