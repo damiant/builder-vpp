@@ -2,26 +2,16 @@ import { LitElement, html } from "lit";
 import type { CompanyConfig } from "../lib/company-store";
 import { maskSecret } from "../lib/company-store";
 
-type ConnectionResult = {
-  status: number;
-  ok: boolean;
-  message?: string;
-  data?: unknown;
-};
-
 export class CompanySummary extends LitElement {
   static properties = {
     company: { attribute: false },
-    connectionResult: { attribute: false },
   };
 
   declare company: CompanyConfig | null;
-  declare connectionResult: ConnectionResult | null;
 
   constructor() {
     super();
     this.company = null;
-    this.connectionResult = null;
   }
 
   createRenderRoot() {
@@ -104,26 +94,6 @@ export class CompanySummary extends LitElement {
             <span class="font-medium text-[var(--color-text-primary)]">Connect endpoint:</span>
             <span class="ml-1 break-all">https://cdn.builder.io/api/v1/orgs/fusion/metrics</span>
           </div>
-
-          ${this.connectionResult ? html`
-            <div class="mt-6 space-y-4">
-              <div class="rounded-[var(--radius-lg)] border ${this.connectionResult.ok ? "border-green-300 bg-green-50" : "border-red-300 bg-red-50"} px-4 py-3">
-                <p class="font-medium ${this.connectionResult.ok ? "text-green-900" : "text-red-900"}">
-                  Status: ${this.connectionResult.status} ${this.connectionResult.ok ? "✓" : "✗"}
-                </p>
-                <p class="mt-1 text-sm ${this.connectionResult.ok ? "text-green-800" : "text-red-800"}">
-                  ${this.connectionResult.message}
-                </p>
-              </div>
-
-              ${this.connectionResult.data ? html`
-                <div class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4">
-                  <p class="font-medium text-[var(--color-text-primary)]">Response:</p>
-                  <pre class="mt-2 overflow-auto rounded-[var(--radius-sm)] bg-[var(--color-surface)] p-3 text-xs font-mono text-[var(--color-text-primary)]">${JSON.stringify(this.connectionResult.data, null, 2)}</pre>
-                </div>
-              ` : ""}
-            </div>
-          ` : ""}
         </section>
       </main>
     `;

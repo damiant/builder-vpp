@@ -15,12 +15,15 @@ import "./company-dialog";
 import "./company-header";
 import "./company-summary";
 import "./companies-table";
+import "./connection-result-dialog";
 
 type ConnectionResult = {
   status: number;
   ok: boolean;
   message?: string;
   data?: unknown;
+  url?: string;
+  headers?: Record<string, string>;
 };
 
 export class CompanyApp extends LitElement {
@@ -30,6 +33,7 @@ export class CompanyApp extends LitElement {
     dialogOpen: { type: Boolean, attribute: false },
     dialogCompany: { attribute: false },
     connectionResult: { attribute: false },
+    resultDialogOpen: { type: Boolean, attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -37,6 +41,7 @@ export class CompanyApp extends LitElement {
   declare dialogOpen: boolean;
   declare dialogCompany: CompanyConfig | null;
   declare connectionResult: ConnectionResult | null;
+  declare resultDialogOpen: boolean;
 
   constructor() {
     super();
@@ -45,6 +50,7 @@ export class CompanyApp extends LitElement {
     this.dialogOpen = false;
     this.dialogCompany = null;
     this.connectionResult = null;
+    this.resultDialogOpen = false;
   }
 
   createRenderRoot() {
@@ -114,19 +120,21 @@ export class CompanyApp extends LitElement {
         ok: false,
         message: "Private key is required to connect.",
       };
+      this.resultDialogOpen = true;
       return;
     }
 
     const { startDate, endDate } = getMetricsDates();
     const url = buildMetricsUrl(startDate, endDate);
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${updatedCompany.privateKey}`,
+    };
 
     try {
       const response = await fetch(url, {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${updatedCompany.privateKey}`,
-        },
+        headers: headers,
       });
 
       const data = await response.json().catch(() => null);
@@ -140,17 +148,23 @@ export class CompanyApp extends LitElement {
             : `Request failed with status ${response.status}`
         ),
         data: data,
+        url: url.toString(),
+        headers: headers,
       };
 
+      this.resultDialogOpen = true;
       if (response.ok) {
-        this.closeDialog();
+        setTimeout(() => this.closeDialog(), 1000);
       }
     } catch (error) {
       this.connectionResult = {
         status: 0,
         ok: false,
         message: error instanceof Error ? error.message : "Connection error",
+        url: url.toString(),
+        headers: headers,
       };
+      this.resultDialogOpen = true;
     }
   };
 
@@ -168,6 +182,10 @@ export class CompanyApp extends LitElement {
     this.closeDialog();
   };
 
+  private closeResultDialog = () => {
+    this.resultDialogOpen = false;
+  };
+
   render() {
     return html`
       <div class="min-h-screen bg-[var(--color-canvas)] text-[var(--color-text-primary)]">
@@ -179,10 +197,7 @@ export class CompanyApp extends LitElement {
           @edit-company=${this.openDialog}
         ></company-header>
 
-        <company-summary
-          .company=${this.selectedCompany}
-          .connectionResult=${this.connectionResult}
-        ></company-summary>
+        <company-summary .company=${this.selectedCompany}></company-summary>
 
         <company-dialog
           .company=${this.dialogCompany ?? this.selectedCompany}
@@ -192,6 +207,12 @@ export class CompanyApp extends LitElement {
           @connect-company=${this.connectCompany}
           @delete-company=${this.removeCompany}
         ></company-dialog>
+
+        <connection-result-dialog
+          .result=${this.connectionResult}
+          .open=${this.resultDialogOpen}
+          @close-result-dialog=${this.closeResultDialog}
+        ></connection-result-dialog>
       </div>
     `;
   }
