@@ -148,21 +148,23 @@ export class CompanyApp extends LitElement {
       return [];
     }
 
-    const spacesMap = new Map<string, string>();
+    const spaceMap = new Map<string, string>();
 
-    this.metricsData.forEach((item: any) => {
+    for (const item of this.metricsData) {
       const spaces = item.metrics?.spaces || [];
-      spaces.forEach((space: any) => {
+      for (const space of spaces) {
         if (space?.id && space?.name) {
-          spacesMap.set(space.id, space.name);
+          spaceMap.set(space.id, space.name);
         }
-      });
-    });
+      }
+    }
 
-    return Array.from(spacesMap.entries()).map(([id, name]) => ({
-      id,
-      name,
-    }));
+    const result: Array<{ id: string; name: string }> = [];
+    for (const [id, name] of spaceMap.entries()) {
+      result.push({ id, name });
+    }
+
+    return result;
   }
 
   private getMetricsDateRange() {
