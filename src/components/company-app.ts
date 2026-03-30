@@ -10,6 +10,7 @@ import {
   saveCompanies,
   upsertCompany,
 } from "../lib/company-store";
+import { cacheMetrics, getCachedMetrics } from "../lib/metrics-cache";
 import "./company-dialog";
 import "./company-header";
 import "./company-summary";
@@ -126,6 +127,39 @@ export class CompanyApp extends LitElement {
     };
   }
 
+  private transformMetricsData(dataArray: any[]): any[] {
+    const firstItem = dataArray[0];
+    console.log("First item structure:", firstItem);
+
+    // Check if already in correct format
+    if (firstItem.period && firstItem.metrics) {
+      console.log("Data is already in correct format");
+      return dataArray;
+    }
+
+    // Transform to correct format
+    const transformedData = dataArray.map((item: any) => {
+      const metrics = item.metrics || item;
+      const toNumber = (val: any): number => {
+        const num = Number(val);
+        return isNaN(num) ? 0 : num;
+      };
+      const transformed = {
+        period: item.period || item.date || "",
+        metrics: {
+          userPrompts: toNumber(metrics.userPrompts),
+          totalLines: toNumber(metrics.totalLines || metrics.linesAccepted),
+          creditsUsed: toNumber(metrics.creditsUsed),
+          designsExported: toNumber(metrics.designsExported),
+          prsMerged: toNumber(metrics.prsMerged),
+        },
+      };
+      return transformed;
+    });
+
+    return transformedData;
+  }
+
   private async fetchMetrics() {
     const company = this.selectedCompany;
 
@@ -136,6 +170,28 @@ export class CompanyApp extends LitElement {
     }
 
     const { startDate, endDate } = this.getMetricsDateRange();
+
+    // Check cache first
+    const cachedData = await getCachedMetrics(
+      company.publicKey,
+      company.privateKey,
+      startDate,
+      endDate,
+    );
+
+    if (cachedData) {
+      console.log("Using cached metrics data");
+      try {
+        const transformedData = this.transformMetricsData(cachedData);
+        this.metricsData = transformedData;
+        this.metricsError = null;
+      } catch (error) {
+        console.error("Error processing cached metrics:", error);
+        this.metricsError = "Failed to process cached metrics";
+      }
+      return;
+    }
+
     const url = buildMetricsUrl(startDate, endDate);
     const headers = {
       "Content-Type": "application/json",
@@ -143,7 +199,7 @@ export class CompanyApp extends LitElement {
     };
 
     try {
-      console.log("Fetching metrics from:", url.toString());
+      console.log("Fetching fresh metrics from:", url.toString());
       const response = await fetch(url, {
         method: "GET",
         headers: headers,
@@ -196,38 +252,13 @@ export class CompanyApp extends LitElement {
       }
 
       try {
-        const firstItem = dataArray[0];
-        console.log("First item structure:", firstItem);
-
-        // Check if already in correct format
-        if (firstItem.period && firstItem.metrics) {
-          console.log("Data is already in correct format");
-          this.metricsData = dataArray;
-          this.metricsError = null;
-          return;
-        }
-
-        // Transform to correct format
-        const transformedData = dataArray.map((item: any) => {
-          const metrics = item.metrics || item;
-          const toNumber = (val: any): number => {
-            const num = Number(val);
-            return isNaN(num) ? 0 : num;
-          };
-          const transformed = {
-            period: item.period || item.date || "",
-            metrics: {
-              userPrompts: toNumber(metrics.userPrompts),
-              totalLines: toNumber(metrics.totalLines || metrics.linesAccepted),
-              creditsUsed: toNumber(metrics.creditsUsed),
-              designsExported: toNumber(metrics.designsExported),
-              prsMerged: toNumber(metrics.prsMerged),
-            },
-          };
-          return transformed;
-        });
+        const transformedData = this.transformMetricsData(dataArray);
 
         console.log("Transformed metrics:", transformedData);
+
+        // Cache the original data
+        await cacheMetrics(company.publicKey, company.privateKey, startDate, endDate, dataArray);
+
         this.metricsData = transformedData;
         this.metricsError = null;
       } catch (transformError) {
@@ -319,7 +350,17 @@ export class CompanyApp extends LitElement {
 
       this.resultDialogOpen = true;
       if (response.ok && Array.isArray(data)) {
-        this.metricsData = data;
+        // Cache the metrics
+        const { startDate, endDate } = this.getMetricsDateRange();
+        await cacheMetrics(
+          updatedCompany.publicKey,
+          updatedCompany.privateKey,
+          startDate,
+          endDate,
+          data,
+        );
+        const transformedData = this.transformMetricsData(data);
+        this.metricsData = transformedData;
         setTimeout(() => this.closeDialog(), 1000);
       }
     } catch (error) {

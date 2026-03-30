@@ -1,6 +1,5 @@
 import { LitElement, html } from "lit";
 import type { CompanyConfig } from "../lib/company-store";
-import { maskSecret } from "../lib/company-store";
 
 type MetricsData = {
   period: string;
@@ -165,30 +164,6 @@ export class SelectedCompanyCard extends LitElement {
             <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
               ${stats.totals.designsExported.toLocaleString()}
             </p>
-          </div>
-        </div>
-
-        <div
-          class="mt-6 rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
-        >
-          <p
-            class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
-          >
-            Company details
-          </p>
-          <div class="mt-4 grid gap-3 text-sm">
-            <div class="flex justify-between">
-              <span class="text-[var(--color-text-secondary)]">Public Key:</span>
-              <code class="font-mono text-[var(--color-text-primary)]"
-                >${maskSecret(company.publicKey)}</code
-              >
-            </div>
-            <div class="flex justify-between">
-              <span class="text-[var(--color-text-secondary)]">Private Key:</span>
-              <code class="font-mono text-[var(--color-text-primary)]"
-                >${maskSecret(company.privateKey)}</code
-              >
-            </div>
           </div>
         </div>
       </section>
