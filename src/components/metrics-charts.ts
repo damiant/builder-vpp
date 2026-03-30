@@ -82,13 +82,15 @@ export class MetricsCharts extends LitElement {
     });
   }
 
-  private createChart(config: Readonly<{
-    id: string;
-    label: string;
-    dataKey: keyof MetricsData[0]["metrics"];
-    borderColor: string;
-    backgroundColor: string;
-  }>) {
+  private createChart(
+    config: Readonly<{
+      id: string;
+      label: string;
+      dataKey: keyof MetricsData[0]["metrics"];
+      borderColor: string;
+      backgroundColor: string;
+    }>,
+  ) {
     const canvas = this.querySelector<HTMLCanvasElement>(`#chart-${config.id}`);
     if (!canvas) return;
 
@@ -168,23 +170,33 @@ export class MetricsCharts extends LitElement {
         </div>
 
         <div class="grid gap-6 md:grid-cols-2">
-          <div class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4">
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
             <canvas id="chart-userPrompts"></canvas>
           </div>
 
-          <div class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4">
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
             <canvas id="chart-totalLines"></canvas>
           </div>
 
-          <div class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4">
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
             <canvas id="chart-creditsUsed"></canvas>
           </div>
 
-          <div class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4">
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
             <canvas id="chart-designsExported"></canvas>
           </div>
 
-          <div class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4 md:col-span-2">
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4 md:col-span-2"
+          >
             <canvas id="chart-prsMerged"></canvas>
           </div>
         </div>

@@ -51,33 +51,33 @@ export class CompaniesTable extends LitElement {
             </tr>
           </thead>
           <tbody>
-            ${this.companies.map(
-              (company) => {
-                const isSelected = company.id === this.selectedCompanyId;
-                return html`
-                  <tr
-                    class="border-b border-[var(--color-border-subtle)] ${isSelected ? "bg-[var(--color-brand-soft)]" : "hover:bg-[var(--color-surface-muted)]"} cursor-pointer transition"
-                    @click=${() => this.selectCompany(company.id)}
-                  >
-                    <td class="px-4 py-3 text-center text-lg font-medium text-[var(--color-brand)]">
-                      ${isSelected ? "✓" : ""}
-                    </td>
-                    <td class="px-4 py-3 text-sm font-medium text-[var(--color-text-primary)]">
-                      ${company.name}
-                    </td>
-                    <td class="px-4 py-3 text-right">
-                      <button
-                        type="button"
-                        class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]"
-                        @click=${this.editCompany}
-                      >
-                        Edit
-                      </button>
-                    </td>
-                  </tr>
-                `;
-              },
-            )}
+            ${this.companies.map((company) => {
+              const isSelected = company.id === this.selectedCompanyId;
+              return html`
+                <tr
+                  class="border-b border-[var(--color-border-subtle)] ${isSelected
+                    ? "bg-[var(--color-brand-soft)]"
+                    : "hover:bg-[var(--color-surface-muted)]"} cursor-pointer transition"
+                  @click=${() => this.selectCompany(company.id)}
+                >
+                  <td class="px-4 py-3 text-center text-lg font-medium text-[var(--color-brand)]">
+                    ${isSelected ? "✓" : ""}
+                  </td>
+                  <td class="px-4 py-3 text-sm font-medium text-[var(--color-text-primary)]">
+                    ${company.name}
+                  </td>
+                  <td class="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] transition hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-muted)]"
+                      @click=${this.editCompany}
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              `;
+            })}
           </tbody>
         </table>
       </div>

@@ -169,17 +169,23 @@ export class SelectedCompanyCard extends LitElement {
         <div
           class="mt-6 rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
         >
-          <p class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
+          <p
+            class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+          >
             Company details
           </p>
           <div class="mt-4 grid gap-3 text-sm">
             <div class="flex justify-between">
               <span class="text-[var(--color-text-secondary)]">Public Key:</span>
-              <code class="font-mono text-[var(--color-text-primary)]">${maskSecret(company.publicKey)}</code>
+              <code class="font-mono text-[var(--color-text-primary)]"
+                >${maskSecret(company.publicKey)}</code
+              >
             </div>
             <div class="flex justify-between">
               <span class="text-[var(--color-text-secondary)]">Private Key:</span>
-              <code class="font-mono text-[var(--color-text-primary)]">${maskSecret(company.privateKey)}</code>
+              <code class="font-mono text-[var(--color-text-primary)]"
+                >${maskSecret(company.privateKey)}</code
+              >
             </div>
           </div>
         </div>

@@ -55,9 +55,7 @@ export class ConnectionResultDialog extends LitElement {
 
   private handleNativeClose = () => {
     if (this.open) {
-      this.dispatchEvent(
-        new CustomEvent("close-result-dialog", { bubbles: true, composed: true }),
-      );
+      this.dispatchEvent(new CustomEvent("close-result-dialog", { bubbles: true, composed: true }));
     }
   };
 
@@ -81,10 +79,14 @@ export class ConnectionResultDialog extends LitElement {
         <div class="p-6 sm:p-8">
           <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="brand-heading text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-text-muted)]">
+              <p
+                class="brand-heading text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-text-muted)]"
+              >
                 Connection result
               </p>
-              <h2 class="mt-2 text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+              <h2
+                class="mt-2 text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]"
+              >
                 ${result.ok ? "Success" : "Failed"}
               </h2>
             </div>
@@ -99,7 +101,11 @@ export class ConnectionResultDialog extends LitElement {
           </div>
 
           <div class="mt-6 space-y-4">
-            <div class="rounded-[var(--radius-lg)] border ${result.ok ? "border-green-300 bg-green-50" : "border-red-300 bg-red-50"} px-4 py-3">
+            <div
+              class="rounded-[var(--radius-lg)] border ${result.ok
+                ? "border-green-300 bg-green-50"
+                : "border-red-300 bg-red-50"} px-4 py-3"
+            >
               <p class="font-medium ${result.ok ? "text-green-900" : "text-red-900"}">
                 Status: ${result.status} ${result.ok ? "✓" : "✗"}
               </p>
@@ -108,26 +114,48 @@ export class ConnectionResultDialog extends LitElement {
               </p>
             </div>
 
-            ${result.url ? html`
-              <div class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4">
-                <p class="font-medium text-[var(--color-text-primary)]">Request URL:</p>
-                <pre class="mt-2 overflow-auto rounded-[var(--radius-sm)] bg-[var(--color-surface)] p-3 text-xs font-mono text-[var(--color-text-primary)]">${result.url}</pre>
-              </div>
-            ` : ""}
-
-            ${result.headers ? html`
-              <div class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4">
-                <p class="font-medium text-[var(--color-text-primary)]">Request Headers:</p>
-                <pre class="mt-2 overflow-auto rounded-[var(--radius-sm)] bg-[var(--color-surface)] p-3 text-xs font-mono text-[var(--color-text-primary)]">${JSON.stringify(result.headers, null, 2)}</pre>
-              </div>
-            ` : ""}
-
-            ${result.data ? html`
-              <div class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4">
-                <p class="font-medium text-[var(--color-text-primary)]">Response Data:</p>
-                <pre class="mt-2 overflow-auto rounded-[var(--radius-sm)] bg-[var(--color-surface)] p-3 text-xs font-mono text-[var(--color-text-primary)]">${JSON.stringify(result.data, null, 2)}</pre>
-              </div>
-            ` : ""}
+            ${result.url
+              ? html`
+                  <div
+                    class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                  >
+                    <p class="font-medium text-[var(--color-text-primary)]">Request URL:</p>
+                    <pre
+                      class="mt-2 overflow-auto rounded-[var(--radius-sm)] bg-[var(--color-surface)] p-3 text-xs font-mono text-[var(--color-text-primary)]"
+                    >
+${result.url}</pre
+                    >
+                  </div>
+                `
+              : ""}
+            ${result.headers
+              ? html`
+                  <div
+                    class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                  >
+                    <p class="font-medium text-[var(--color-text-primary)]">Request Headers:</p>
+                    <pre
+                      class="mt-2 overflow-auto rounded-[var(--radius-sm)] bg-[var(--color-surface)] p-3 text-xs font-mono text-[var(--color-text-primary)]"
+                    >
+${JSON.stringify(result.headers, null, 2)}</pre
+                    >
+                  </div>
+                `
+              : ""}
+            ${result.data
+              ? html`
+                  <div
+                    class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                  >
+                    <p class="font-medium text-[var(--color-text-primary)]">Response Data:</p>
+                    <pre
+                      class="mt-2 overflow-auto rounded-[var(--radius-sm)] bg-[var(--color-surface)] p-3 text-xs font-mono text-[var(--color-text-primary)]"
+                    >
+${JSON.stringify(result.data, null, 2)}</pre
+                    >
+                  </div>
+                `
+              : ""}
           </div>
 
           <div class="mt-8 flex justify-end gap-3">

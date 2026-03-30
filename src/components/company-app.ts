@@ -139,7 +139,10 @@ export class CompanyApp extends LitElement {
           return {
             period: item.period || item.date || "",
             metrics: {
-              userPrompts: metrics.userPrompts || metrics.events?.filter((e: any) => e.event === "prompt").length || 0,
+              userPrompts:
+                metrics.userPrompts ||
+                metrics.events?.filter((e: any) => e.event === "prompt").length ||
+                0,
               totalLines: metrics.totalLines || metrics.linesAccepted || 0,
               creditsUsed: metrics.creditsUsed || 0,
               designsExported: metrics.designsExported || 0,
@@ -222,11 +225,11 @@ export class CompanyApp extends LitElement {
       this.connectionResult = {
         status: response.status,
         ok: response.ok,
-        message: response.ok ? "Connection successful" : (
-          data && typeof data === "object" && "message" in data
+        message: response.ok
+          ? "Connection successful"
+          : data && typeof data === "object" && "message" in data
             ? String((data as { message?: unknown }).message)
-            : `Request failed with status ${response.status}`
-        ),
+            : `Request failed with status ${response.status}`,
         data: data,
         url: url.toString(),
         headers: headers,
