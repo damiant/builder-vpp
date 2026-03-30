@@ -75,20 +75,20 @@ export class MetricsCharts extends LitElement {
         borderColor: "#ec4899",
         backgroundColor: "rgba(236, 72, 153, 0.1)",
       },
-    ];
+    ] as const;
 
     chartConfigs.forEach((config) => {
       setTimeout(() => this.createChart(config), 0);
     });
   }
 
-  private createChart(config: {
+  private createChart(config: Readonly<{
     id: string;
     label: string;
     dataKey: keyof MetricsData[0]["metrics"];
     borderColor: string;
     backgroundColor: string;
-  }) {
+  }>) {
     const canvas = this.querySelector<HTMLCanvasElement>(`#chart-${config.id}`);
     if (!canvas) return;
 
