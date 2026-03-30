@@ -158,7 +158,10 @@ export class CompanyApp extends LitElement {
       });
     });
 
-    return Array.from(spacesMap.entries()).map(([id, name]) => ({ id, name }));
+    return Array.from(spacesMap.entries()).map(([id, name]) => ({
+      id,
+      name,
+    }));
   }
 
   private getMetricsDateRange() {
