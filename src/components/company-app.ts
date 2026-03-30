@@ -159,7 +159,8 @@ export class CompanyApp extends LitElement {
         },
       };
       if (spaceIds.length > 0) {
-        console.log(`Period ${item.period || item.date}: found ${spaceIds.length} space IDs:`, spaceIds);
+        const period = item.period || item.date;
+        console.log(`Period ${period}: found ${spaceIds.length} space IDs:`, spaceIds);
       }
       return transformed;
     });
@@ -234,7 +235,9 @@ export class CompanyApp extends LitElement {
       const firstDataItem = Array.isArray(data) ? data[0] : data.data?.[0];
       if (firstDataItem) {
         console.log("First item keys:", Object.keys(firstDataItem));
-        console.log("First item spaceIds field:", firstDataItem.spaceIds || firstDataItem.metrics?.spaceIds || "NOT FOUND");
+        const spaceIdsField =
+          firstDataItem.spaceIds || firstDataItem.metrics?.spaceIds || "NOT FOUND";
+        console.log("First item spaceIds field:", spaceIdsField);
       }
 
       if (!data) {
