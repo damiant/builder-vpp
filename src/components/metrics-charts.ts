@@ -98,22 +98,16 @@ export class MetricsCharts extends LitElement {
     const values = this.data!.map((d) => d.metrics[config.dataKey]);
 
     const chart = new Chart(canvas, {
-      type: "line",
+      type: "bar",
       data: {
         labels: dates,
         datasets: [
           {
             label: config.label,
             data: values,
+            backgroundColor: config.borderColor,
             borderColor: config.borderColor,
-            backgroundColor: config.backgroundColor,
-            borderWidth: 2,
-            fill: true,
-            tension: 0.4,
-            pointRadius: 4,
-            pointBackgroundColor: config.borderColor,
-            pointBorderColor: "#fff",
-            pointBorderWidth: 2,
+            borderWidth: 1,
           },
         ],
       },
