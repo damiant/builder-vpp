@@ -32,6 +32,10 @@ export class CompanyHeader extends LitElement {
     );
   };
 
+  private addCompany = () => {
+    this.dispatchEvent(new CustomEvent("add-company", { bubbles: true, composed: true }));
+  };
+
   private openEditor = () => {
     this.dispatchEvent(new CustomEvent("edit-company", { bubbles: true, composed: true }));
   };
@@ -50,6 +54,13 @@ export class CompanyHeader extends LitElement {
           </div>
 
           <div class="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              class="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-violet-500"
+              @click=${this.addCompany}
+            >
+              Add company
+            </button>
             <label class="flex items-center gap-2 text-sm font-medium text-slate-600">
               <span>Company</span>
               <select

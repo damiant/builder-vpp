@@ -2,11 +2,13 @@ import { LitElement, html } from "lit";
 import type { CompanyConfig } from "../lib/company-store";
 import {
   buildMetricsUrl,
+  createCompany,
   defaultCompanies,
   getMetricsDates,
   getSelectedCompany,
   loadCompanies,
   saveCompanies,
+  upsertCompany,
 } from "../lib/company-store";
 import "./company-dialog";
 import "./company-header";
@@ -17,25 +19,44 @@ export class CompanyApp extends LitElement {
     companies: { attribute: false },
     selectedCompanyId: { attribute: false },
     dialogOpen: { type: Boolean, attribute: false },
+    dialogCompany: { attribute: false },
   };
 
   declare companies: CompanyConfig[];
   declare selectedCompanyId: string;
   declare dialogOpen: boolean;
+  declare dialogCompany: CompanyConfig | null;
 
   constructor() {
     super();
-    this.companies = loadCompanies();
+    this.companies = [...defaultCompanies];
     this.selectedCompanyId = this.companies[0]?.id ?? defaultCompanies[0].id;
     this.dialogOpen = false;
+    this.dialogCompany = null;
   }
 
   createRenderRoot() {
     return this;
   }
 
+  override connectedCallback() {
+    super.connectedCallback();
+    void this.restoreCompanies();
+  }
+
   private get selectedCompany() {
     return getSelectedCompany(this.companies, this.selectedCompanyId);
+  }
+
+  private async restoreCompanies() {
+    const companies = await loadCompanies();
+
+    this.companies = companies;
+    this.selectedCompanyId = getSelectedCompany(companies, this.selectedCompanyId).id;
+  }
+
+  private async persistCompanies() {
+    await saveCompanies(this.companies);
   }
 
   private handleCompanyChange = (event: CustomEvent<{ companyId: string }>) => {
@@ -43,32 +64,35 @@ export class CompanyApp extends LitElement {
   };
 
   private openDialog = () => {
+    this.dialogCompany = { ...this.selectedCompany };
+    this.dialogOpen = true;
+  };
+
+  private addCompany = () => {
+    this.dialogCompany = createCompany();
     this.dialogOpen = true;
   };
 
   private closeDialog = () => {
     this.dialogOpen = false;
+    this.dialogCompany = null;
   };
 
-  private saveCompany = (event: CustomEvent<{ company: CompanyConfig }>) => {
+  private saveCompany = async (event: CustomEvent<{ company: CompanyConfig }>) => {
     const updatedCompany = event.detail.company;
 
-    this.companies = this.companies.map((company) =>
-      company.id === updatedCompany.id ? updatedCompany : company,
-    );
-    saveCompanies(this.companies);
+    this.companies = upsertCompany(this.companies, updatedCompany);
     this.selectedCompanyId = updatedCompany.id;
-    this.dialogOpen = false;
+    await this.persistCompanies();
+    this.closeDialog();
   };
 
   private connectCompany = async (event: CustomEvent<{ company: CompanyConfig }>) => {
     const updatedCompany = event.detail.company;
 
-    this.companies = this.companies.map((company) =>
-      company.id === updatedCompany.id ? updatedCompany : company,
-    );
-    saveCompanies(this.companies);
+    this.companies = upsertCompany(this.companies, updatedCompany);
     this.selectedCompanyId = updatedCompany.id;
+    await this.persistCompanies();
 
     if (!updatedCompany.privateKey) {
       console.error("Private key is required to connect.");
@@ -100,7 +124,7 @@ export class CompanyApp extends LitElement {
       }
 
       console.log(result);
-      this.dialogOpen = false;
+      this.closeDialog();
     } catch (error) {
       console.error(error);
     }
@@ -113,13 +137,14 @@ export class CompanyApp extends LitElement {
           .companies=${this.companies}
           .selectedCompanyId=${this.selectedCompanyId}
           @company-change=${this.handleCompanyChange}
+          @add-company=${this.addCompany}
           @edit-company=${this.openDialog}
         ></company-header>
 
         <company-summary .company=${this.selectedCompany}></company-summary>
 
         <company-dialog
-          .company=${this.selectedCompany}
+          .company=${this.dialogCompany ?? this.selectedCompany}
           .open=${this.dialogOpen}
           @close-company-dialog=${this.closeDialog}
           @save-company=${this.saveCompany}

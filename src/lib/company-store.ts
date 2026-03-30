@@ -1,3 +1,5 @@
+import { get, set } from "idb-keyval";
+
 export type CompanyConfig = {
   id: string;
   name: string;
@@ -16,28 +18,22 @@ export const defaultCompanies: CompanyConfig[] = [
   },
 ];
 
-export function loadCompanies() {
-  const storedValue = localStorage.getItem(storageKey);
-
-  if (!storedValue) {
-    return [...defaultCompanies];
-  }
-
+export async function loadCompanies() {
   try {
-    const parsedValue = JSON.parse(storedValue) as CompanyConfig[];
+    const storedValue = await get<CompanyConfig[]>(storageKey);
 
-    if (!Array.isArray(parsedValue) || parsedValue.length === 0) {
+    if (!Array.isArray(storedValue) || storedValue.length === 0) {
       return [...defaultCompanies];
     }
 
-    return parsedValue;
+    return storedValue;
   } catch {
     return [...defaultCompanies];
   }
 }
 
-export function saveCompanies(companies: CompanyConfig[]) {
-  localStorage.setItem(storageKey, JSON.stringify(companies));
+export async function saveCompanies(companies: CompanyConfig[]) {
+  await set(storageKey, companies);
 }
 
 export function getSelectedCompany(companies: CompanyConfig[], selectedCompanyId: string) {
@@ -85,4 +81,25 @@ export function buildMetricsUrl(startDate: string, endDate: string) {
   url.searchParams.set("endDate", endDate);
 
   return url;
+}
+
+export function createCompany(name = "") {
+  return {
+    id: globalThis.crypto?.randomUUID?.() ?? `company-${Date.now()}`,
+    name,
+    publicKey: "",
+    privateKey: "",
+  };
+}
+
+export function upsertCompany(companies: CompanyConfig[], updatedCompany: CompanyConfig) {
+  const companyExists = companies.some((company) => company.id === updatedCompany.id);
+
+  if (companyExists) {
+    return companies.map((company) =>
+      company.id === updatedCompany.id ? updatedCompany : company,
+    );
+  }
+
+  return [...companies, updatedCompany];
 }

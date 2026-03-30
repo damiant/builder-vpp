@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
+    "idb-keyval": "^6.2.2",
     "lit": "^3.3.2",
     "recharts": "^3.8.1",
     "tailwindcss": "^4.2.2"
