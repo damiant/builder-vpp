@@ -105,6 +105,22 @@ export class CompanyDialog extends LitElement {
     );
   };
 
+  private deleteCompany = () => {
+    if (!this.company) {
+      return;
+    }
+
+    if (confirm(`Delete "${this.company.name}"? This action cannot be undone.`)) {
+      this.dispatchEvent(
+        new CustomEvent<{ companyId: string }>("delete-company", {
+          detail: { companyId: this.company.id },
+          bubbles: true,
+          composed: true,
+        }),
+      );
+    }
+  };
+
   render() {
     const company = this.company ?? {
       id: "company",
@@ -183,28 +199,38 @@ export class CompanyDialog extends LitElement {
             Fusion Metrics API docs.
           </p>
 
-          <div class="mt-8 flex flex-wrap justify-end gap-3">
+          <div class="mt-8 flex flex-wrap items-center justify-between gap-3">
             <button
               type="button"
-              class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
-              @click=${this.closeDialog}
+              class="rounded-[var(--radius-sm)] border border-[var(--color-destructive-soft)] bg-[var(--color-destructive-soft)] px-4 py-2.5 text-sm font-medium text-[var(--color-destructive)] transition hover:bg-[var(--color-destructive)] hover:text-white"
+              @click=${this.deleteCompany}
             >
-              Cancel
+              Delete
             </button>
-            <button
-              type="button"
-              class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
-              @click=${this.saveCompany}
-            >
-              Save
-            </button>
-            <button
-              type="button"
-              class="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-inverse)] transition hover:bg-[var(--color-brand-strong)]"
-              @click=${this.connectCompany}
-            >
-              Connect
-            </button>
+
+            <div class="flex flex-wrap gap-3">
+              <button
+                type="button"
+                class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
+                @click=${this.closeDialog}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
+                @click=${this.saveCompany}
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                class="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-inverse)] transition hover:bg-[var(--color-brand-strong)]"
+                @click=${this.connectCompany}
+              >
+                Connect
+              </button>
+            </div>
           </div>
         </div>
       </dialog>

@@ -103,3 +103,7 @@ export function upsertCompany(companies: CompanyConfig[], updatedCompany: Compan
 
   return [...companies, updatedCompany];
 }
+
+export function deleteCompany(companies: CompanyConfig[], companyId: string) {
+  return companies.filter((company) => company.id !== companyId);
+}

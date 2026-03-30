@@ -4,6 +4,7 @@ import {
   buildMetricsUrl,
   createCompany,
   defaultCompanies,
+  deleteCompany,
   getMetricsDates,
   getSelectedCompany,
   loadCompanies,
@@ -131,6 +132,20 @@ export class CompanyApp extends LitElement {
     }
   };
 
+  private removeCompany = async (event: CustomEvent<{ companyId: string }>) => {
+    const companyId = event.detail.companyId;
+
+    this.companies = deleteCompany(this.companies, companyId);
+    await this.persistCompanies();
+
+    // If the deleted company was selected, select another one
+    if (this.selectedCompanyId === companyId) {
+      this.selectedCompanyId = this.companies[0]?.id ?? defaultCompanies[0].id;
+    }
+
+    this.closeDialog();
+  };
+
   render() {
     return html`
       <div class="min-h-screen bg-[var(--color-canvas)] text-[var(--color-text-primary)]">
@@ -150,6 +165,7 @@ export class CompanyApp extends LitElement {
           @close-company-dialog=${this.closeDialog}
           @save-company=${this.saveCompany}
           @connect-company=${this.connectCompany}
+          @delete-company=${this.removeCompany}
         ></company-dialog>
       </div>
     `;
