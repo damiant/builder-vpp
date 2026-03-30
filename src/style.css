@@ -73,6 +73,10 @@ code {
   min-height: 100vh;
 }
 
+dialog {
+  margin: auto;
+}
+
 dialog::backdrop {
   background: rgba(67, 20, 7, 0.4);
 }
