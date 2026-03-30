@@ -1,6 +1,5 @@
 import { LitElement, html } from "lit";
 import type { CompanyConfig } from "../lib/company-store";
-import "./companies-table";
 
 export class CompanyHeader extends LitElement {
   static properties = {
@@ -25,6 +24,22 @@ export class CompanyHeader extends LitElement {
     this.dispatchEvent(new CustomEvent("add-company", { bubbles: true, composed: true }));
   };
 
+  private handleCompanyChange = (event: Event) => {
+    const target = event.target as HTMLSelectElement;
+    const companyId = target.value;
+    this.dispatchEvent(
+      new CustomEvent("company-change", {
+        detail: { companyId },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  };
+
+  private handleEditCompany = () => {
+    this.dispatchEvent(new CustomEvent("edit-company", { bubbles: true, composed: true }));
+  };
+
   render() {
     return html`
       <header
@@ -44,12 +59,33 @@ export class CompanyHeader extends LitElement {
             </button>
           </div>
 
-          <companies-table
-            .companies=${this.companies}
-            .selectedCompanyId=${this.selectedCompanyId}
-            @company-change
-            @edit-company
-          ></companies-table>
+          <div class="flex gap-4">
+            <div class="flex flex-col gap-2">
+              <label
+                for="company-select"
+                class="text-sm font-medium text-[var(--color-text-secondary)]"
+              >
+                Company
+              </label>
+              <select
+                id="company-select"
+                .value=${this.selectedCompanyId}
+                @change=${this.handleCompanyChange}
+                class="rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] transition hover:border-[var(--color-border-strong)]"
+              >
+                ${this.companies.map(
+                  (company) => html`<option value=${company.id}>${company.name}</option>`,
+                )}
+              </select>
+            </div>
+            <button
+              type="button"
+              class="mt-6 rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
+              @click=${this.handleEditCompany}
+            >
+              Edit
+            </button>
+          </div>
         </div>
       </header>
     `;
