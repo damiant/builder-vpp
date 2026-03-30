@@ -160,9 +160,7 @@ export class SelectedCompanyCard extends LitElement {
               ${stats.totals.prsMerged.toLocaleString()}
             </p>
           </div>
-        </div>
 
-        <div class="mt-6 grid gap-4 md:grid-cols-3">
           <div
             class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
           >
@@ -227,9 +225,7 @@ export class SelectedCompanyCard extends LitElement {
               ${stats.totals.users.toLocaleString()}
             </p>
           </div>
-        </div>
 
-        <div class="mt-6 grid gap-4 md:grid-cols-3">
           <div
             class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
           >
