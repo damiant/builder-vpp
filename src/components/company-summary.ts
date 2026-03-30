@@ -28,7 +28,7 @@ export class CompanySummary extends LitElement {
   render() {
     return html`
       <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-8 px-6 py-12">
-        ${this.metricsData ? html`
+        ${this.metricsData && Array.isArray(this.metricsData) && this.metricsData.length > 0 ? html`
           <selected-company-card
             .company=${this.company}
             .metricsData=${this.metricsData}
@@ -53,7 +53,20 @@ export class CompanySummary extends LitElement {
               </p>
             </div>
           </section>
-        ` : ""}
+        ` : html`
+          <section
+            class="w-full rounded-[var(--radius-xl)] border border-blue-300 bg-blue-50 p-8 shadow-[var(--shadow-md)]"
+          >
+            <div class="flex flex-col gap-3">
+              <p class="brand-heading text-sm font-medium text-blue-900">
+                Loading metrics
+              </p>
+              <p class="text-sm leading-6 text-blue-800">
+                Fetching metrics data for the selected company...
+              </p>
+            </div>
+          </section>
+        `}
       </main>
     `;
   }

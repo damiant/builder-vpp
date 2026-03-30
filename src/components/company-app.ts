@@ -129,13 +129,32 @@ export class CompanyApp extends LitElement {
       }
 
       const data = await response.json();
+      console.log("Metrics API response:", data);
+
+      // Transform API response to expected format
       if (Array.isArray(data)) {
-        this.metricsData = data;
+        const transformedData = data.map((item: any) => {
+          // Handle both nested metrics object and flat structure
+          const metrics = item.metrics || item;
+          return {
+            period: item.period || item.date || "",
+            metrics: {
+              userPrompts: metrics.userPrompts || metrics.events?.filter((e: any) => e.event === "prompt").length || 0,
+              totalLines: metrics.totalLines || metrics.linesAccepted || 0,
+              creditsUsed: metrics.creditsUsed || 0,
+              designsExported: metrics.designsExported || 0,
+              prsMerged: metrics.prsMerged || 0,
+            },
+          };
+        });
+        console.log("Transformed metrics:", transformedData);
+        this.metricsData = transformedData;
         this.metricsError = null;
       }
     } catch (error) {
       this.metricsError = error instanceof Error ? error.message : "Failed to fetch metrics";
       this.metricsData = null;
+      console.error("Metrics fetch error:", error);
     }
   }
 
