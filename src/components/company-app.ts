@@ -205,8 +205,21 @@ export class CompanyApp extends LitElement {
         const num = Number(val);
         return isNaN(num) ? 0 : num;
       };
-      const spaceIds = Array.isArray(metrics.spaceIds) ? metrics.spaceIds : [];
-      const spaces = Array.isArray(metrics.spaces) ? metrics.spaces : [];
+
+      // Extract spaceIds and normalize spaces format
+      let spaceIds: string[] = [];
+      let spaces: Array<{ id: string; name: string }> = [];
+
+      const rawSpaces = Array.isArray(metrics.spaces) ? metrics.spaces : [];
+      if (rawSpaces.length > 0) {
+        // API returns spaces with spaceId and spaceName
+        spaceIds = rawSpaces.map((space: any) => space.spaceId).filter(Boolean);
+        spaces = rawSpaces.map((space: any) => ({
+          id: space.spaceId,
+          name: space.spaceName,
+        })).filter((space) => space.id && space.name);
+      }
+
       const transformed = {
         period: item.period || item.date || "",
         metrics: {
@@ -221,11 +234,9 @@ export class CompanyApp extends LitElement {
           spaces: spaces,
         },
       };
-      if (spaceIds.length > 0 || spaces.length > 0) {
+      if (spaceIds.length > 0) {
         const period = item.period || item.date;
-        const count1 = spaceIds.length;
-        const count2 = spaces.length;
-        console.log(`Period ${period}: found ${count1} space IDs, ${count2} spaces:`, {
+        console.log(`Period ${period}: found ${spaceIds.length} unique spaces:`, {
           spaceIds,
           spaces,
         });
