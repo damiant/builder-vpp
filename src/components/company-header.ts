@@ -49,13 +49,8 @@ export class CompanyHeader extends LitElement {
           class="mx-auto flex max-w-6xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <p
-              class="brand-heading text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-text-muted)]"
-            >
+            <h1 class="brand-heading text-2xl font-semibold text-[var(--color-text-primary)]">
               Fusion Metrics
-            </p>
-            <h1 class="mt-1 text-xl font-semibold text-[var(--color-text-primary)]">
-              Company connection
             </h1>
           </div>
 
