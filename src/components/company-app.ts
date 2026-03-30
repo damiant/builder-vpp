@@ -37,6 +37,7 @@ export class CompanyApp extends LitElement {
     connectionResult: { attribute: false },
     resultDialogOpen: { type: Boolean, attribute: false },
     metricsData: { attribute: false },
+    metricsError: { attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -46,6 +47,7 @@ export class CompanyApp extends LitElement {
   declare connectionResult: ConnectionResult | null;
   declare resultDialogOpen: boolean;
   declare metricsData: unknown[] | null;
+  declare metricsError: string | null;
 
   constructor() {
     super();
@@ -56,6 +58,7 @@ export class CompanyApp extends LitElement {
     this.connectionResult = null;
     this.resultDialogOpen = false;
     this.metricsData = null;
+    this.metricsError = null;
   }
 
   createRenderRoot() {
@@ -92,7 +95,8 @@ export class CompanyApp extends LitElement {
     const company = this.selectedCompany;
 
     if (!company.privateKey) {
-      console.warn("Private key is required to fetch metrics.");
+      this.metricsError = "Private key is required to fetch metrics";
+      this.metricsData = null;
       return;
     }
 
@@ -110,16 +114,24 @@ export class CompanyApp extends LitElement {
       });
 
       if (!response.ok) {
-        console.error(`Metrics fetch failed with status ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        const message =
+          errorData && typeof errorData === "object" && "message" in errorData
+            ? String((errorData as { message?: unknown }).message)
+            : `Request failed with status ${response.status}`;
+        this.metricsError = message;
+        this.metricsData = null;
         return;
       }
 
       const data = await response.json();
       if (Array.isArray(data)) {
         this.metricsData = data;
+        this.metricsError = null;
       }
     } catch (error) {
-      console.error("Failed to fetch metrics:", error);
+      this.metricsError = error instanceof Error ? error.message : "Failed to fetch metrics";
+      this.metricsData = null;
     }
   }
 
@@ -127,12 +139,14 @@ export class CompanyApp extends LitElement {
     this.dialogCompany = { ...this.selectedCompany };
     this.dialogOpen = true;
     this.connectionResult = null;
+    this.metricsError = null;
   };
 
   private addCompany = () => {
     this.dialogCompany = createCompany();
     this.dialogOpen = true;
     this.connectionResult = null;
+    this.metricsError = null;
   };
 
   private closeDialog = () => {
@@ -146,6 +160,7 @@ export class CompanyApp extends LitElement {
     this.companies = upsertCompany(this.companies, updatedCompany);
     this.selectedCompanyId = updatedCompany.id;
     await this.persistCompanies();
+    this.metricsError = null;
     this.closeDialog();
   };
 
@@ -243,6 +258,7 @@ export class CompanyApp extends LitElement {
         <company-summary
           .company=${this.selectedCompany}
           .metricsData=${this.metricsData}
+          .metricsError=${this.metricsError}
         ></company-summary>
 
         <company-dialog
