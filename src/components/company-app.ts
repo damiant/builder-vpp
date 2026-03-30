@@ -192,7 +192,13 @@ export class CompanyApp extends LitElement {
 
       // Extract spaceIds and normalize spaces format
       let spaceIds: string[] = [];
-      let spaces: Array<{ id: string; name: string }> = [];
+      let spaces: Array<{
+        id: string;
+        name: string;
+        totalLines?: number;
+        events?: number;
+        creditsUsed?: number;
+      }> = [];
 
       const rawSpaces = Array.isArray(metrics.spaces) ? metrics.spaces : [];
       if (rawSpaces.length > 0) {
@@ -202,8 +208,19 @@ export class CompanyApp extends LitElement {
           .map((space: any) => ({
             id: space.spaceId,
             name: space.spaceName,
+            totalLines: space.totalLines,
+            events: space.events,
+            creditsUsed: space.creditsUsed,
           }))
-          .filter((space: { id: string; name: string }) => space.id && space.name);
+          .filter(
+            (space: {
+              id: string;
+              name: string;
+              totalLines?: number;
+              events?: number;
+              creditsUsed?: number;
+            }) => space.id && space.name,
+          );
       }
 
       return {

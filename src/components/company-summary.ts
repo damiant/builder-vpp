@@ -78,7 +78,10 @@ export class CompanySummary extends LitElement {
               ></selected-company-card>
 
               <section class="w-full">
-                <metrics-charts .data=${this.metricsData}></metrics-charts>
+                <metrics-charts
+                  .data=${this.metricsData}
+                  .selectedSpaceId=${this.selectedSpaceId}
+                ></metrics-charts>
               </section>
             `
           : this.metricsError

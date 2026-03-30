@@ -23,15 +23,18 @@ type MetricsData = {
 export class MetricsCharts extends LitElement {
   static properties = {
     data: { attribute: false },
+    selectedSpaceId: { attribute: false },
   };
 
   declare data: MetricsData | null;
+  declare selectedSpaceId: string;
 
   private charts: Map<string, Chart<any>> = new Map();
 
   constructor() {
     super();
     this.data = null;
+    this.selectedSpaceId = "all";
   }
 
   createRenderRoot() {
@@ -93,6 +96,57 @@ export class MetricsCharts extends LitElement {
     chartConfigs.forEach((config) => {
       setTimeout(() => this.createChart(config), 0);
     });
+  }
+
+  private getSpaceMetrics(): Array<{
+    spaceId: string;
+    spaceName: string;
+    totalLines: number;
+    events: number;
+    creditsUsed: number;
+  }> {
+    if (!this.data) return [];
+
+    const spaceMap = new Map<
+      string,
+      {
+        spaceId: string;
+        spaceName: string;
+        totalLines: number;
+        events: number;
+        creditsUsed: number;
+      }
+    >();
+
+    this.data.forEach((item) => {
+      const rawSpaces = item.metrics.spaces || [];
+      rawSpaces.forEach(
+        (space: {
+          id: string;
+          name: string;
+          totalLines?: number;
+          events?: number;
+          creditsUsed?: number;
+        }) => {
+          const spaceId = space.id;
+          if (!spaceMap.has(spaceId)) {
+            spaceMap.set(spaceId, {
+              spaceId,
+              spaceName: space.name,
+              totalLines: 0,
+              events: 0,
+              creditsUsed: 0,
+            });
+          }
+          const spaceData = spaceMap.get(spaceId)!;
+          spaceData.totalLines += space.totalLines || 0;
+          spaceData.events += space.events || 0;
+          spaceData.creditsUsed += space.creditsUsed || 0;
+        },
+      );
+    });
+
+    return Array.from(spaceMap.values()).sort((a, b) => b.creditsUsed - a.creditsUsed);
   }
 
   private formatDateLabel(dateString: string): string {
@@ -180,6 +234,9 @@ export class MetricsCharts extends LitElement {
       return html``;
     }
 
+    const spaceMetrics = this.getSpaceMetrics();
+    const shouldShowSpacesTable = this.selectedSpaceId === "all" && spaceMetrics.length > 0;
+
     return html`
       <div class="mt-8 space-y-6">
         <div>
@@ -225,6 +282,71 @@ export class MetricsCharts extends LitElement {
             <canvas id="chart-events"></canvas>
           </div>
         </div>
+
+        ${shouldShowSpacesTable
+          ? html`
+              <div>
+                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  Spaces Summary
+                </h3>
+              </div>
+
+              <div
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-[var(--color-border-subtle)]">
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Space Name
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Total Lines
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Events
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Used
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${spaceMetrics.map(
+                        (space) => html`
+                          <tr
+                            class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                          >
+                            <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                              ${space.spaceName}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${space.totalLines.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${space.events.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${Math.ceil(space.creditsUsed).toLocaleString()}
+                            </td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `
+          : ""}
       </div>
     `;
   }
