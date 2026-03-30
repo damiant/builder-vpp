@@ -179,14 +179,18 @@ export class CompanyApp extends LitElement {
         // Transform to correct format
         const transformedData = dataArray.map((item: any) => {
           const metrics = item.metrics || item;
+          const toNumber = (val: any): number => {
+            const num = Number(val);
+            return isNaN(num) ? 0 : num;
+          };
           const transformed = {
             period: item.period || item.date || "",
             metrics: {
-              userPrompts: metrics.userPrompts || 0,
-              totalLines: metrics.totalLines || metrics.linesAccepted || 0,
-              creditsUsed: metrics.creditsUsed || 0,
-              designsExported: metrics.designsExported || 0,
-              prsMerged: metrics.prsMerged || 0,
+              userPrompts: toNumber(metrics.userPrompts),
+              totalLines: toNumber(metrics.totalLines || metrics.linesAccepted),
+              creditsUsed: toNumber(metrics.creditsUsed),
+              designsExported: toNumber(metrics.designsExported),
+              prsMerged: toNumber(metrics.prsMerged),
             },
           };
           return transformed;
