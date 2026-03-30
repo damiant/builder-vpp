@@ -57,6 +57,9 @@ export class CompanySummary extends LitElement {
                 <metrics-charts
                   .data=${this.metricsData}
                   .selectedSpaceId=${this.selectedSpaceId}
+                  .company=${this.company}
+                  .selectedMonth=${this.selectedMonth}
+                  .selectedYear=${this.selectedYear}
                 ></metrics-charts>
               </section>
             `

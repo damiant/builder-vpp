@@ -1,5 +1,8 @@
 import { LitElement, html } from "lit";
 import { Chart, registerables } from "chart.js";
+import type { CompanyConfig } from "../lib/company-store";
+import { buildUsersUrl } from "../lib/company-store";
+import { getCachedUsers, cacheUsers } from "../lib/metrics-cache";
 
 Chart.register(...registerables);
 
@@ -24,10 +27,18 @@ export class MetricsCharts extends LitElement {
   static properties = {
     data: { attribute: false },
     selectedSpaceId: { attribute: false },
+    company: { attribute: false },
+    selectedMonth: { type: Number, attribute: false },
+    selectedYear: { type: Number, attribute: false },
+    usersData: { attribute: false },
   };
 
   declare data: MetricsData | null;
   declare selectedSpaceId: string;
+  declare company: CompanyConfig | null;
+  declare selectedMonth: number;
+  declare selectedYear: number;
+  declare usersData: Array<any> | null;
 
   private charts: Map<string, Chart<any>> = new Map();
 
@@ -35,6 +46,10 @@ export class MetricsCharts extends LitElement {
     super();
     this.data = null;
     this.selectedSpaceId = "all";
+    this.company = null;
+    this.selectedMonth = new Date().getMonth();
+    this.selectedYear = new Date().getFullYear();
+    this.usersData = null;
   }
 
   createRenderRoot() {
@@ -47,6 +62,11 @@ export class MetricsCharts extends LitElement {
     // Destroy existing charts
     this.charts.forEach((chart) => chart.destroy());
     this.charts.clear();
+
+    // Fetch users data if company is available
+    if (this.company && this.company.privateKey) {
+      void this.fetchUsersData();
+    }
 
     const chartConfigs = [
       {
@@ -96,6 +116,74 @@ export class MetricsCharts extends LitElement {
     chartConfigs.forEach((config) => {
       setTimeout(() => this.createChart(config), 0);
     });
+  }
+
+  private async fetchUsersData() {
+    if (!this.company) return;
+
+    const { startDate, endDate } = this.getDateRange();
+    const cachedData = await getCachedUsers(
+      this.company.publicKey,
+      this.company.privateKey,
+      startDate,
+      endDate,
+    );
+
+    if (cachedData) {
+      this.usersData = cachedData as Array<any>;
+      return;
+    }
+
+    const url = buildUsersUrl(startDate, endDate);
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${this.company.privateKey}`,
+    };
+
+    try {
+      console.log("Fetching users data from:", url.toString());
+      const response = await fetch(url, {
+        method: "GET",
+        headers: headers,
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch users data:", response.status);
+        return;
+      }
+
+      const responseData = await response.json();
+      const usersArray = Array.isArray(responseData) ? responseData : responseData.data || [];
+
+      await cacheUsers(
+        this.company.publicKey,
+        this.company.privateKey,
+        startDate,
+        endDate,
+        usersArray,
+      );
+
+      this.usersData = usersArray;
+    } catch (error) {
+      console.error("Error fetching users data:", error);
+    }
+  }
+
+  private getDateRange() {
+    const startDate = new Date(this.selectedYear, this.selectedMonth, 1);
+    const endDate = new Date(this.selectedYear, this.selectedMonth + 1, 0);
+
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    return {
+      startDate: formatDate(startDate),
+      endDate: formatDate(endDate),
+    };
   }
 
   private getSpaceMetrics(): Array<{
@@ -341,6 +429,81 @@ export class MetricsCharts extends LitElement {
                           </tr>
                         `,
                       )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `
+          : ""}
+        ${this.usersData && Array.isArray(this.usersData) && this.usersData.length > 0
+          ? html`
+              <div>
+                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  Users Summary
+                </h3>
+              </div>
+
+              <div
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-[var(--color-border-subtle)]">
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          User Email
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Total Lines
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          User Prompts
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Design Exports
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Used
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this.usersData
+                        .filter((user: any) => user.userEmail) // Filter out unknown users
+                        .sort((a: any, b: any) => b.metrics.creditsUsed - a.metrics.creditsUsed)
+                        .map(
+                          (user: any) => html`
+                            <tr
+                              class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                            >
+                              <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                                ${user.userEmail}
+                              </td>
+                              <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                                ${user.metrics.totalLines.toLocaleString()}
+                              </td>
+                              <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                                ${user.metrics.userPrompts.toLocaleString()}
+                              </td>
+                              <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                                ${user.designExports.toLocaleString()}
+                              </td>
+                              <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                                ${Math.ceil(user.metrics.creditsUsed).toLocaleString()}
+                              </td>
+                            </tr>
+                          `,
+                        )}
                     </tbody>
                   </table>
                 </div>
