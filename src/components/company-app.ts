@@ -133,7 +133,8 @@ export class CompanyApp extends LitElement {
       }
 
       const data = await response.json();
-      console.log("Raw metrics API response:", data);
+      console.log("Raw metrics API response:", JSON.stringify(data, null, 2));
+      console.log("Response type:", typeof data, "Is array:", Array.isArray(data));
 
       if (!data) {
         this.metricsError = "No data returned from API";
@@ -141,44 +142,62 @@ export class CompanyApp extends LitElement {
         return;
       }
 
-      // If data is already in the right format (array with period and metrics)
-      if (Array.isArray(data) && data.length > 0) {
-        const firstItem = data[0];
-        console.log("First item:", firstItem);
+      // Handle different response formats
+      let dataArray: any[] = [];
 
-        // Check if it's already in the right format
+      if (Array.isArray(data)) {
+        dataArray = data;
+        console.log("Data is an array with", data.length, "items");
+      } else if (data.data && Array.isArray(data.data)) {
+        dataArray = data.data;
+        console.log("Data wrapped in .data property, found", dataArray.length, "items");
+      } else {
+        console.error("Unexpected data format:", data);
+        this.metricsError = `Unexpected API response format. Check browser console for details.`;
+        this.metricsData = null;
+        return;
+      }
+
+      if (dataArray.length === 0) {
+        this.metricsError = "No metrics data available for the selected period";
+        this.metricsData = null;
+        return;
+      }
+
+      try {
+        const firstItem = dataArray[0];
+        console.log("First item structure:", firstItem);
+
+        // Check if already in correct format
         if (firstItem.period && firstItem.metrics) {
           console.log("Data is already in correct format");
-          this.metricsData = data;
+          this.metricsData = dataArray;
           this.metricsError = null;
           return;
         }
 
-        // Otherwise, try to transform it
-        try {
-          const transformedData = data.map((item: any) => {
-            const metrics = item.metrics || item;
-            return {
-              period: item.period || item.date || "",
-              metrics: {
-                userPrompts: metrics.userPrompts || 0,
-                totalLines: metrics.totalLines || metrics.linesAccepted || 0,
-                creditsUsed: metrics.creditsUsed || 0,
-                designsExported: metrics.designsExported || 0,
-                prsMerged: metrics.prsMerged || 0,
-              },
-            };
-          });
-          console.log("Transformed metrics:", transformedData);
-          this.metricsData = transformedData;
-          this.metricsError = null;
-        } catch (transformError) {
-          console.error("Error transforming metrics:", transformError);
-          this.metricsError = "Failed to process metrics data";
-          this.metricsData = null;
-        }
-      } else {
-        this.metricsError = "Invalid metrics data format";
+        // Transform to correct format
+        const transformedData = dataArray.map((item: any) => {
+          const metrics = item.metrics || item;
+          const transformed = {
+            period: item.period || item.date || "",
+            metrics: {
+              userPrompts: metrics.userPrompts || 0,
+              totalLines: metrics.totalLines || metrics.linesAccepted || 0,
+              creditsUsed: metrics.creditsUsed || 0,
+              designsExported: metrics.designsExported || 0,
+              prsMerged: metrics.prsMerged || 0,
+            },
+          };
+          return transformed;
+        });
+
+        console.log("Transformed metrics:", transformedData);
+        this.metricsData = transformedData;
+        this.metricsError = null;
+      } catch (transformError) {
+        console.error("Error transforming metrics:", transformError);
+        this.metricsError = `Failed to process metrics data: ${transformError instanceof Error ? transformError.message : "unknown error"}`;
         this.metricsData = null;
       }
     } catch (error) {
