@@ -82,6 +82,17 @@ export class MetricsCharts extends LitElement {
     });
   }
 
+  private formatDateLabel(dateString: string): string {
+    try {
+      const date = new Date(dateString);
+      const month = date.toLocaleString("en-US", { month: "short" });
+      const day = date.getDate();
+      return `${month} ${day}`;
+    } catch {
+      return dateString;
+    }
+  }
+
   private createChart(
     config: Readonly<{
       id: string;
@@ -95,12 +106,13 @@ export class MetricsCharts extends LitElement {
     if (!canvas) return;
 
     const dates = this.data!.map((d) => d.period);
+    const formattedDates = dates.map((d) => this.formatDateLabel(d));
     const values = this.data!.map((d) => d.metrics[config.dataKey]);
 
     const chart = new Chart(canvas, {
       type: "bar",
       data: {
-        labels: dates,
+        labels: formattedDates,
         datasets: [
           {
             label: config.label,
