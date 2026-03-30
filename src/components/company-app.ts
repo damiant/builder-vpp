@@ -5,7 +5,6 @@ import {
   createCompany,
   defaultCompanies,
   deleteCompany,
-  getMetricsDates,
   getSelectedCompany,
   loadCompanies,
   saveCompanies,
@@ -18,6 +17,7 @@ import "./companies-table";
 import "./connection-result-dialog";
 import "./metrics-charts";
 import "./selected-company-card";
+import "./date-range-selector";
 
 type ConnectionResult = {
   status: number;
@@ -38,6 +38,8 @@ export class CompanyApp extends LitElement {
     resultDialogOpen: { type: Boolean, attribute: false },
     metricsData: { attribute: false },
     metricsError: { attribute: false },
+    selectedMonth: { type: Number, attribute: false },
+    selectedYear: { type: Number, attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -48,6 +50,8 @@ export class CompanyApp extends LitElement {
   declare resultDialogOpen: boolean;
   declare metricsData: unknown[] | null;
   declare metricsError: string | null;
+  declare selectedMonth: number;
+  declare selectedYear: number;
 
   constructor() {
     super();
@@ -59,6 +63,9 @@ export class CompanyApp extends LitElement {
     this.resultDialogOpen = false;
     this.metricsData = null;
     this.metricsError = null;
+    const today = new Date();
+    this.selectedMonth = today.getMonth();
+    this.selectedYear = today.getFullYear();
   }
 
   createRenderRoot() {
@@ -95,6 +102,30 @@ export class CompanyApp extends LitElement {
     void this.fetchMetrics();
   };
 
+  private handleDateChange = (event: CustomEvent<{ month: number; year: number }>) => {
+    this.selectedMonth = event.detail.month;
+    this.selectedYear = event.detail.year;
+    void this.fetchMetrics();
+  };
+
+  private getMetricsDateRange() {
+    // Get the first and last day of the selected month
+    const startDate = new Date(this.selectedYear, this.selectedMonth, 1);
+    const endDate = new Date(this.selectedYear, this.selectedMonth + 1, 0);
+
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    };
+
+    return {
+      startDate: formatDate(startDate),
+      endDate: formatDate(endDate),
+    };
+  }
+
   private async fetchMetrics() {
     const company = this.selectedCompany;
 
@@ -104,7 +135,7 @@ export class CompanyApp extends LitElement {
       return;
     }
 
-    const { startDate, endDate } = getMetricsDates();
+    const { startDate, endDate } = this.getMetricsDateRange();
     const url = buildMetricsUrl(startDate, endDate);
     const headers = {
       "Content-Type": "application/json",
@@ -258,7 +289,7 @@ export class CompanyApp extends LitElement {
       return;
     }
 
-    const { startDate, endDate } = getMetricsDates();
+    const { startDate, endDate } = this.getMetricsDateRange();
     const url = buildMetricsUrl(startDate, endDate);
     const headers = {
       "Content-Type": "application/json",
@@ -336,6 +367,9 @@ export class CompanyApp extends LitElement {
           .company=${this.selectedCompany}
           .metricsData=${this.metricsData}
           .metricsError=${this.metricsError}
+          .selectedMonth=${this.selectedMonth}
+          .selectedYear=${this.selectedYear}
+          @date-change=${this.handleDateChange}
         ></company-summary>
 
         <company-dialog

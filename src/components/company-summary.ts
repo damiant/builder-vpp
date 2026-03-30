@@ -2,23 +2,31 @@ import { LitElement, html } from "lit";
 import type { CompanyConfig } from "../lib/company-store";
 import "./metrics-charts";
 import "./selected-company-card";
+import "./date-range-selector";
 
 export class CompanySummary extends LitElement {
   static properties = {
     company: { attribute: false },
     metricsData: { attribute: false },
     metricsError: { attribute: false },
+    selectedMonth: { type: Number, attribute: false },
+    selectedYear: { type: Number, attribute: false },
   };
 
   declare company: CompanyConfig | null;
   declare metricsData: unknown[] | null;
   declare metricsError: string | null;
+  declare selectedMonth: number;
+  declare selectedYear: number;
 
   constructor() {
     super();
     this.company = null;
     this.metricsData = null;
     this.metricsError = null;
+    const today = new Date();
+    this.selectedMonth = today.getMonth();
+    this.selectedYear = today.getFullYear();
   }
 
   createRenderRoot() {
@@ -28,6 +36,21 @@ export class CompanySummary extends LitElement {
   render() {
     return html`
       <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-8 px-6 py-12">
+        <div
+          class="w-full rounded-[var(--radius-xl)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-md)]"
+        >
+          <p class="brand-heading text-sm font-medium text-[var(--color-text-secondary)]">
+            Date Range
+          </p>
+          <div class="mt-4">
+            <date-range-selector
+              .month=${this.selectedMonth}
+              .year=${this.selectedYear}
+              @date-change
+            ></date-range-selector>
+          </div>
+        </div>
+
         ${this.metricsData && Array.isArray(this.metricsData) && this.metricsData.length > 0
           ? html`
               <selected-company-card
