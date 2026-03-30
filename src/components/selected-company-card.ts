@@ -1,5 +1,7 @@
 import { LitElement, html } from "lit";
 import type { CompanyConfig } from "../lib/company-store";
+import "./date-range-selector";
+import "./space-selector";
 
 type MetricsItem = {
   userPrompts: number;
@@ -24,12 +26,16 @@ export class SelectedCompanyCard extends LitElement {
     metricsData: { attribute: false },
     selectedMonth: { type: Number, attribute: false },
     selectedYear: { type: Number, attribute: false },
+    spaces: { attribute: false },
+    selectedSpaceId: { attribute: false },
   };
 
   declare company: CompanyConfig | null;
   declare metricsData: MetricsData | null;
   declare selectedMonth: number;
   declare selectedYear: number;
+  declare spaces: Array<{ id: string; name: string }>;
+  declare selectedSpaceId: string;
 
   constructor() {
     super();
@@ -38,6 +44,8 @@ export class SelectedCompanyCard extends LitElement {
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
+    this.spaces = [];
+    this.selectedSpaceId = "all";
   }
 
   createRenderRoot() {
@@ -107,23 +115,55 @@ export class SelectedCompanyCard extends LitElement {
       <section
         class="w-full rounded-[var(--radius-xl)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-8 shadow-[var(--shadow-md)]"
       >
-        <div class="flex flex-col gap-3 border-b border-[var(--color-border-subtle)] pb-6">
-          <p class="brand-heading text-sm font-medium text-[var(--color-brand-strong)]">
-            Selected company
-          </p>
-          <h2 class="text-3xl font-semibold tracking-tight text-[var(--color-text-primary)]">
-            ${company.name}
-          </h2>
-          <p class="max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
-            Metrics for
-            ${new Date(this.selectedYear, this.selectedMonth).toLocaleDateString("en-US", {
-              month: "long",
-              year: "numeric",
-            })}
-          </p>
+        <div class="mb-8 flex gap-8">
+          <div class="flex-1">
+            <div class="flex flex-col gap-3 border-b border-[var(--color-border-subtle)] pb-6">
+              <p class="brand-heading text-sm font-medium text-[var(--color-brand-strong)]">
+                Selected company
+              </p>
+              <h2 class="text-3xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                ${company.name}
+              </h2>
+              <p class="max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
+                Metrics for
+                ${new Date(this.selectedYear, this.selectedMonth).toLocaleDateString("en-US", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+          </div>
+
+          <div class="w-64 space-y-4 border-l border-[var(--color-border-subtle)] pl-8">
+            <div>
+              <p class="brand-heading text-sm font-medium text-[var(--color-text-secondary)]">
+                Filters
+              </p>
+            </div>
+            <div class="flex flex-col gap-4">
+              <div>
+                <date-range-selector
+                  .month=${this.selectedMonth}
+                  .year=${this.selectedYear}
+                  @date-change
+                ></date-range-selector>
+              </div>
+              ${this.spaces.length > 0
+                ? html`
+                    <div>
+                      <space-selector
+                        .spaces=${this.spaces}
+                        .selectedSpaceId=${this.selectedSpaceId}
+                        @space-change
+                      ></space-selector>
+                    </div>
+                  `
+                : ""}
+            </div>
+          </div>
         </div>
 
-        <div class="mt-6 grid gap-4 md:grid-cols-3">
+        <div class="grid gap-4 md:grid-cols-3">
           <div
             class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
           >

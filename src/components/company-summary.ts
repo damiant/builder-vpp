@@ -42,44 +42,16 @@ export class CompanySummary extends LitElement {
       <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-8 px-6 py-12">
         ${this.metricsData && Array.isArray(this.metricsData) && this.metricsData.length > 0
           ? html`
-              <div class="flex w-full gap-6">
-                <div class="flex-1">
-                  <selected-company-card
-                    .company=${this.company}
-                    .metricsData=${this.metricsData}
-                    .selectedMonth=${this.selectedMonth}
-                    .selectedYear=${this.selectedYear}
-                  ></selected-company-card>
-                </div>
-
-                <div
-                  class="w-80 rounded-[var(--radius-xl)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-md)]"
-                >
-                  <p class="brand-heading text-sm font-medium text-[var(--color-text-secondary)]">
-                    Filters
-                  </p>
-                  <div class="mt-4 flex flex-col gap-6">
-                    <div>
-                      <date-range-selector
-                        .month=${this.selectedMonth}
-                        .year=${this.selectedYear}
-                        @date-change
-                      ></date-range-selector>
-                    </div>
-                    ${this.spaces.length > 0
-                      ? html`
-                          <div>
-                            <space-selector
-                              .spaces=${this.spaces}
-                              .selectedSpaceId=${this.selectedSpaceId}
-                              @space-change
-                            ></space-selector>
-                          </div>
-                        `
-                      : ""}
-                  </div>
-                </div>
-              </div>
+              <selected-company-card
+                .company=${this.company}
+                .metricsData=${this.metricsData}
+                .selectedMonth=${this.selectedMonth}
+                .selectedYear=${this.selectedYear}
+                .spaces=${this.spaces}
+                .selectedSpaceId=${this.selectedSpaceId}
+                @date-change
+                @space-change
+              ></selected-company-card>
 
               <section class="w-full">
                 <metrics-charts
