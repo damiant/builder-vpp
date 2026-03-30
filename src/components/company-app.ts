@@ -104,7 +104,9 @@ export class CompanyApp extends LitElement {
     // Filter data to only include the selected space
     return this.metricsData.map((item: any) => {
       const spaces = item.metrics?.spaces || [];
-      const hasSelectedSpace = spaces.some((space: any) => space.id === this.selectedSpaceId);
+      const hasSelectedSpace = spaces.some(
+        (space: any) => space.id === this.selectedSpaceId,
+      );
 
       if (!hasSelectedSpace) {
         return null;
