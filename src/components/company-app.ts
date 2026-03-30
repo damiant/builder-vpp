@@ -143,30 +143,31 @@ export class CompanyApp extends LitElement {
     this.selectedSpaceId = event.detail.spaceId;
   };
 
-  private getUniqueSpaces() {
+  private getUniqueSpaces(): Array<{ id: string; name: string }> {
     if (!this.metricsData || !Array.isArray(this.metricsData)) {
       return [];
     }
 
     const spaceMap = new Map<string, string>();
-    const items = this.metricsData as any[];
+    const data = this.metricsData as any[];
 
-    items.forEach((item) => {
-      const spaces = item.metrics?.spaces || [];
+    data.forEach((item) => {
+      const spaces = item.metrics?.spaces;
       if (Array.isArray(spaces)) {
         spaces.forEach((space) => {
-          if (space && space.id && space.name) {
+          if (space?.id && space?.name) {
             spaceMap.set(space.id, space.name);
           }
         });
       }
     });
 
-    const entries = Array.from(spaceMap.entries());
-    return entries.map(([id, name]) => ({
-      id,
-      name,
-    }));
+    const arr: Array<{ id: string; name: string }> = [];
+    spaceMap.forEach((name, id) => {
+      arr.push({ id, name });
+    });
+
+    return arr;
   }
 
   private getMetricsDateRange() {
@@ -222,8 +223,12 @@ export class CompanyApp extends LitElement {
       };
       if (spaceIds.length > 0 || spaces.length > 0) {
         const period = item.period || item.date;
-        const message = `Period ${period}: found ${spaceIds.length} space IDs, ${spaces.length} spaces:`;
-        console.log(message, { spaceIds, spaces });
+        const count1 = spaceIds.length;
+        const count2 = spaces.length;
+        console.log(`Period ${period}: found ${count1} space IDs, ${count2} spaces:`, {
+          spaceIds,
+          spaces,
+        });
       }
       return transformed;
     });
@@ -345,7 +350,9 @@ export class CompanyApp extends LitElement {
         this.metricsError = null;
       } catch (transformError) {
         console.error("Error transforming metrics:", transformError);
-        this.metricsError = `Failed to process metrics data: ${transformError instanceof Error ? transformError.message : "unknown error"}`;
+        const errMsg =
+          transformError instanceof Error ? transformError.message : "unknown error";
+        this.metricsError = `Failed to process metrics data: ${errMsg}`;
         this.metricsData = null;
       }
     } catch (error) {
