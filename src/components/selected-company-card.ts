@@ -120,7 +120,7 @@ export class SelectedCompanyCard extends LitElement {
               Credits used
             </p>
             <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-              ${stats.totals.creditsUsed.toLocaleString()}
+              ${Math.ceil(stats.totals.creditsUsed).toLocaleString()}
             </p>
           </div>
 
