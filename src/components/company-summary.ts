@@ -24,9 +24,6 @@ export class CompanySummary extends LitElement {
     this.company = null;
     this.metricsData = null;
     this.metricsError = null;
-    const today = new Date();
-    this.selectedMonth = today.getMonth();
-    this.selectedYear = today.getFullYear();
   }
 
   createRenderRoot() {

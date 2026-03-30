@@ -9,13 +9,6 @@ export class DateRangeSelector extends LitElement {
   declare month: number;
   declare year: number;
 
-  constructor() {
-    super();
-    const today = new Date();
-    this.month = today.getMonth();
-    this.year = today.getFullYear();
-  }
-
   createRenderRoot() {
     return this;
   }
