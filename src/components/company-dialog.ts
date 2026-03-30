@@ -189,16 +189,7 @@ export class CompanyDialog extends LitElement {
               />
             </label>
 
-            <label class="grid gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
-              <span>Public Key</span>
-              <input
-                id="company-public-key"
-                class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
-                type="text"
-                placeholder="Enter public key"
-                value=${company.publicKey}
-              />
-            </label>
+            <input id="company-public-key" type="hidden" value=${company.publicKey} />
 
             <label class="grid gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
               <span>Private Key</span>
