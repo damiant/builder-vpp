@@ -92,7 +92,7 @@ export class CompanySummary extends LitElement {
             class="mt-6 rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border-default)] bg-[var(--color-brand-soft)] px-4 py-3 text-sm text-[var(--color-text-secondary)]"
           >
             <span class="font-medium text-[var(--color-text-primary)]">Connect endpoint:</span>
-            <span class="ml-1 break-all">https://builder.io/api/v1/orgs/fusion/metrics</span>
+            <span class="ml-1 break-all">https://cdn.builder.io/api/v1/orgs/fusion/metrics</span>
           </div>
         </section>
       </main>

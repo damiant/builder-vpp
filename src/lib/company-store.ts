@@ -76,7 +76,7 @@ export function maskSecret(value: string) {
 }
 
 export function buildMetricsUrl(startDate: string, endDate: string) {
-  const url = new URL("https://builder.io/api/v1/orgs/fusion/metrics");
+  const url = new URL("https://cdn.builder.io/api/v1/orgs/fusion/metrics");
   url.searchParams.set("startDate", startDate);
   url.searchParams.set("endDate", endDate);
 
