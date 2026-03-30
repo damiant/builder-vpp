@@ -10,6 +10,8 @@ type MetricsData = {
     designsExported: number;
     prsMerged: number;
     events: number;
+    users: number;
+    spaceIds: string[];
   };
 }[];
 
@@ -53,6 +55,7 @@ export class SelectedCompanyCard extends LitElement {
         designsExported: acc.designsExported + item.metrics.designsExported,
         prsMerged: acc.prsMerged + item.metrics.prsMerged,
         events: acc.events + item.metrics.events,
+        users: Math.max(acc.users, item.metrics.users),
       }),
       {
         userPrompts: 0,
@@ -61,10 +64,26 @@ export class SelectedCompanyCard extends LitElement {
         designsExported: 0,
         prsMerged: 0,
         events: 0,
+        users: 0,
       },
     );
 
-    return { latest, totals };
+    // Calculate derived metrics
+    const daysCount = this.metricsData.length;
+    const avgCreditsPerDay = totals.creditsUsed / daysCount;
+
+    // Get unique spaceIds across all days
+    const uniqueSpaces = new Set<string>();
+    this.metricsData.forEach((item) => {
+      if (Array.isArray(item.metrics.spaceIds)) {
+        item.metrics.spaceIds.forEach((spaceId) => {
+          uniqueSpaces.add(spaceId);
+        });
+      }
+    });
+    const spacesCount = uniqueSpaces.size;
+
+    return { latest, totals, avgCreditsPerDay, spacesCount };
   }
 
   render() {
@@ -179,6 +198,47 @@ export class SelectedCompanyCard extends LitElement {
             </p>
             <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
               ${stats.totals.designsExported.toLocaleString()}
+            </p>
+          </div>
+
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
+            <p
+              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+            >
+              Avg Credits per day
+            </p>
+            <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+              ${Math.ceil(stats.avgCreditsPerDay).toLocaleString()}
+            </p>
+          </div>
+
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
+            <p
+              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+            >
+              Users
+            </p>
+            <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+              ${stats.totals.users.toLocaleString()}
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-6 grid gap-4 md:grid-cols-3">
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
+            <p
+              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+            >
+              Spaces
+            </p>
+            <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+              ${stats.spacesCount.toLocaleString()}
             </p>
           </div>
         </div>

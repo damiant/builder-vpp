@@ -153,6 +153,8 @@ export class CompanyApp extends LitElement {
           designsExported: toNumber(metrics.designsExported),
           prsMerged: toNumber(metrics.prsMerged),
           events: toNumber(metrics.events),
+          users: toNumber(metrics.users),
+          spaceIds: Array.isArray(metrics.spaceIds) ? metrics.spaceIds : [],
         },
       };
       return transformed;

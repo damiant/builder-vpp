@@ -12,6 +12,8 @@ type MetricsData = {
     designsExported: number;
     prsMerged: number;
     events: number;
+    users: number;
+    spaceIds: string[];
   };
 }[];
 
