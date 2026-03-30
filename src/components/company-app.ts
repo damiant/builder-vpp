@@ -213,11 +213,15 @@ export class CompanyApp extends LitElement {
       const rawSpaces = Array.isArray(metrics.spaces) ? metrics.spaces : [];
       if (rawSpaces.length > 0) {
         // API returns spaces with spaceId and spaceName
-        spaceIds = rawSpaces.map((space: any) => space.spaceId).filter(Boolean);
-        spaces = rawSpaces.map((space: any) => ({
-          id: space.spaceId,
-          name: space.spaceName,
-        })).filter((space) => space.id && space.name);
+        spaceIds = rawSpaces
+          .map((space: any) => space.spaceId)
+          .filter(Boolean);
+        spaces = rawSpaces
+          .map((space: any) => ({
+            id: space.spaceId,
+            name: space.spaceName,
+          }))
+          .filter((space) => space.id && space.name);
       }
 
       const transformed = {
@@ -236,10 +240,10 @@ export class CompanyApp extends LitElement {
       };
       if (spaceIds.length > 0) {
         const period = item.period || item.date;
-        console.log(`Period ${period}: found ${spaceIds.length} unique spaces:`, {
-          spaceIds,
-          spaces,
-        });
+        console.log(
+          `Period ${period}: found ${spaceIds.length} unique spaces:`,
+          { spaceIds, spaces },
+        );
       }
       return transformed;
     });
