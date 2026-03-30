@@ -16,18 +16,27 @@ import "./company-header";
 import "./company-summary";
 import "./companies-table";
 
+type ConnectionResult = {
+  status: number;
+  ok: boolean;
+  message?: string;
+  data?: unknown;
+};
+
 export class CompanyApp extends LitElement {
   static properties = {
     companies: { attribute: false },
     selectedCompanyId: { attribute: false },
     dialogOpen: { type: Boolean, attribute: false },
     dialogCompany: { attribute: false },
+    connectionResult: { attribute: false },
   };
 
   declare companies: CompanyConfig[];
   declare selectedCompanyId: string;
   declare dialogOpen: boolean;
   declare dialogCompany: CompanyConfig | null;
+  declare connectionResult: ConnectionResult | null;
 
   constructor() {
     super();
@@ -35,6 +44,7 @@ export class CompanyApp extends LitElement {
     this.selectedCompanyId = this.companies[0]?.id ?? defaultCompanies[0].id;
     this.dialogOpen = false;
     this.dialogCompany = null;
+    this.connectionResult = null;
   }
 
   createRenderRoot() {
@@ -68,11 +78,13 @@ export class CompanyApp extends LitElement {
   private openDialog = () => {
     this.dialogCompany = { ...this.selectedCompany };
     this.dialogOpen = true;
+    this.connectionResult = null;
   };
 
   private addCompany = () => {
     this.dialogCompany = createCompany();
     this.dialogOpen = true;
+    this.connectionResult = null;
   };
 
   private closeDialog = () => {
@@ -97,7 +109,11 @@ export class CompanyApp extends LitElement {
     await this.persistCompanies();
 
     if (!updatedCompany.privateKey) {
-      console.error("Private key is required to connect.");
+      this.connectionResult = {
+        status: 0,
+        ok: false,
+        message: "Private key is required to connect.",
+      };
       return;
     }
 
@@ -113,22 +129,28 @@ export class CompanyApp extends LitElement {
         },
       });
 
-      const result = await response.json().catch(() => null);
+      const data = await response.json().catch(() => null);
 
-      if (!response.ok) {
-        const message =
-          result && typeof result === "object" && "message" in result
-            ? String((result as { message?: unknown }).message)
-            : `Request failed with status ${response.status}`;
+      this.connectionResult = {
+        status: response.status,
+        ok: response.ok,
+        message: response.ok ? "Connection successful" : (
+          data && typeof data === "object" && "message" in data
+            ? String((data as { message?: unknown }).message)
+            : `Request failed with status ${response.status}`
+        ),
+        data: data,
+      };
 
-        console.error(`Connection failed: ${message}`);
-        return;
+      if (response.ok) {
+        this.closeDialog();
       }
-
-      console.log(result);
-      this.closeDialog();
     } catch (error) {
-      console.error(error);
+      this.connectionResult = {
+        status: 0,
+        ok: false,
+        message: error instanceof Error ? error.message : "Connection error",
+      };
     }
   };
 
@@ -157,7 +179,10 @@ export class CompanyApp extends LitElement {
           @edit-company=${this.openDialog}
         ></company-header>
 
-        <company-summary .company=${this.selectedCompany}></company-summary>
+        <company-summary
+          .company=${this.selectedCompany}
+          .connectionResult=${this.connectionResult}
+        ></company-summary>
 
         <company-dialog
           .company=${this.dialogCompany ?? this.selectedCompany}
