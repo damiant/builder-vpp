@@ -1,6 +1,5 @@
 import { LitElement, html } from "lit";
 import type { CompanyConfig } from "../lib/company-store";
-import { maskSecret } from "../lib/company-store";
 import "./metrics-charts";
 import "./selected-company-card";
 
