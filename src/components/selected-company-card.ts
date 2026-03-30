@@ -17,15 +17,22 @@ export class SelectedCompanyCard extends LitElement {
   static properties = {
     company: { attribute: false },
     metricsData: { attribute: false },
+    selectedMonth: { type: Number, attribute: false },
+    selectedYear: { type: Number, attribute: false },
   };
 
   declare company: CompanyConfig | null;
   declare metricsData: MetricsData | null;
+  declare selectedMonth: number;
+  declare selectedYear: number;
 
   constructor() {
     super();
     this.company = null;
     this.metricsData = null;
+    const today = new Date();
+    this.selectedMonth = today.getMonth();
+    this.selectedYear = today.getFullYear();
   }
 
   createRenderRoot() {
@@ -84,16 +91,11 @@ export class SelectedCompanyCard extends LitElement {
             ${company.name}
           </h2>
           <p class="max-w-2xl text-sm leading-6 text-[var(--color-text-secondary)]">
-            Metrics for the last 30 days from
-            <code
-              class="rounded-[var(--radius-sm)] bg-[var(--color-code-bg)] px-1.5 py-0.5 text-[0.85em] font-medium text-[var(--color-text-primary)]"
-              >${stats.latest.period}</code
-            >
-            to
-            <code
-              class="rounded-[var(--radius-sm)] bg-[var(--color-code-bg)] px-1.5 py-0.5 text-[0.85em] font-medium text-[var(--color-text-primary)]"
-              >${this.metricsData?.[0]?.period ?? "—"}</code
-            >.
+            Metrics for
+            ${new Date(this.selectedYear, this.selectedMonth).toLocaleDateString("en-US", {
+              month: "long",
+              year: "numeric",
+            })}
           </p>
         </div>
 

@@ -56,6 +56,8 @@ export class CompanySummary extends LitElement {
               <selected-company-card
                 .company=${this.company}
                 .metricsData=${this.metricsData}
+                .selectedMonth=${this.selectedMonth}
+                .selectedYear=${this.selectedYear}
               ></selected-company-card>
 
               <section class="w-full">
