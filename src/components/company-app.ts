@@ -67,8 +67,12 @@ export class CompanyApp extends LitElement {
 
   override connectedCallback() {
     super.connectedCallback();
-    void this.restoreCompanies();
-    void this.fetchMetrics();
+    void this.initializeApp();
+  }
+
+  private async initializeApp() {
+    await this.restoreCompanies();
+    await this.fetchMetrics();
   }
 
   private get selectedCompany() {
