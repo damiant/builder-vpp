@@ -144,6 +144,7 @@ export class CompanyApp extends LitElement {
         const num = Number(val);
         return isNaN(num) ? 0 : num;
       };
+      const spaceIds = Array.isArray(metrics.spaceIds) ? metrics.spaceIds : [];
       const transformed = {
         period: item.period || item.date || "",
         metrics: {
@@ -154,9 +155,12 @@ export class CompanyApp extends LitElement {
           prsMerged: toNumber(metrics.prsMerged),
           events: toNumber(metrics.events),
           users: toNumber(metrics.users),
-          spaceIds: Array.isArray(metrics.spaceIds) ? metrics.spaceIds : [],
+          spaceIds: spaceIds,
         },
       };
+      if (spaceIds.length > 0) {
+        console.log(`Period ${item.period || item.date}: found ${spaceIds.length} space IDs:`, spaceIds);
+      }
       return transformed;
     });
 
@@ -225,6 +229,13 @@ export class CompanyApp extends LitElement {
       const data = await response.json();
       console.log("Raw metrics API response:", JSON.stringify(data, null, 2));
       console.log("Response type:", typeof data, "Is array:", Array.isArray(data));
+
+      // Log first item structure for debugging
+      const firstDataItem = Array.isArray(data) ? data[0] : data.data?.[0];
+      if (firstDataItem) {
+        console.log("First item keys:", Object.keys(firstDataItem));
+        console.log("First item spaceIds field:", firstDataItem.spaceIds || firstDataItem.metrics?.spaceIds || "NOT FOUND");
+      }
 
       if (!data) {
         this.metricsError = "No data returned from API";

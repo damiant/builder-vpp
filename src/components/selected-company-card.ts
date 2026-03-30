@@ -82,6 +82,7 @@ export class SelectedCompanyCard extends LitElement {
       }
     });
     const spacesCount = uniqueSpaces.size;
+    console.log("Unique spaces count:", spacesCount, "Space IDs:", Array.from(uniqueSpaces));
 
     return { latest, totals, avgCreditsPerDay, spacesCount };
   }
