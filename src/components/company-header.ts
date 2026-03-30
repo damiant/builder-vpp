@@ -45,22 +45,12 @@ export class CompanyHeader extends LitElement {
       <header
         class="border-b border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-6 py-4 backdrop-blur"
       >
-        <div class="mx-auto flex max-w-6xl flex-col gap-4">
-          <div class="flex items-center justify-between">
+        <div class="mx-auto flex max-w-6xl items-center justify-between">
+          <div class="flex items-center gap-4">
             <h1 class="brand-heading text-2xl font-semibold text-[var(--color-text-primary)]">
               Fusion Metrics
             </h1>
-            <button
-              type="button"
-              class="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-[var(--color-text-inverse)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--color-brand-strong)]"
-              @click=${this.addCompany}
-            >
-              Add company
-            </button>
-          </div>
-
-          <div class="flex gap-4">
-            <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-2">
               <label
                 for="company-select"
                 class="text-sm font-medium text-[var(--color-text-secondary)]"
@@ -78,12 +68,22 @@ export class CompanyHeader extends LitElement {
                 )}
               </select>
             </div>
+          </div>
+
+          <div class="flex items-center gap-2">
             <button
               type="button"
-              class="mt-6 rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
+              class="rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
               @click=${this.handleEditCompany}
             >
               Edit
+            </button>
+            <button
+              type="button"
+              class="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-[var(--color-text-inverse)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--color-brand-strong)]"
+              @click=${this.addCompany}
+            >
+              Add
             </button>
           </div>
         </div>
