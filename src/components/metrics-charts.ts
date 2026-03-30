@@ -3,18 +3,21 @@ import { Chart, registerables } from "chart.js";
 
 Chart.register(...registerables);
 
+type MetricsItem = {
+  userPrompts: number;
+  totalLines: number;
+  creditsUsed: number;
+  designsExported: number;
+  prsMerged: number;
+  events: number;
+  users: number;
+  spaceIds: string[];
+  spaces: Array<{ id: string; name: string }>;
+};
+
 type MetricsData = {
   period: string;
-  metrics: {
-    userPrompts: number;
-    totalLines: number;
-    creditsUsed: number;
-    designsExported: number;
-    prsMerged: number;
-    events: number;
-    users: number;
-    spaceIds: string[];
-  };
+  metrics: MetricsItem;
 }[];
 
 export class MetricsCharts extends LitElement {

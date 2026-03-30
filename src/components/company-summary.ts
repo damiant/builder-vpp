@@ -3,6 +3,7 @@ import type { CompanyConfig } from "../lib/company-store";
 import "./metrics-charts";
 import "./selected-company-card";
 import "./date-range-selector";
+import "./space-selector";
 
 export class CompanySummary extends LitElement {
   static properties = {
@@ -11,6 +12,8 @@ export class CompanySummary extends LitElement {
     metricsError: { attribute: false },
     selectedMonth: { type: Number, attribute: false },
     selectedYear: { type: Number, attribute: false },
+    spaces: { attribute: false },
+    selectedSpaceId: { attribute: false },
   };
 
   declare company: CompanyConfig | null;
@@ -18,12 +21,16 @@ export class CompanySummary extends LitElement {
   declare metricsError: string | null;
   declare selectedMonth: number;
   declare selectedYear: number;
+  declare spaces: Array<{ id: string; name: string }>;
+  declare selectedSpaceId: string;
 
   constructor() {
     super();
     this.company = null;
     this.metricsData = null;
     this.metricsError = null;
+    this.spaces = [];
+    this.selectedSpaceId = "all";
   }
 
   createRenderRoot() {
@@ -37,14 +44,27 @@ export class CompanySummary extends LitElement {
           class="w-full rounded-[var(--radius-xl)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-md)]"
         >
           <p class="brand-heading text-sm font-medium text-[var(--color-text-secondary)]">
-            Date Range
+            Filters
           </p>
-          <div class="mt-4">
-            <date-range-selector
-              .month=${this.selectedMonth}
-              .year=${this.selectedYear}
-              @date-change
-            ></date-range-selector>
+          <div class="mt-4 flex gap-6">
+            <div class="flex-1">
+              <date-range-selector
+                .month=${this.selectedMonth}
+                .year=${this.selectedYear}
+                @date-change
+              ></date-range-selector>
+            </div>
+            ${this.spaces.length > 0
+              ? html`
+                  <div class="flex-1">
+                    <space-selector
+                      .spaces=${this.spaces}
+                      .selectedSpaceId=${this.selectedSpaceId}
+                      @space-change
+                    ></space-selector>
+                  </div>
+                `
+              : ""}
           </div>
         </div>
 

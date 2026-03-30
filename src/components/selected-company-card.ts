@@ -1,18 +1,21 @@
 import { LitElement, html } from "lit";
 import type { CompanyConfig } from "../lib/company-store";
 
+type MetricsItem = {
+  userPrompts: number;
+  totalLines: number;
+  creditsUsed: number;
+  designsExported: number;
+  prsMerged: number;
+  events: number;
+  users: number;
+  spaceIds: string[];
+  spaces: Array<{ id: string; name: string }>;
+};
+
 type MetricsData = {
   period: string;
-  metrics: {
-    userPrompts: number;
-    totalLines: number;
-    creditsUsed: number;
-    designsExported: number;
-    prsMerged: number;
-    events: number;
-    users: number;
-    spaceIds: string[];
-  };
+  metrics: MetricsItem;
 }[];
 
 export class SelectedCompanyCard extends LitElement {

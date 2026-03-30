@@ -19,6 +19,7 @@ import "./connection-result-dialog";
 import "./metrics-charts";
 import "./selected-company-card";
 import "./date-range-selector";
+import "./space-selector";
 
 type ConnectionResult = {
   status: number;
@@ -41,6 +42,7 @@ export class CompanyApp extends LitElement {
     metricsError: { attribute: false },
     selectedMonth: { type: Number, attribute: false },
     selectedYear: { type: Number, attribute: false },
+    selectedSpaceId: { attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -53,6 +55,7 @@ export class CompanyApp extends LitElement {
   declare metricsError: string | null;
   declare selectedMonth: number;
   declare selectedYear: number;
+  declare selectedSpaceId: string;
 
   constructor() {
     super();
@@ -64,6 +67,7 @@ export class CompanyApp extends LitElement {
     this.resultDialogOpen = false;
     this.metricsData = null;
     this.metricsError = null;
+    this.selectedSpaceId = "all";
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
@@ -87,6 +91,29 @@ export class CompanyApp extends LitElement {
     return getSelectedCompany(this.companies, this.selectedCompanyId);
   }
 
+  private get filteredMetricsData() {
+    if (!this.metricsData || !Array.isArray(this.metricsData)) {
+      return this.metricsData;
+    }
+
+    // If "All Spaces" is selected, return all data
+    if (this.selectedSpaceId === "all") {
+      return this.metricsData;
+    }
+
+    // Filter data to only include the selected space
+    return this.metricsData.map((item: any) => {
+      const spaces = item.metrics?.spaces || [];
+      const hasSelectedSpace = spaces.some((space: any) => space.id === this.selectedSpaceId);
+
+      if (!hasSelectedSpace) {
+        return null;
+      }
+
+      return item;
+    }).filter((item: any) => item !== null);
+  }
+
   private async restoreCompanies() {
     const companies = await loadCompanies();
 
@@ -108,6 +135,31 @@ export class CompanyApp extends LitElement {
     this.selectedYear = event.detail.year;
     void this.fetchMetrics();
   };
+
+  private handleSpaceChange = (event: CustomEvent<{ spaceId: string }>) => {
+    this.selectedSpaceId = event.detail.spaceId;
+    // Reset space selection when space changes - no need to refetch,
+    // just re-render with filtered data
+  };
+
+  private getUniqueSpaces(): Array<{ id: string; name: string }> {
+    if (!this.metricsData || !Array.isArray(this.metricsData)) {
+      return [];
+    }
+
+    const spacesMap = new Map<string, string>();
+
+    this.metricsData.forEach((item: any) => {
+      const spaces = item.metrics?.spaces || [];
+      spaces.forEach((space: any) => {
+        if (space?.id && space?.name) {
+          spacesMap.set(space.id, space.name);
+        }
+      });
+    });
+
+    return Array.from(spacesMap.entries()).map(([id, name]) => ({ id, name }));
+  }
 
   private getMetricsDateRange() {
     // Get the first and last day of the selected month
@@ -145,6 +197,7 @@ export class CompanyApp extends LitElement {
         return isNaN(num) ? 0 : num;
       };
       const spaceIds = Array.isArray(metrics.spaceIds) ? metrics.spaceIds : [];
+      const spaces = Array.isArray(metrics.spaces) ? metrics.spaces : [];
       const transformed = {
         period: item.period || item.date || "",
         metrics: {
@@ -156,11 +209,15 @@ export class CompanyApp extends LitElement {
           events: toNumber(metrics.events),
           users: toNumber(metrics.users),
           spaceIds: spaceIds,
+          spaces: spaces,
         },
       };
-      if (spaceIds.length > 0) {
+      if (spaceIds.length > 0 || spaces.length > 0) {
         const period = item.period || item.date;
-        console.log(`Period ${period}: found ${spaceIds.length} space IDs:`, spaceIds);
+        console.log(
+          `Period ${period}: found ${spaceIds.length} space IDs, ${spaces.length} spaces:`,
+          { spaceIds, spaces },
+        );
       }
       return transformed;
     });
@@ -423,11 +480,14 @@ export class CompanyApp extends LitElement {
 
         <company-summary
           .company=${this.selectedCompany}
-          .metricsData=${this.metricsData}
+          .metricsData=${this.filteredMetricsData}
           .metricsError=${this.metricsError}
           .selectedMonth=${this.selectedMonth}
           .selectedYear=${this.selectedYear}
+          .spaces=${this.getUniqueSpaces()}
+          .selectedSpaceId=${this.selectedSpaceId}
           @date-change=${this.handleDateChange}
+          @space-change=${this.handleSpaceChange}
         ></company-summary>
 
         <company-dialog
