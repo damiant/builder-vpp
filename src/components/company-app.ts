@@ -152,6 +152,7 @@ export class CompanyApp extends LitElement {
           creditsUsed: toNumber(metrics.creditsUsed),
           designsExported: toNumber(metrics.designsExported),
           prsMerged: toNumber(metrics.prsMerged),
+          events: toNumber(metrics.events),
         },
       };
       return transformed;

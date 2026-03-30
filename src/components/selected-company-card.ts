@@ -9,6 +9,7 @@ type MetricsData = {
     creditsUsed: number;
     designsExported: number;
     prsMerged: number;
+    events: number;
   };
 }[];
 
@@ -51,6 +52,7 @@ export class SelectedCompanyCard extends LitElement {
         creditsUsed: acc.creditsUsed + item.metrics.creditsUsed,
         designsExported: acc.designsExported + item.metrics.designsExported,
         prsMerged: acc.prsMerged + item.metrics.prsMerged,
+        events: acc.events + item.metrics.events,
       }),
       {
         userPrompts: 0,
@@ -58,6 +60,7 @@ export class SelectedCompanyCard extends LitElement {
         creditsUsed: 0,
         designsExported: 0,
         prsMerged: 0,
+        events: 0,
       },
     );
 
@@ -139,7 +142,20 @@ export class SelectedCompanyCard extends LitElement {
           </div>
         </div>
 
-        <div class="mt-6 grid gap-4 md:grid-cols-2">
+        <div class="mt-6 grid gap-4 md:grid-cols-3">
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
+            <p
+              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+            >
+              Total events
+            </p>
+            <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+              ${stats.totals.events.toLocaleString()}
+            </p>
+          </div>
+
           <div
             class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
           >

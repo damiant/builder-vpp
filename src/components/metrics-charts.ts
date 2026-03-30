@@ -11,6 +11,7 @@ type MetricsData = {
     creditsUsed: number;
     designsExported: number;
     prsMerged: number;
+    events: number;
   };
 }[];
 
@@ -74,6 +75,13 @@ export class MetricsCharts extends LitElement {
         dataKey: "prsMerged",
         borderColor: "#ec4899",
         backgroundColor: "rgba(236, 72, 153, 0.1)",
+      },
+      {
+        id: "events",
+        label: "Events",
+        dataKey: "events",
+        borderColor: "#06b6d4",
+        backgroundColor: "rgba(6, 182, 212, 0.1)",
       },
     ] as const;
 
@@ -201,9 +209,15 @@ export class MetricsCharts extends LitElement {
           </div>
 
           <div
-            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4 md:col-span-2"
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
           >
             <canvas id="chart-prsMerged"></canvas>
+          </div>
+
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
+            <canvas id="chart-events"></canvas>
           </div>
         </div>
       </div>
