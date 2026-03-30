@@ -13,6 +13,7 @@ import {
 import "./company-dialog";
 import "./company-header";
 import "./company-summary";
+import "./companies-table";
 
 export class CompanyApp extends LitElement {
   static properties = {
