@@ -8,8 +8,14 @@ export class CompanyDialog extends LitElement {
     open: { type: Boolean, attribute: false },
   };
 
-  accessor company: CompanyConfig | null = null;
-  accessor open = false;
+  declare company: CompanyConfig | null;
+  declare open: boolean;
+
+  constructor() {
+    super();
+    this.company = null;
+    this.open = false;
+  }
 
   createRenderRoot() {
     return this;

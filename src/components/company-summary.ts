@@ -7,7 +7,12 @@ export class CompanySummary extends LitElement {
     company: { attribute: false },
   };
 
-  accessor company: CompanyConfig | null = null;
+  declare company: CompanyConfig | null;
+
+  constructor() {
+    super();
+    this.company = null;
+  }
 
   createRenderRoot() {
     return this;

@@ -19,9 +19,16 @@ export class CompanyApp extends LitElement {
     dialogOpen: { type: Boolean, attribute: false },
   };
 
-  accessor companies: CompanyConfig[] = loadCompanies();
-  accessor selectedCompanyId = this.companies[0]?.id ?? defaultCompanies[0].id;
-  accessor dialogOpen = false;
+  declare companies: CompanyConfig[];
+  declare selectedCompanyId: string;
+  declare dialogOpen: boolean;
+
+  constructor() {
+    super();
+    this.companies = loadCompanies();
+    this.selectedCompanyId = this.companies[0]?.id ?? defaultCompanies[0].id;
+    this.dialogOpen = false;
+  }
 
   createRenderRoot() {
     return this;
