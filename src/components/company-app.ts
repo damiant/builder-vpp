@@ -102,7 +102,7 @@ export class CompanyApp extends LitElement {
     }
 
     // Filter data to only include the selected space
-    return this.metricsData.map((item: any) => {
+    const mapped = this.metricsData.map((item: any) => {
       const spaces = item.metrics?.spaces || [];
       const hasSelectedSpace = spaces.some(
         (space: any) => space.id === this.selectedSpaceId,
@@ -113,7 +113,8 @@ export class CompanyApp extends LitElement {
       }
 
       return item;
-    }).filter((item: any) => item !== null);
+    });
+    return mapped.filter((item: any) => item !== null);
   }
 
   private async restoreCompanies() {
@@ -217,10 +218,8 @@ export class CompanyApp extends LitElement {
       };
       if (spaceIds.length > 0 || spaces.length > 0) {
         const period = item.period || item.date;
-        console.log(
-          `Period ${period}: found ${spaceIds.length} space IDs, ${spaces.length} spaces:`,
-          { spaceIds, spaces },
-        );
+        const message = `Period ${period}: found ${spaceIds.length} space IDs, ${spaces.length} spaces:`;
+        console.log(message, { spaceIds, spaces });
       }
       return transformed;
     });
@@ -295,9 +294,11 @@ export class CompanyApp extends LitElement {
       const firstDataItem = Array.isArray(data) ? data[0] : data.data?.[0];
       if (firstDataItem) {
         console.log("First item keys:", Object.keys(firstDataItem));
-        const spaceIdsField =
-          firstDataItem.spaceIds || firstDataItem.metrics?.spaceIds || "NOT FOUND";
-        console.log("First item spaceIds field:", spaceIdsField);
+        const spaceIds =
+          firstDataItem.spaceIds ||
+          firstDataItem.metrics?.spaceIds ||
+          "NOT FOUND";
+        console.log("First item spaceIds field:", spaceIds);
       }
 
       if (!data) {
