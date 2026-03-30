@@ -186,23 +186,9 @@ export class CompanyApp extends LitElement {
     };
   }
 
-  private transformMetricsData(dataArray: any[]): any[] {
-    const firstItem = dataArray[0];
-    console.log("First item structure:", firstItem);
-
-    // Check if already in correct format
-    if (firstItem.period && firstItem.metrics) {
-      console.log("Data is already in correct format");
-      return dataArray;
-    }
-
-    // Transform to correct format
-    const transformedData = dataArray.map((item: any) => {
+  private normalizeSpaces(dataArray: any[]): any[] {
+    return dataArray.map((item: any) => {
       const metrics = item.metrics || item;
-      const toNumber = (val: any): number => {
-        const num = Number(val);
-        return isNaN(num) ? 0 : num;
-      };
 
       // Extract spaceIds and normalize spaces format
       let spaceIds: string[] = [];
@@ -220,7 +206,35 @@ export class CompanyApp extends LitElement {
           .filter((space: { id: string; name: string }) => space.id && space.name);
       }
 
-      const transformed = {
+      return {
+        period: item.period || item.date || "",
+        metrics: {
+          ...metrics,
+          spaceIds: spaceIds,
+          spaces: spaces,
+        },
+      };
+    });
+  }
+
+  private transformMetricsData(dataArray: any[]): any[] {
+    const firstItem = dataArray[0];
+
+    // Check if already in correct format
+    if (firstItem.period && firstItem.metrics) {
+      // Still need to normalize spaces to extract spaceIds
+      return this.normalizeSpaces(dataArray);
+    }
+
+    // Transform to correct format
+    const transformedData = dataArray.map((item: any) => {
+      const metrics = item.metrics || item;
+      const toNumber = (val: any): number => {
+        const num = Number(val);
+        return isNaN(num) ? 0 : num;
+      };
+
+      return {
         period: item.period || item.date || "",
         metrics: {
           userPrompts: toNumber(metrics.userPrompts),
@@ -230,21 +244,13 @@ export class CompanyApp extends LitElement {
           prsMerged: toNumber(metrics.prsMerged),
           events: toNumber(metrics.events),
           users: toNumber(metrics.users),
-          spaceIds: spaceIds,
-          spaces: spaces,
+          spaces: metrics.spaces || [],
         },
       };
-      if (spaceIds.length > 0) {
-        const period = item.period || item.date;
-        console.log(`Period ${period}: found ${spaceIds.length} unique spaces:`, {
-          spaceIds,
-          spaces,
-        });
-      }
-      return transformed;
     });
 
-    return transformedData;
+    // Normalize spaces in all items (extract spaceIds from space objects)
+    return this.normalizeSpaces(transformedData);
   }
 
   private async fetchMetrics() {
