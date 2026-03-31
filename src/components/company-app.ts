@@ -43,6 +43,7 @@ export class CompanyApp extends LitElement {
     selectedMonth: { type: Number, attribute: false },
     selectedYear: { type: Number, attribute: false },
     selectedSpaceId: { attribute: false },
+    isFetchingUncachedMetrics: { type: Boolean, attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -56,6 +57,7 @@ export class CompanyApp extends LitElement {
   declare selectedMonth: number;
   declare selectedYear: number;
   declare selectedSpaceId: string;
+  declare isFetchingUncachedMetrics: boolean;
 
   constructor() {
     super();
@@ -68,6 +70,7 @@ export class CompanyApp extends LitElement {
     this.metricsData = null;
     this.metricsError = null;
     this.selectedSpaceId = "all";
+    this.isFetchingUncachedMetrics = false;
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
@@ -286,6 +289,7 @@ export class CompanyApp extends LitElement {
     const company = this.selectedCompany;
 
     if (!company.privateKey) {
+      this.isFetchingUncachedMetrics = false;
       this.metricsError = "Private key is required to fetch metrics";
       this.metricsData = null;
       return;
@@ -302,6 +306,7 @@ export class CompanyApp extends LitElement {
     );
 
     if (cachedData) {
+      this.isFetchingUncachedMetrics = false;
       console.log("Using cached metrics data");
       try {
         const transformedData = this.transformMetricsData(cachedData);
@@ -313,6 +318,8 @@ export class CompanyApp extends LitElement {
       }
       return;
     }
+
+    this.isFetchingUncachedMetrics = true;
 
     const url = buildMetricsUrl(startDate, endDate);
     const headers = {
@@ -402,6 +409,8 @@ export class CompanyApp extends LitElement {
       console.error("Metrics fetch failed:", message, error);
       this.metricsError = `Failed to fetch metrics: ${message}`;
       this.metricsData = null;
+    } finally {
+      this.isFetchingUncachedMetrics = false;
     }
   }
 
@@ -555,6 +564,23 @@ export class CompanyApp extends LitElement {
           @connect-company=${this.connectCompany}
           @delete-company=${this.removeCompany}
         ></company-dialog>
+
+        ${this.isFetchingUncachedMetrics
+          ? html`
+              <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
+                <div
+                  class="flex flex-col items-center gap-4 rounded-[var(--radius-lg)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-md)]"
+                >
+                  <div
+                    class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-border-subtle)] border-t-[var(--color-brand)]"
+                  ></div>
+                  <p class="text-sm font-medium text-[var(--color-text-secondary)]">
+                    Loading metrics...
+                  </p>
+                </div>
+              </div>
+            `
+          : ""}
 
         <connection-result-dialog
           .result=${this.connectionResult}
