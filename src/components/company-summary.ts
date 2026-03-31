@@ -37,6 +37,26 @@ export class CompanySummary extends LitElement {
     return this;
   }
 
+  private handleDateChange = (event: CustomEvent<{ month: number; year: number }>) => {
+    this.dispatchEvent(
+      new CustomEvent("date-change", {
+        detail: event.detail,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  };
+
+  private handleSpaceChange = (event: CustomEvent<{ spaceId: string }>) => {
+    this.dispatchEvent(
+      new CustomEvent("space-change", {
+        detail: event.detail,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  };
+
   render() {
     return html`
       <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-8 px-6 py-12">
@@ -49,8 +69,8 @@ export class CompanySummary extends LitElement {
                 .selectedYear=${this.selectedYear}
                 .spaces=${this.spaces}
                 .selectedSpaceId=${this.selectedSpaceId}
-                @date-change
-                @space-change
+                @date-change=${this.handleDateChange}
+                @space-change=${this.handleSpaceChange}
               ></selected-company-card>
 
               <section class="w-full">

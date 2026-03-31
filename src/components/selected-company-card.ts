@@ -52,6 +52,26 @@ export class SelectedCompanyCard extends LitElement {
     return this;
   }
 
+  private handleDateChange = (event: CustomEvent<{ month: number; year: number }>) => {
+    this.dispatchEvent(
+      new CustomEvent("date-change", {
+        detail: event.detail,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  };
+
+  private handleSpaceChange = (event: CustomEvent<{ spaceId: string }>) => {
+    this.dispatchEvent(
+      new CustomEvent("space-change", {
+        detail: event.detail,
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  };
+
   private getSummaryStats() {
     if (!this.metricsData || this.metricsData.length === 0) {
       return null;
@@ -140,7 +160,7 @@ export class SelectedCompanyCard extends LitElement {
                 <date-range-selector
                   .month=${this.selectedMonth}
                   .year=${this.selectedYear}
-                  @date-change
+                  @date-change=${this.handleDateChange}
                 ></date-range-selector>
               </div>
               ${this.spaces.length > 0
@@ -149,7 +169,7 @@ export class SelectedCompanyCard extends LitElement {
                       <space-selector
                         .spaces=${this.spaces}
                         .selectedSpaceId=${this.selectedSpaceId}
-                        @space-change
+                        @space-change=${this.handleSpaceChange}
                       ></space-selector>
                     </div>
                   `
