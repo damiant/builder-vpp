@@ -60,19 +60,19 @@ export class CompanySummary extends LitElement {
   render() {
     return html`
       <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-8 px-6 py-12">
+        <selected-company-card
+          .company=${this.company}
+          .metricsData=${this.metricsData}
+          .selectedMonth=${this.selectedMonth}
+          .selectedYear=${this.selectedYear}
+          .spaces=${this.spaces}
+          .selectedSpaceId=${this.selectedSpaceId}
+          @date-change=${this.handleDateChange}
+          @space-change=${this.handleSpaceChange}
+        ></selected-company-card>
+
         ${this.metricsData && Array.isArray(this.metricsData) && this.metricsData.length > 0
           ? html`
-              <selected-company-card
-                .company=${this.company}
-                .metricsData=${this.metricsData}
-                .selectedMonth=${this.selectedMonth}
-                .selectedYear=${this.selectedYear}
-                .spaces=${this.spaces}
-                .selectedSpaceId=${this.selectedSpaceId}
-                @date-change=${this.handleDateChange}
-                @space-change=${this.handleSpaceChange}
-              ></selected-company-card>
-
               <section class="w-full">
                 <metrics-charts
                   .data=${this.metricsData}

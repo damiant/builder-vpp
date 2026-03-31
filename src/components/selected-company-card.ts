@@ -127,10 +127,6 @@ export class SelectedCompanyCard extends LitElement {
 
     const stats = this.getSummaryStats();
 
-    if (!stats) {
-      return html``;
-    }
-
     return html`
       <section
         class="w-full rounded-[var(--radius-xl)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-8 shadow-[var(--shadow-md)]"
@@ -178,124 +174,128 @@ export class SelectedCompanyCard extends LitElement {
           </div>
         </div>
 
-        <div class="grid gap-4 md:grid-cols-3">
-          <div
-            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
-          >
-            <p
-              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
-            >
-              Total user prompts
-            </p>
-            <p class="mt-2 text-2xl font-semibold text-[var(--color-brand)]">
-              ${stats.totals.userPrompts.toLocaleString()}
-            </p>
-          </div>
+        ${stats
+          ? html`
+              <div class="grid gap-4 md:grid-cols-3">
+                <div
+                  class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                >
+                  <p
+                    class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                  >
+                    Total user prompts
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold text-[var(--color-brand)]">
+                    ${stats.totals.userPrompts.toLocaleString()}
+                  </p>
+                </div>
 
-          <div
-            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
-          >
-            <p
-              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
-            >
-              Credits used
-            </p>
-            <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-              ${Math.ceil(stats.totals.creditsUsed).toLocaleString()}
-            </p>
-          </div>
+                <div
+                  class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                >
+                  <p
+                    class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                  >
+                    Credits used
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                    ${Math.ceil(stats.totals.creditsUsed).toLocaleString()}
+                  </p>
+                </div>
 
-          <div
-            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
-          >
-            <p
-              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
-            >
-              Total PRs merged
-            </p>
-            <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-              ${stats.totals.prsMerged.toLocaleString()}
-            </p>
-          </div>
+                <div
+                  class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                >
+                  <p
+                    class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                  >
+                    Total PRs merged
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                    ${stats.totals.prsMerged.toLocaleString()}
+                  </p>
+                </div>
 
-          <div
-            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
-          >
-            <p
-              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
-            >
-              Total events
-            </p>
-            <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-              ${stats.totals.events.toLocaleString()}
-            </p>
-          </div>
+                <div
+                  class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                >
+                  <p
+                    class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                  >
+                    Total events
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                    ${stats.totals.events.toLocaleString()}
+                  </p>
+                </div>
 
-          <div
-            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
-          >
-            <p
-              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
-            >
-              Total lines
-            </p>
-            <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-              ${stats.totals.totalLines.toLocaleString()}
-            </p>
-          </div>
+                <div
+                  class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                >
+                  <p
+                    class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                  >
+                    Total lines
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                    ${stats.totals.totalLines.toLocaleString()}
+                  </p>
+                </div>
 
-          <div
-            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
-          >
-            <p
-              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
-            >
-              Designs exported
-            </p>
-            <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-              ${stats.totals.designsExported.toLocaleString()}
-            </p>
-          </div>
+                <div
+                  class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                >
+                  <p
+                    class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                  >
+                    Designs exported
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                    ${stats.totals.designsExported.toLocaleString()}
+                  </p>
+                </div>
 
-          <div
-            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
-          >
-            <p
-              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
-            >
-              Avg Credits per day
-            </p>
-            <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-              ${Math.ceil(stats.avgCreditsPerDay).toLocaleString()}
-            </p>
-          </div>
+                <div
+                  class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                >
+                  <p
+                    class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                  >
+                    Avg Credits per day
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                    ${Math.ceil(stats.avgCreditsPerDay).toLocaleString()}
+                  </p>
+                </div>
 
-          <div
-            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
-          >
-            <p
-              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
-            >
-              Users
-            </p>
-            <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-              ${stats.totals.users.toLocaleString()}
-            </p>
-          </div>
+                <div
+                  class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                >
+                  <p
+                    class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                  >
+                    Users
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                    ${stats.totals.users.toLocaleString()}
+                  </p>
+                </div>
 
-          <div
-            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
-          >
-            <p
-              class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
-            >
-              Spaces
-            </p>
-            <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-              ${stats.spacesCount.toLocaleString()}
-            </p>
-          </div>
-        </div>
+                <div
+                  class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                >
+                  <p
+                    class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                  >
+                    Spaces
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                    ${stats.spacesCount.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            `
+          : ""}
       </section>
     `;
   }
