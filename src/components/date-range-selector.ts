@@ -64,11 +64,14 @@ export class DateRangeSelector extends LitElement {
           </label>
           <select
             id="month-select"
-            .value=${String(this.month)}
             @change=${this.handleMonthChange}
             class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-[var(--shadow-sm)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
           >
-            ${months.map((name, index) => html` <option value=${index}>${name}</option> `)}
+            ${months.map(
+              (name, index) => html`
+                <option value=${index} ?selected=${this.month === index}>${name}</option>
+              `,
+            )}
           </select>
         </div>
 
@@ -78,11 +81,12 @@ export class DateRangeSelector extends LitElement {
           </label>
           <select
             id="year-select"
-            .value=${String(this.year)}
             @change=${this.handleYearChange}
             class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] shadow-[var(--shadow-sm)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
           >
-            ${years.map((y) => html` <option value=${y}>${y}</option> `)}
+            ${years.map(
+              (y) => html` <option value=${y} ?selected=${this.year === y}>${y}</option> `,
+            )}
           </select>
         </div>
       </div>
