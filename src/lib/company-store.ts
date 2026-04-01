@@ -91,6 +91,21 @@ export function buildUsersUrl(startDate: string, endDate: string) {
   return url;
 }
 
+export function buildEventsUrl(
+  startDate: string,
+  endDate: string,
+  page: number = 1,
+  limit: number = 1000,
+) {
+  const url = new URL("https://cdn.builder.io/api/v1/orgs/fusion/events");
+  url.searchParams.set("startDate", startDate);
+  url.searchParams.set("endDate", endDate);
+  url.searchParams.set("page", String(page));
+  url.searchParams.set("limit", String(limit));
+
+  return url;
+}
+
 export function createCompany(name = "") {
   return {
     id: globalThis.crypto?.randomUUID?.() ?? `company-${Date.now()}`,

@@ -32,6 +32,7 @@ export class MetricsCharts extends LitElement {
     selectedMonth: { type: Number, attribute: false },
     selectedYear: { type: Number, attribute: false },
     usersData: { attribute: false },
+    modelMetrics: { attribute: false },
   };
 
   declare data: MetricsData | null;
@@ -40,6 +41,7 @@ export class MetricsCharts extends LitElement {
   declare selectedMonth: number;
   declare selectedYear: number;
   declare usersData: Array<any> | null;
+  declare modelMetrics: Array<{ model: string; totalLines: number; creditsUsed: number }> | null;
 
   private charts: Map<string, Chart<any>> = new Map();
 
@@ -51,6 +53,7 @@ export class MetricsCharts extends LitElement {
     this.selectedMonth = new Date().getMonth();
     this.selectedYear = new Date().getFullYear();
     this.usersData = null;
+    this.modelMetrics = null;
   }
 
   createRenderRoot() {
@@ -255,44 +258,6 @@ export class MetricsCharts extends LitElement {
     return Array.from(spaceMap.values()).sort((a, b) => b.creditsUsed - a.creditsUsed);
   }
 
-  private getModelMetrics(): Array<{
-    model: string;
-    totalLines: number;
-    creditsUsed: number;
-  }> {
-    if (!this.data) return [];
-
-    const modelMap = new Map<
-      string,
-      {
-        model: string;
-        totalLines: number;
-        creditsUsed: number;
-      }
-    >();
-
-    this.data.forEach((item) => {
-      const rawModels = item.metrics.models || [];
-      rawModels.forEach(
-        (modelData: { model: string; linesOfCode?: number; creditsUsed?: number }) => {
-          const model = modelData.model;
-          if (!modelMap.has(model)) {
-            modelMap.set(model, {
-              model,
-              totalLines: 0,
-              creditsUsed: 0,
-            });
-          }
-          const data = modelMap.get(model)!;
-          data.totalLines += modelData.linesOfCode || 0;
-          data.creditsUsed += modelData.creditsUsed || 0;
-        },
-      );
-    });
-
-    return Array.from(modelMap.values()).sort((a, b) => b.creditsUsed - a.creditsUsed);
-  }
-
   private formatDateLabel(dateString: string): string {
     try {
       const date = new Date(dateString);
@@ -385,9 +350,8 @@ export class MetricsCharts extends LitElement {
     }
 
     const spaceMetrics = this.getSpaceMetrics();
-    const modelMetrics = this.getModelMetrics();
     const shouldShowSpacesTable = this.selectedSpaceId === "all" && spaceMetrics.length > 0;
-    const shouldShowModelsTable = modelMetrics.length > 0;
+    const shouldShowModelsTable = this.modelMetrics && this.modelMetrics.length > 0;
 
     return html`
       <div class="mt-8 space-y-6">
@@ -537,8 +501,11 @@ export class MetricsCharts extends LitElement {
                       </tr>
                     </thead>
                     <tbody>
-                      ${modelMetrics.map((model) => {
-                        const maxCredits = Math.max(...modelMetrics.map((m) => m.creditsUsed), 1);
+                      ${this.modelMetrics!.map((model) => {
+                        const maxCredits = Math.max(
+                          ...this.modelMetrics!.map((m) => m.creditsUsed),
+                          1,
+                        );
                         const creditPercentage = (model.creditsUsed / maxCredits) * 100;
 
                         return html`

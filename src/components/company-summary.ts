@@ -14,6 +14,7 @@ export class CompanySummary extends LitElement {
     selectedYear: { type: Number, attribute: false },
     spaces: { attribute: false },
     selectedSpaceId: { attribute: false },
+    modelMetrics: { attribute: false },
   };
 
   declare company: CompanyConfig | null;
@@ -23,6 +24,7 @@ export class CompanySummary extends LitElement {
   declare selectedYear: number;
   declare spaces: Array<{ id: string; name: string }>;
   declare selectedSpaceId: string;
+  declare modelMetrics: Array<{ model: string; totalLines: number; creditsUsed: number }> | null;
 
   constructor() {
     super();
@@ -31,6 +33,7 @@ export class CompanySummary extends LitElement {
     this.metricsError = null;
     this.spaces = [];
     this.selectedSpaceId = "all";
+    this.modelMetrics = null;
   }
 
   createRenderRoot() {
@@ -80,6 +83,7 @@ export class CompanySummary extends LitElement {
                   .company=${this.company}
                   .selectedMonth=${this.selectedMonth}
                   .selectedYear=${this.selectedYear}
+                  .modelMetrics=${this.modelMetrics}
                 ></metrics-charts>
               </section>
             `

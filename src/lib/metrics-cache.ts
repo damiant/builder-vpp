@@ -8,6 +8,7 @@ export type CachedMetrics = {
 const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
 const CACHE_PREFIX = "metrics-cache:";
 const USERS_CACHE_PREFIX = "users-cache:";
+const EVENTS_CACHE_PREFIX = "events-cache:";
 
 /**
  * Generate a cache key based on company credentials and date range
@@ -159,5 +160,80 @@ export async function cacheUsers(
     console.log("Users data cached successfully");
   } catch (error) {
     console.error("Error writing to users cache:", error);
+  }
+}
+
+/**
+ * Generate a cache key for events data
+ */
+function generateEventsCacheKey(
+  publicKey: string,
+  privateKey: string,
+  startDate: string,
+  endDate: string,
+): string {
+  const combined = `${publicKey}|${privateKey}|${startDate}|${endDate}`;
+  let hash = 0;
+  for (let i = 0; i < combined.length; i++) {
+    const char = combined.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash;
+  }
+  return `${EVENTS_CACHE_PREFIX}${Math.abs(hash).toString(36)}`;
+}
+
+/**
+ * Get cached events data if available and fresh
+ */
+export async function getCachedEvents(
+  publicKey: string,
+  privateKey: string,
+  startDate: string,
+  endDate: string,
+): Promise<unknown[] | null> {
+  try {
+    const cacheKey = generateEventsCacheKey(publicKey, privateKey, startDate, endDate);
+    const cached = await get<CachedMetrics>(cacheKey);
+
+    if (!cached || !Array.isArray(cached.data)) {
+      return null;
+    }
+
+    const now = Date.now();
+    const age = now - cached.timestamp;
+
+    if (age < CACHE_DURATION_MS) {
+      console.log(`Using cached events data (${Math.round(age / 1000)}s old)`);
+      return cached.data;
+    }
+
+    console.log("Cached events data expired, fetching fresh data");
+    return null;
+  } catch (error) {
+    console.error("Error reading from events cache:", error);
+    return null;
+  }
+}
+
+/**
+ * Store events data in cache
+ */
+export async function cacheEvents(
+  publicKey: string,
+  privateKey: string,
+  startDate: string,
+  endDate: string,
+  data: unknown[],
+): Promise<void> {
+  try {
+    const cacheKey = generateEventsCacheKey(publicKey, privateKey, startDate, endDate);
+    const cached: CachedMetrics = {
+      data,
+      timestamp: Date.now(),
+    };
+    await set(cacheKey, cached);
+    console.log("Events data cached successfully");
+  } catch (error) {
+    console.error("Error writing to events cache:", error);
   }
 }

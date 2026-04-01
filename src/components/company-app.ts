@@ -2,6 +2,7 @@ import { LitElement, html } from "lit";
 import type { CompanyConfig } from "../lib/company-store";
 import {
   buildMetricsUrl,
+  buildEventsUrl,
   createCompany,
   defaultCompanies,
   deleteCompany,
@@ -10,7 +11,7 @@ import {
   saveCompanies,
   upsertCompany,
 } from "../lib/company-store";
-import { cacheMetrics, getCachedMetrics } from "../lib/metrics-cache";
+import { cacheMetrics, getCachedMetrics, cacheEvents, getCachedEvents } from "../lib/metrics-cache";
 import "./company-dialog";
 import "./company-header";
 import "./company-summary";
@@ -30,6 +31,12 @@ type ConnectionResult = {
   headers?: Record<string, string>;
 };
 
+type ModelMetric = {
+  model: string;
+  totalLines: number;
+  creditsUsed: number;
+};
+
 export class CompanyApp extends LitElement {
   static properties = {
     companies: { attribute: false },
@@ -44,6 +51,7 @@ export class CompanyApp extends LitElement {
     selectedYear: { type: Number, attribute: false },
     selectedSpaceId: { attribute: false },
     isFetchingUncachedMetrics: { type: Boolean, attribute: false },
+    modelMetrics: { attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -58,6 +66,7 @@ export class CompanyApp extends LitElement {
   declare selectedYear: number;
   declare selectedSpaceId: string;
   declare isFetchingUncachedMetrics: boolean;
+  declare modelMetrics: ModelMetric[] | null;
 
   constructor() {
     super();
@@ -71,6 +80,7 @@ export class CompanyApp extends LitElement {
     this.metricsError = null;
     this.selectedSpaceId = "all";
     this.isFetchingUncachedMetrics = false;
+    this.modelMetrics = null;
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
@@ -88,6 +98,7 @@ export class CompanyApp extends LitElement {
   private async initializeApp() {
     await this.restoreCompanies();
     await this.fetchMetrics();
+    await this.fetchEventsData();
   }
 
   private get selectedCompany() {
@@ -138,6 +149,7 @@ export class CompanyApp extends LitElement {
     this.selectedMonth = event.detail.month;
     this.selectedYear = event.detail.year;
     void this.fetchMetrics();
+    void this.fetchEventsData();
   };
 
   private handleSpaceChange = (event: CustomEvent<{ spaceId: string }>) => {
@@ -303,6 +315,108 @@ export class CompanyApp extends LitElement {
 
     // Normalize spaces in all items (extract spaceIds from space objects)
     return this.normalizeSpaces(transformedData);
+  }
+
+  private async fetchEventsData() {
+    const company = this.selectedCompany;
+
+    if (!company.privateKey) {
+      console.log("Skipping events fetch - no private key");
+      this.modelMetrics = null;
+      return;
+    }
+
+    const { startDate, endDate } = this.getMetricsDateRange();
+
+    // Check cache first
+    const cachedEvents = await getCachedEvents(
+      company.publicKey,
+      company.privateKey,
+      startDate,
+      endDate,
+    );
+
+    let allEvents: any[] = [];
+
+    if (cachedEvents && Array.isArray(cachedEvents)) {
+      console.log("Using cached events data");
+      allEvents = cachedEvents;
+    } else {
+      // Fetch all events with pagination
+      let hasMore = true;
+      let page = 1;
+      const limit = 1000;
+
+      console.log("Fetching events data with pagination");
+
+      while (hasMore) {
+        try {
+          const url = buildEventsUrl(startDate, endDate, page, limit);
+          const headers = {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${company.privateKey}`,
+          };
+
+          const response = await fetch(url, {
+            method: "GET",
+            headers: headers,
+          });
+
+          if (!response.ok) {
+            console.error("Failed to fetch events, stopping pagination:", response.status);
+            break;
+          }
+
+          const data = await response.json();
+          const events = data.data || [];
+          allEvents = allEvents.concat(events);
+
+          const pagination = data.pagination || {};
+          hasMore = pagination.hasNext ?? false;
+          page += 1;
+
+          console.log(`Fetched page ${page - 1}, total events so far: ${allEvents.length}`);
+        } catch (error) {
+          console.error("Error fetching events page:", error);
+          break;
+        }
+      }
+
+      // Cache the events
+      if (allEvents.length > 0) {
+        await cacheEvents(company.publicKey, company.privateKey, startDate, endDate, allEvents);
+      }
+    }
+
+    // Aggregate models from events
+    const modelMap = new Map<
+      string,
+      {
+        model: string;
+        totalLines: number;
+        creditsUsed: number;
+      }
+    >();
+
+    allEvents.forEach((event: any) => {
+      const metadata = event.metadata;
+      if (metadata && metadata.model) {
+        const model = metadata.model;
+        if (!modelMap.has(model)) {
+          modelMap.set(model, {
+            model,
+            totalLines: 0,
+            creditsUsed: 0,
+          });
+        }
+        const modelData = modelMap.get(model)!;
+        modelData.totalLines += Number(metadata.linesOfCode) || 0;
+        modelData.creditsUsed += Number(metadata.creditsUsed) || 0;
+      }
+    });
+
+    this.modelMetrics = Array.from(modelMap.values()).sort((a, b) => b.creditsUsed - a.creditsUsed);
+    console.log("Aggregated model metrics:", this.modelMetrics);
   }
 
   private async fetchMetrics() {
@@ -521,6 +635,7 @@ export class CompanyApp extends LitElement {
         );
         const transformedData = this.transformMetricsData(data);
         this.metricsData = transformedData;
+        await this.fetchEventsData();
         setTimeout(() => this.closeDialog(), 1000);
       }
     } catch (error) {
@@ -572,6 +687,7 @@ export class CompanyApp extends LitElement {
           .selectedYear=${this.selectedYear}
           .spaces=${this.getUniqueSpaces()}
           .selectedSpaceId=${this.selectedSpaceId}
+          .modelMetrics=${this.modelMetrics}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}
         ></company-summary>
