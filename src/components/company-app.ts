@@ -77,7 +77,9 @@ export class CompanyApp extends LitElement {
   constructor() {
     super();
     this.companies = [...defaultCompanies];
-    this.selectedCompanyId = this.companies[0]?.id ?? defaultCompanies[0].id;
+    // Try to load saved company ID from localStorage, otherwise use first company
+    const savedCompanyId = this.getSelectedCompanyIdFromStorage();
+    this.selectedCompanyId = savedCompanyId || this.companies[0]?.id || defaultCompanies[0].id;
     this.dialogOpen = false;
     this.dialogCompany = null;
     this.connectionResult = null;
@@ -139,15 +141,39 @@ export class CompanyApp extends LitElement {
     const companies = await loadCompanies();
 
     this.companies = companies;
-    this.selectedCompanyId = getSelectedCompany(companies, this.selectedCompanyId).id;
+    // Load saved company ID from localStorage, or use first company in list
+    const savedCompanyId = this.getSelectedCompanyIdFromStorage();
+    const initialCompanyId = savedCompanyId || companies[0]?.id || defaultCompanies[0].id;
+
+    // Verify the selected company exists in the loaded companies list
+    this.selectedCompanyId = getSelectedCompany(companies, initialCompanyId).id;
+    this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
   }
 
   private async persistCompanies() {
     await saveCompanies(this.companies);
   }
 
+  private getSelectedCompanyIdFromStorage(): string | null {
+    try {
+      return window.localStorage.getItem("selectedCompanyId");
+    } catch (error) {
+      console.error("Error reading from localStorage:", error);
+      return null;
+    }
+  }
+
+  private saveSelectedCompanyIdToStorage(companyId: string): void {
+    try {
+      window.localStorage.setItem("selectedCompanyId", companyId);
+    } catch (error) {
+      console.error("Error writing to localStorage:", error);
+    }
+  }
+
   private handleCompanyChange = (event: CustomEvent<{ companyId: string }>) => {
     this.selectedCompanyId = event.detail.companyId;
+    this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
     void this.fetchMetrics();
     void this.fetchEventsData();
   };
@@ -594,6 +620,7 @@ export class CompanyApp extends LitElement {
 
     this.companies = upsertCompany(this.companies, updatedCompany);
     this.selectedCompanyId = updatedCompany.id;
+    this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
     await this.persistCompanies();
     this.metricsError = null;
     this.closeDialog();
@@ -604,6 +631,7 @@ export class CompanyApp extends LitElement {
 
     this.companies = upsertCompany(this.companies, updatedCompany);
     this.selectedCompanyId = updatedCompany.id;
+    this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
     await this.persistCompanies();
 
     if (!updatedCompany.privateKey) {
@@ -681,6 +709,7 @@ export class CompanyApp extends LitElement {
     // If the deleted company was selected, select another one
     if (this.selectedCompanyId === companyId) {
       this.selectedCompanyId = this.companies[0]?.id ?? defaultCompanies[0].id;
+      this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
     }
 
     this.closeDialog();
