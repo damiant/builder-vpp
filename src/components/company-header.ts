@@ -118,7 +118,7 @@ export class CompanyHeader extends LitElement {
               @click=${this.handleRefresh}
               title="Refresh data"
             >
-              <svg
+              <svg style="margin-left:-4px"
                 width="24"
                 height="24"
                 viewBox="0 0 20 20"
