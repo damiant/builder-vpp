@@ -606,11 +606,12 @@ export class CompanyApp extends LitElement {
     >();
 
     allEvents.forEach((event: any) => {
-      const metadata = event.metadata;
-      if (!metadata) return;
+      const metadata = event.metadata || {};
+      const creditsUsed = Number(metadata.creditsUsed ?? event.creditsUsed) || 0;
+      const totalLines = Number(metadata.linesOfCode ?? event.linesOfCode) || 0;
+      const model = metadata.model || event.model;
 
-      if (metadata.model) {
-        const model = metadata.model;
+      if (model) {
         if (!modelMap.has(model)) {
           modelMap.set(model, {
             model,
@@ -620,9 +621,9 @@ export class CompanyApp extends LitElement {
           });
         }
         const modelData = modelMap.get(model)!;
-        modelData.totalLines += Number(metadata.linesOfCode) || 0;
+        modelData.totalLines += totalLines;
         modelData.events += 1;
-        modelData.creditsUsed += Number(metadata.creditsUsed) || 0;
+        modelData.creditsUsed += creditsUsed;
       }
 
       const projectName = String(metadata.projectName || event.projectName || "Unknown");
@@ -634,13 +635,13 @@ export class CompanyApp extends LitElement {
         });
       }
       const projectData = projectMap.get(projectName)!;
-      projectData.totalLines += Number(metadata.linesOfCode) || 0;
-      projectData.creditsUsed += Number(metadata.creditsUsed) || 0;
+      projectData.totalLines += totalLines;
+      projectData.creditsUsed += creditsUsed;
 
       const userEmail = String(
         event.userEmail || metadata.userEmail || event.userId || metadata.userId || "Unknown",
       );
-      const modelName = String(metadata.model || "Unknown");
+      const modelName = String(model || "Unknown");
       if (!userModelMap.has(userEmail)) {
         userModelMap.set(userEmail, {
           userEmail,
@@ -649,7 +650,7 @@ export class CompanyApp extends LitElement {
         });
       }
       const userData = userModelMap.get(userEmail)!;
-      userData.totalCreditsUsed += Number(metadata.creditsUsed) || 0;
+      userData.totalCreditsUsed += creditsUsed;
 
       if (!userData.models.has(modelName)) {
         userData.models.set(modelName, {
@@ -660,9 +661,9 @@ export class CompanyApp extends LitElement {
         });
       }
       const userModelData = userData.models.get(modelName)!;
-      userModelData.totalLines += Number(metadata.linesOfCode) || 0;
+      userModelData.totalLines += totalLines;
       userModelData.events += 1;
-      userModelData.creditsUsed += Number(metadata.creditsUsed) || 0;
+      userModelData.creditsUsed += creditsUsed;
     });
 
     this.modelMetrics = Array.from(modelMap.values()).sort((a, b) => b.creditsUsed - a.creditsUsed);
