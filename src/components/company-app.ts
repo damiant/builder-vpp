@@ -251,7 +251,7 @@ export class CompanyApp extends LitElement {
             autoPaging: "text",
             html2canvas: {
               backgroundColor: "#ffffff",
-              scale: 1,
+              scale: 0.5,
               useCORS: true,
               scrollX: 0,
               scrollY: 0,
