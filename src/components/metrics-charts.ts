@@ -34,6 +34,7 @@ export class MetricsCharts extends LitElement {
     usersData: { attribute: false },
     modelMetrics: { attribute: false },
     projectMetrics: { attribute: false },
+    userModelMetrics: { attribute: false },
   };
 
   declare data: MetricsData | null;
@@ -53,6 +54,16 @@ export class MetricsCharts extends LitElement {
     totalLines: number;
     creditsUsed: number;
   }> | null;
+  declare userModelMetrics: Array<{
+    userEmail: string;
+    totalCreditsUsed: number;
+    models: Array<{
+      model: string;
+      totalLines: number;
+      events: number;
+      creditsUsed: number;
+    }>;
+  }> | null;
 
   private charts: Map<string, Chart<any>> = new Map();
 
@@ -66,6 +77,7 @@ export class MetricsCharts extends LitElement {
     this.usersData = null;
     this.modelMetrics = null;
     this.projectMetrics = null;
+    this.userModelMetrics = null;
   }
 
   createRenderRoot() {
@@ -365,6 +377,7 @@ export class MetricsCharts extends LitElement {
     const shouldShowSpacesTable = this.selectedSpaceId === "all" && spaceMetrics.length > 0;
     const shouldShowModelsTable = this.modelMetrics && this.modelMetrics.length > 0;
     const shouldShowProjectsTable = this.projectMetrics && this.projectMetrics.length > 0;
+    const shouldShowUserModelBreakdown = this.userModelMetrics && this.userModelMetrics.length > 0;
 
     return html`
       <div class="mt-8 space-y-6">
@@ -743,6 +756,120 @@ export class MetricsCharts extends LitElement {
                     </tbody>
                   </table>
                 </div>
+              </div>
+            `
+          : ""}
+        ${shouldShowUserModelBreakdown
+          ? html`
+              <div>
+                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  User-Level Model Usage Breakdown
+                </h3>
+              </div>
+
+              <div class="space-y-4">
+                ${this.userModelMetrics!.map((user) => {
+                  const maxCredits = Math.max(...user.models.map((model) => model.creditsUsed), 1);
+
+                  return html`
+                    <div
+                      class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                    >
+                      <div class="border-b border-[var(--color-border-subtle)] px-4 pb-3">
+                        <h4 class="text-base font-semibold text-[var(--color-text-primary)]">
+                          ${user.userEmail}
+                        </h4>
+                      </div>
+                      <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                          <thead>
+                            <tr class="border-b border-[var(--color-border-subtle)]">
+                              <th
+                                class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                              >
+                                Model
+                              </th>
+                              <th
+                                class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                              >
+                                Total Lines
+                              </th>
+                              <th
+                                class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                              >
+                                Events
+                              </th>
+                              <th
+                                class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                              >
+                                Credits Per Event
+                              </th>
+                              <th
+                                class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                              >
+                                Credits Used
+                              </th>
+                              <th
+                                class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                              >
+                                Credit Distribution
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            ${user.models.map((model) => {
+                              const creditPercentage = (model.creditsUsed / maxCredits) * 100;
+                              const creditsPerEvent =
+                                model.events > 0 ? model.creditsUsed / model.events : 0;
+
+                              return html`
+                                <tr
+                                  class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                                >
+                                  <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                                    ${model.model}
+                                  </td>
+                                  <td
+                                    class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                  >
+                                    ${model.totalLines.toLocaleString()}
+                                  </td>
+                                  <td
+                                    class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                  >
+                                    ${model.events.toLocaleString()}
+                                  </td>
+                                  <td
+                                    class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                  >
+                                    ${creditsPerEvent.toFixed(2)}
+                                  </td>
+                                  <td
+                                    class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                  >
+                                    ${Math.round(model.creditsUsed).toLocaleString()}
+                                  </td>
+                                  <td class="px-4 py-3">
+                                    <div class="w-full max-w-xs">
+                                      <div
+                                        class="h-6 rounded-full bg-[var(--color-border-subtle)] p-0.5"
+                                      >
+                                        <div
+                                          class="h-full rounded-full bg-[#10b981] transition-all duration-300"
+                                          style="width: ${creditPercentage}%"
+                                        ></div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              `;
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  `;
+                })}
               </div>
             `
           : ""}

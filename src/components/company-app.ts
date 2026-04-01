@@ -52,6 +52,17 @@ type ProjectMetric = {
   creditsUsed: number;
 };
 
+type UserModelMetric = {
+  userEmail: string;
+  totalCreditsUsed: number;
+  models: Array<{
+    model: string;
+    totalLines: number;
+    events: number;
+    creditsUsed: number;
+  }>;
+};
+
 export class CompanyApp extends LitElement {
   static properties = {
     companies: { attribute: false },
@@ -70,6 +81,7 @@ export class CompanyApp extends LitElement {
     isExportingPng: { type: Boolean, attribute: false },
     modelMetrics: { attribute: false },
     projectMetrics: { attribute: false },
+    userModelMetrics: { attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -88,6 +100,7 @@ export class CompanyApp extends LitElement {
   declare isExportingPng: boolean;
   declare modelMetrics: ModelMetric[] | null;
   declare projectMetrics: ProjectMetric[] | null;
+  declare userModelMetrics: UserModelMetric[] | null;
 
   constructor() {
     super();
@@ -107,6 +120,7 @@ export class CompanyApp extends LitElement {
     this.isExportingPng = false;
     this.modelMetrics = null;
     this.projectMetrics = null;
+    this.userModelMetrics = null;
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
@@ -482,6 +496,7 @@ export class CompanyApp extends LitElement {
       console.log("Skipping events fetch - no private key");
       this.modelMetrics = null;
       this.projectMetrics = null;
+      this.userModelMetrics = null;
       return;
     }
 
@@ -573,6 +588,22 @@ export class CompanyApp extends LitElement {
         creditsUsed: number;
       }
     >();
+    const userModelMap = new Map<
+      string,
+      {
+        userEmail: string;
+        totalCreditsUsed: number;
+        models: Map<
+          string,
+          {
+            model: string;
+            totalLines: number;
+            events: number;
+            creditsUsed: number;
+          }
+        >;
+      }
+    >();
 
     allEvents.forEach((event: any) => {
       const metadata = event.metadata;
@@ -605,14 +636,49 @@ export class CompanyApp extends LitElement {
       const projectData = projectMap.get(projectName)!;
       projectData.totalLines += Number(metadata.linesOfCode) || 0;
       projectData.creditsUsed += Number(metadata.creditsUsed) || 0;
+
+      const userEmail = String(
+        event.userEmail || metadata.userEmail || event.userId || metadata.userId || "Unknown",
+      );
+      const modelName = String(metadata.model || "Unknown");
+      if (!userModelMap.has(userEmail)) {
+        userModelMap.set(userEmail, {
+          userEmail,
+          totalCreditsUsed: 0,
+          models: new Map(),
+        });
+      }
+      const userData = userModelMap.get(userEmail)!;
+      userData.totalCreditsUsed += Number(metadata.creditsUsed) || 0;
+
+      if (!userData.models.has(modelName)) {
+        userData.models.set(modelName, {
+          model: modelName,
+          totalLines: 0,
+          events: 0,
+          creditsUsed: 0,
+        });
+      }
+      const userModelData = userData.models.get(modelName)!;
+      userModelData.totalLines += Number(metadata.linesOfCode) || 0;
+      userModelData.events += 1;
+      userModelData.creditsUsed += Number(metadata.creditsUsed) || 0;
     });
 
     this.modelMetrics = Array.from(modelMap.values()).sort((a, b) => b.creditsUsed - a.creditsUsed);
     this.projectMetrics = Array.from(projectMap.values()).sort(
       (a, b) => b.creditsUsed - a.creditsUsed,
     );
+    this.userModelMetrics = Array.from(userModelMap.values())
+      .map((user) => ({
+        userEmail: user.userEmail,
+        totalCreditsUsed: user.totalCreditsUsed,
+        models: Array.from(user.models.values()).sort((a, b) => b.creditsUsed - a.creditsUsed),
+      }))
+      .sort((a, b) => b.totalCreditsUsed - a.totalCreditsUsed);
     console.log("Aggregated model metrics:", this.modelMetrics);
     console.log("Aggregated project metrics:", this.projectMetrics);
+    console.log("Aggregated user model metrics:", this.userModelMetrics);
   }
 
   private async fetchMetrics() {
@@ -893,6 +959,7 @@ export class CompanyApp extends LitElement {
           .selectedSpaceId=${this.selectedSpaceId}
           .modelMetrics=${this.modelMetrics}
           .projectMetrics=${this.projectMetrics}
+          .userModelMetrics=${this.userModelMetrics}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}
         ></company-summary>

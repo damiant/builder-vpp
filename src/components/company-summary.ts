@@ -16,6 +16,7 @@ export class CompanySummary extends LitElement {
     selectedSpaceId: { attribute: false },
     modelMetrics: { attribute: false },
     projectMetrics: { attribute: false },
+    userModelMetrics: { attribute: false },
   };
 
   declare company: CompanyConfig | null;
@@ -36,6 +37,16 @@ export class CompanySummary extends LitElement {
     totalLines: number;
     creditsUsed: number;
   }> | null;
+  declare userModelMetrics: Array<{
+    userEmail: string;
+    totalCreditsUsed: number;
+    models: Array<{
+      model: string;
+      totalLines: number;
+      events: number;
+      creditsUsed: number;
+    }>;
+  }> | null;
 
   constructor() {
     super();
@@ -46,6 +57,7 @@ export class CompanySummary extends LitElement {
     this.selectedSpaceId = "all";
     this.modelMetrics = null;
     this.projectMetrics = null;
+    this.userModelMetrics = null;
   }
 
   createRenderRoot() {
@@ -97,6 +109,7 @@ export class CompanySummary extends LitElement {
                   .selectedYear=${this.selectedYear}
                   .modelMetrics=${this.modelMetrics}
                   .projectMetrics=${this.projectMetrics}
+                  .userModelMetrics=${this.userModelMetrics}
                 ></metrics-charts>
               </section>
             `
