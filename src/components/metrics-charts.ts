@@ -16,6 +16,7 @@ type MetricsItem = {
   users: number;
   spaceIds: string[];
   spaces: Array<{ id: string; name: string }>;
+  models?: Array<{ model: string; tokensUsed: number; creditsUsed: number; linesOfCode: number }>;
 };
 
 type MetricsData = {
@@ -247,6 +248,44 @@ export class MetricsCharts extends LitElement {
     return Array.from(spaceMap.values()).sort((a, b) => b.creditsUsed - a.creditsUsed);
   }
 
+  private getModelMetrics(): Array<{
+    model: string;
+    totalLines: number;
+    creditsUsed: number;
+  }> {
+    if (!this.data) return [];
+
+    const modelMap = new Map<
+      string,
+      {
+        model: string;
+        totalLines: number;
+        creditsUsed: number;
+      }
+    >();
+
+    this.data.forEach((item) => {
+      const rawModels = item.metrics.models || [];
+      rawModels.forEach(
+        (modelData: { model: string; linesOfCode?: number; creditsUsed?: number }) => {
+          const model = modelData.model;
+          if (!modelMap.has(model)) {
+            modelMap.set(model, {
+              model,
+              totalLines: 0,
+              creditsUsed: 0,
+            });
+          }
+          const data = modelMap.get(model)!;
+          data.totalLines += modelData.linesOfCode || 0;
+          data.creditsUsed += modelData.creditsUsed || 0;
+        },
+      );
+    });
+
+    return Array.from(modelMap.values()).sort((a, b) => b.creditsUsed - a.creditsUsed);
+  }
+
   private formatDateLabel(dateString: string): string {
     try {
       const date = new Date(dateString);
@@ -333,7 +372,9 @@ export class MetricsCharts extends LitElement {
     }
 
     const spaceMetrics = this.getSpaceMetrics();
+    const modelMetrics = this.getModelMetrics();
     const shouldShowSpacesTable = this.selectedSpaceId === "all" && spaceMetrics.length > 0;
+    const shouldShowModelsTable = modelMetrics.length > 0;
 
     return html`
       <div class="mt-8 space-y-6">
@@ -439,6 +480,80 @@ export class MetricsCharts extends LitElement {
                           </tr>
                         `,
                       )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `
+          : ""}
+        ${shouldShowModelsTable
+          ? html`
+              <div>
+                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  Models Summary
+                </h3>
+              </div>
+
+              <div
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-[var(--color-border-subtle)]">
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Model
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Total Lines
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Used
+                        </th>
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credit Distribution
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${modelMetrics.map((model) => {
+                        const maxCredits = Math.max(...modelMetrics.map((m) => m.creditsUsed), 1);
+                        const creditPercentage = (model.creditsUsed / maxCredits) * 100;
+
+                        return html`
+                          <tr
+                            class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                          >
+                            <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                              ${model.model}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${model.totalLines.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${model.creditsUsed.toFixed(3)}
+                            </td>
+                            <td class="px-4 py-3">
+                              <div class="w-full max-w-xs">
+                                <div class="rounded-full bg-[var(--color-border-subtle)] p-0.5 h-6">
+                                  <div
+                                    class="h-full rounded-full bg-[#10b981] transition-all duration-300"
+                                    style="width: ${creditPercentage}%"
+                                  ></div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        `;
+                      })}
                     </tbody>
                   </table>
                 </div>

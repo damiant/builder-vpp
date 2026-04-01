@@ -226,10 +226,28 @@ export class CompanyApp extends LitElement {
           );
       }
 
+      // Extract and normalize models from metadata
+      let models: Array<{
+        model: string;
+        tokensUsed: number;
+        creditsUsed: number;
+        linesOfCode: number;
+      }> = [];
+
       const toNumber = (val: any): number => {
         const num = Number(val);
         return isNaN(num) ? 0 : num;
       };
+
+      // Check if there's metadata with model information
+      if (metrics.metadata && metrics.metadata.model) {
+        models.push({
+          model: metrics.metadata.model,
+          tokensUsed: toNumber(metrics.metadata.tokensUsed),
+          creditsUsed: toNumber(metrics.metadata.creditsUsed),
+          linesOfCode: toNumber(metrics.metadata.linesOfCode),
+        });
+      }
 
       return {
         period: item.period || item.date || "",
@@ -244,6 +262,7 @@ export class CompanyApp extends LitElement {
           users: toNumber(metrics.users),
           spaceIds: spaceIds,
           spaces: spaces,
+          models: models,
         },
       };
     });
@@ -277,6 +296,7 @@ export class CompanyApp extends LitElement {
           events: toNumber(metrics.events),
           users: toNumber(metrics.users),
           spaces: metrics.spaces || [],
+          metadata: metrics.metadata || {},
         },
       };
     });
