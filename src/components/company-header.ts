@@ -114,14 +114,14 @@ export class CompanyHeader extends LitElement {
             </button>
             <button
               type="button" 
-              class="rounded-[var(--radius-sm)] m-4 text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+              class="rounded-[var(--radius-sm)] p-4 text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
               @click=${this.handleRefresh}
               title="Refresh data"
             >
               <svg
                 width="24"
                 height="24"
-                viewBox="0 0 20 20"
+                viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
