@@ -77,6 +77,9 @@ export class CompanyApp extends LitElement {
     selectedYear: { type: Number, attribute: false },
     selectedSpaceId: { attribute: false },
     isFetchingUncachedMetrics: { type: Boolean, attribute: false },
+    isFetchingEventPages: { type: Boolean, attribute: false },
+    currentEventPage: { type: Number, attribute: false },
+    totalEventPages: { type: Number, attribute: false },
     isExportingPdf: { type: Boolean, attribute: false },
     isExportingPng: { type: Boolean, attribute: false },
     modelMetrics: { attribute: false },
@@ -96,6 +99,9 @@ export class CompanyApp extends LitElement {
   declare selectedYear: number;
   declare selectedSpaceId: string;
   declare isFetchingUncachedMetrics: boolean;
+  declare isFetchingEventPages: boolean;
+  declare currentEventPage: number;
+  declare totalEventPages: number;
   declare isExportingPdf: boolean;
   declare isExportingPng: boolean;
   declare modelMetrics: ModelMetric[] | null;
@@ -116,6 +122,9 @@ export class CompanyApp extends LitElement {
     this.metricsError = null;
     this.selectedSpaceId = "all";
     this.isFetchingUncachedMetrics = false;
+    this.isFetchingEventPages = false;
+    this.currentEventPage = 1;
+    this.totalEventPages = 1;
     this.isExportingPdf = false;
     this.isExportingPng = false;
     this.modelMetrics = null;
@@ -494,6 +503,9 @@ export class CompanyApp extends LitElement {
 
     if (!company.privateKey) {
       console.log("Skipping events fetch - no private key");
+      this.isFetchingEventPages = false;
+      this.currentEventPage = 1;
+      this.totalEventPages = 1;
       this.modelMetrics = null;
       this.projectMetrics = null;
       this.userModelMetrics = null;
@@ -522,9 +534,13 @@ export class CompanyApp extends LitElement {
       const limit = 1000;
 
       console.log("Fetching events data with pagination");
+      this.isFetchingEventPages = true;
+      this.currentEventPage = 1;
+      this.totalEventPages = 1;
 
       while (hasMore) {
         try {
+          this.currentEventPage = page;
           const url = buildEventsUrl(startDate, endDate, page, limit);
           const headers = {
             "Content-Type": "application/json",
@@ -546,7 +562,8 @@ export class CompanyApp extends LitElement {
           allEvents = allEvents.concat(events);
 
           const pagination = data.pagination || {};
-          hasMore = pagination.hasNext ?? false;
+          this.totalEventPages = Number(pagination.totalPages) || page;
+          hasMore = pagination.hasNext ?? page < this.totalEventPages;
           page += 1;
 
           console.log(`Fetched page ${page - 1}, total events so far: ${allEvents.length}`);
@@ -555,6 +572,10 @@ export class CompanyApp extends LitElement {
           break;
         }
       }
+
+      this.isFetchingEventPages = false;
+      this.currentEventPage = 1;
+      this.totalEventPages = 1;
 
       if (allEvents.length === 0) {
         console.warn("No events found for the selected date range");
@@ -970,7 +991,7 @@ export class CompanyApp extends LitElement {
           @delete-company=${this.removeCompany}
         ></company-dialog>
 
-        ${this.isFetchingUncachedMetrics
+        ${this.isFetchingUncachedMetrics || this.isFetchingEventPages
           ? html`
               <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
                 <div
@@ -980,7 +1001,9 @@ export class CompanyApp extends LitElement {
                     class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-border-subtle)] border-t-[var(--color-brand)]"
                   ></div>
                   <p class="text-sm font-medium text-[var(--color-text-secondary)]">
-                    Loading metrics...
+                    ${this.isFetchingEventPages
+                      ? `reading page ${this.currentEventPage} of ${this.totalEventPages}`
+                      : "Loading metrics..."}
                   </p>
                 </div>
               </div>
