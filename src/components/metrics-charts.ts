@@ -761,116 +761,130 @@ export class MetricsCharts extends LitElement {
           : ""}
         ${shouldShowUserModelBreakdown
           ? html`
-              <div>
-                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
-                  User-Level Model Usage Breakdown
-                </h3>
-              </div>
-
-              <div class="space-y-4">
-                ${this.userModelMetrics!.map((user) => {
-                  const maxCredits = Math.max(...user.models.map((model) => model.creditsUsed), 1);
-
-                  return html`
-                    <div
-                      class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              <details
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <summary class="cursor-pointer list-none">
+                  <div class="flex items-center justify-between gap-4">
+                    <h3
+                      class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]"
                     >
-                      <div class="border-b border-[var(--color-border-subtle)] px-4 pb-3">
-                        <h4 class="text-base font-semibold text-[var(--color-text-primary)]">
-                          ${user.userEmail}
-                        </h4>
-                      </div>
-                      <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
-                          <thead>
-                            <tr class="border-b border-[var(--color-border-subtle)]">
-                              <th
-                                class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
-                              >
-                                Model
-                              </th>
-                              <th
-                                class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
-                              >
-                                Total Lines
-                              </th>
-                              <th
-                                class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
-                              >
-                                Events
-                              </th>
-                              <th
-                                class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
-                              >
-                                Credits Per Event
-                              </th>
-                              <th
-                                class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
-                              >
-                                Credits Used
-                              </th>
-                              <th
-                                class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
-                              >
-                                Credit Distribution
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            ${user.models.map((model) => {
-                              const creditPercentage = (model.creditsUsed / maxCredits) * 100;
-                              const creditsPerEvent =
-                                model.events > 0 ? model.creditsUsed / model.events : 0;
+                      User-Level Model Usage Breakdown
+                    </h3>
+                    <span class="text-sm font-medium text-[var(--color-text-secondary)]">
+                      Expand
+                    </span>
+                  </div>
+                </summary>
 
-                              return html`
-                                <tr
-                                  class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                <div class="mt-4 space-y-4">
+                  ${this.userModelMetrics!.map((user) => {
+                    const maxCredits = Math.max(
+                      ...user.models.map((model) => model.creditsUsed),
+                      1,
+                    );
+
+                    return html`
+                      <div
+                        class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-4"
+                      >
+                        <div class="border-b border-[var(--color-border-subtle)] px-4 pb-3">
+                          <h4 class="text-base font-semibold text-[var(--color-text-primary)]">
+                            ${user.userEmail}
+                          </h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                          <table class="w-full text-sm">
+                            <thead>
+                              <tr class="border-b border-[var(--color-border-subtle)]">
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
                                 >
-                                  <td class="px-4 py-3 text-[var(--color-text-primary)]">
-                                    ${model.model}
-                                  </td>
-                                  <td
-                                    class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                  Model
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Total Lines
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Events
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Credits Per Event
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Credits Used
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Credit Distribution
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              ${user.models.map((model) => {
+                                const creditPercentage = (model.creditsUsed / maxCredits) * 100;
+                                const creditsPerEvent =
+                                  model.events > 0 ? model.creditsUsed / model.events : 0;
+
+                                return html`
+                                  <tr
+                                    class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-elevated)]"
                                   >
-                                    ${model.totalLines.toLocaleString()}
-                                  </td>
-                                  <td
-                                    class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
-                                  >
-                                    ${model.events.toLocaleString()}
-                                  </td>
-                                  <td
-                                    class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
-                                  >
-                                    ${creditsPerEvent.toFixed(2)}
-                                  </td>
-                                  <td
-                                    class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
-                                  >
-                                    ${Math.round(model.creditsUsed).toLocaleString()}
-                                  </td>
-                                  <td class="px-4 py-3">
-                                    <div class="w-full max-w-xs">
-                                      <div
-                                        class="h-6 rounded-full bg-[var(--color-border-subtle)] p-0.5"
-                                      >
+                                    <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                                      ${model.model}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      ${model.totalLines.toLocaleString()}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      ${model.events.toLocaleString()}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      ${creditsPerEvent.toFixed(2)}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      ${Math.round(model.creditsUsed).toLocaleString()}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                      <div class="w-full max-w-xs">
                                         <div
-                                          class="h-full rounded-full bg-[#10b981] transition-all duration-300"
-                                          style="width: ${creditPercentage}%"
-                                        ></div>
+                                          class="h-6 rounded-full bg-[var(--color-border-subtle)] p-0.5"
+                                        >
+                                          <div
+                                            class="h-full rounded-full bg-[#10b981] transition-all duration-300"
+                                            style="width: ${creditPercentage}%"
+                                          ></div>
+                                        </div>
                                       </div>
-                                    </div>
-                                  </td>
-                                </tr>
-                              `;
-                            })}
-                          </tbody>
-                        </table>
+                                    </td>
+                                  </tr>
+                                `;
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
-                    </div>
-                  `;
-                })}
-              </div>
+                    `;
+                  })}
+                </div>
+              </details>
             `
           : ""}
       </div>
