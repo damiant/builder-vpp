@@ -40,6 +40,10 @@ export class CompanyHeader extends LitElement {
     this.dispatchEvent(new CustomEvent("edit-company", { bubbles: true, composed: true }));
   };
 
+  private handleRefresh = () => {
+    this.dispatchEvent(new CustomEvent("refresh-data", { bubbles: true, composed: true }));
+  };
+
   render() {
     return html`
       <header
@@ -84,6 +88,26 @@ export class CompanyHeader extends LitElement {
               @click=${this.addCompany}
             >
               Add
+            </button>
+            <button
+              type="button"
+              class="rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] p-2 text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+              @click=${this.handleRefresh}
+              title="Refresh data"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 20 20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1 2.12-9.36L23 10"></path>
+              </svg>
             </button>
           </div>
         </div>

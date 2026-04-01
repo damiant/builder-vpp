@@ -11,7 +11,13 @@ import {
   saveCompanies,
   upsertCompany,
 } from "../lib/company-store";
-import { cacheMetrics, getCachedMetrics, cacheEvents, getCachedEvents } from "../lib/metrics-cache";
+import {
+  cacheMetrics,
+  getCachedMetrics,
+  cacheEvents,
+  getCachedEvents,
+  clearAllCaches,
+} from "../lib/metrics-cache";
 import "./company-dialog";
 import "./company-header";
 import "./company-summary";
@@ -154,6 +160,13 @@ export class CompanyApp extends LitElement {
 
   private handleSpaceChange = (event: CustomEvent<{ spaceId: string }>) => {
     this.selectedSpaceId = event.detail.spaceId;
+  };
+
+  private handleRefresh = async () => {
+    console.log("Clearing caches and refreshing data...");
+    await clearAllCaches();
+    void this.fetchMetrics();
+    void this.fetchEventsData();
   };
 
   private getUniqueSpaces(): Array<{ id: string; name: string }> {
@@ -677,6 +690,7 @@ export class CompanyApp extends LitElement {
           @company-change=${this.handleCompanyChange}
           @add-company=${this.addCompany}
           @edit-company=${this.openDialog}
+          @refresh-data=${this.handleRefresh}
         ></company-header>
 
         <company-summary

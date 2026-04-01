@@ -237,3 +237,59 @@ export async function cacheEvents(
     console.error("Error writing to events cache:", error);
   }
 }
+
+/**
+ * Clear all cached data
+ */
+export async function clearAllCaches(): Promise<void> {
+  try {
+    // Get all keys from IndexedDB
+    const allKeys = await globalThis.indexedDB
+      .databases()
+      .then(() => {
+        // Use idb-keyval to clear all stored data
+        const dbRequest = globalThis.indexedDB.open("keyval-store", 1);
+        return new Promise<string[]>((resolve) => {
+          dbRequest.onsuccess = () => {
+            const db = dbRequest.result;
+            const store = db.transaction("keyval", "readonly").objectStore("keyval");
+            const keysRequest = store.getAllKeys();
+            keysRequest.onsuccess = () => {
+              resolve((keysRequest.result as string[]) || []);
+            };
+            keysRequest.onerror = () => {
+              resolve([]);
+            };
+          };
+          dbRequest.onerror = () => {
+            resolve([]);
+          };
+        });
+      })
+      .catch(() => []);
+
+    // Delete all keys
+    if (allKeys && Array.isArray(allKeys)) {
+      const deletePromises = allKeys.map((key) => {
+        return new Promise<void>((resolve) => {
+          const dbRequest = globalThis.indexedDB.open("keyval-store", 1);
+          dbRequest.onsuccess = () => {
+            const db = dbRequest.result;
+            const deleteReq = db
+              .transaction("keyval", "readwrite")
+              .objectStore("keyval")
+              .delete(key);
+            deleteReq.onerror = () => resolve();
+            deleteReq.onsuccess = () => resolve();
+          };
+          dbRequest.onerror = () => resolve();
+        });
+      });
+      await Promise.all(deletePromises);
+    }
+
+    console.log("All caches cleared successfully");
+  } catch (error) {
+    console.error("Error clearing caches:", error);
+  }
+}
