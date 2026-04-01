@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
     "chart.js": "^4.5.1",
+    "html-to-image": "^1.11.13",
     "idb-keyval": "^6.2.2",
     "jspdf": "^4.2.1",
     "lit": "^3.3.2",

@@ -1,4 +1,5 @@
 import { LitElement, html } from "lit";
+import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
 import type { CompanyConfig } from "../lib/company-store";
 import {
@@ -66,6 +67,7 @@ export class CompanyApp extends LitElement {
     selectedSpaceId: { attribute: false },
     isFetchingUncachedMetrics: { type: Boolean, attribute: false },
     isExportingPdf: { type: Boolean, attribute: false },
+    isExportingPng: { type: Boolean, attribute: false },
     modelMetrics: { attribute: false },
     projectMetrics: { attribute: false },
   };
@@ -83,6 +85,7 @@ export class CompanyApp extends LitElement {
   declare selectedSpaceId: string;
   declare isFetchingUncachedMetrics: boolean;
   declare isExportingPdf: boolean;
+  declare isExportingPng: boolean;
   declare modelMetrics: ModelMetric[] | null;
   declare projectMetrics: ProjectMetric[] | null;
 
@@ -101,6 +104,7 @@ export class CompanyApp extends LitElement {
     this.selectedSpaceId = "all";
     this.isFetchingUncachedMetrics = false;
     this.isExportingPdf = false;
+    this.isExportingPng = false;
     this.modelMetrics = null;
     this.projectMetrics = null;
     const today = new Date();
@@ -211,7 +215,7 @@ export class CompanyApp extends LitElement {
   };
 
   private handleExportPdf = async () => {
-    if (this.isExportingPdf) return;
+    if (this.isExportingPdf || this.isExportingPng) return;
 
     const exportRoot = this.querySelector<HTMLElement>("company-summary main");
     if (!exportRoot) {
@@ -269,6 +273,44 @@ export class CompanyApp extends LitElement {
     } finally {
       window.scrollTo(previousScrollX, previousScrollY);
       this.isExportingPdf = false;
+    }
+  };
+
+  private handleExportPng = async () => {
+    if (this.isExportingPng || this.isExportingPdf) return;
+
+    const exportRoot = this.querySelector<HTMLElement>("company-summary main");
+    if (!exportRoot) {
+      console.error("Unable to find page content for PNG export");
+      return;
+    }
+
+    this.isExportingPng = true;
+
+    try {
+      await this.updateComplete;
+      await customElements.whenDefined("company-summary");
+      await document.fonts.ready;
+
+      const companyName = this.selectedCompany.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const month = String(this.selectedMonth + 1).padStart(2, "0");
+      const filename = `fusion-metrics-${companyName}-${this.selectedYear}-${month}.png`;
+      const contentWidth = Math.max(exportRoot.scrollWidth, exportRoot.clientWidth);
+      const dataUrl = await toPng(exportRoot, {
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+        pixelRatio: 2,
+        canvasWidth: contentWidth,
+        width: contentWidth,
+      });
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = dataUrl;
+      link.click();
+    } catch (error) {
+      console.error("Error exporting PNG:", error);
+    } finally {
+      this.isExportingPng = false;
     }
   };
 
@@ -832,9 +874,11 @@ export class CompanyApp extends LitElement {
           .companies=${this.companies}
           .selectedCompanyId=${this.selectedCompanyId}
           .isExportingPdf=${this.isExportingPdf}
+          .isExportingPng=${this.isExportingPng}
           @company-change=${this.handleCompanyChange}
           @add-company=${this.addCompany}
           @edit-company=${this.openDialog}
+          @export-png=${this.handleExportPng}
           @export-pdf=${this.handleExportPdf}
           @refresh-data=${this.handleRefresh}
         ></company-header>
