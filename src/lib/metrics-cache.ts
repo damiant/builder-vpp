@@ -239,7 +239,7 @@ export async function cacheEvents(
 }
 
 /**
- * Clear all cached data
+ * Clear API call caches (metrics, events, users) but preserve company list
  */
 export async function clearAllCaches(): Promise<void> {
   try {
@@ -268,27 +268,30 @@ export async function clearAllCaches(): Promise<void> {
       })
       .catch(() => []);
 
-    // Delete all keys
+    // Delete only cache keys (metrics, events, users), preserve company list
+    const cacheKeyPrefixes = [CACHE_PREFIX, EVENTS_CACHE_PREFIX, USERS_CACHE_PREFIX];
     if (allKeys && Array.isArray(allKeys)) {
-      const deletePromises = allKeys.map((key) => {
-        return new Promise<void>((resolve) => {
-          const dbRequest = globalThis.indexedDB.open("keyval-store", 1);
-          dbRequest.onsuccess = () => {
-            const db = dbRequest.result;
-            const deleteReq = db
-              .transaction("keyval", "readwrite")
-              .objectStore("keyval")
-              .delete(key);
-            deleteReq.onerror = () => resolve();
-            deleteReq.onsuccess = () => resolve();
-          };
-          dbRequest.onerror = () => resolve();
+      const deletePromises = allKeys
+        .filter((key: string) => cacheKeyPrefixes.some((prefix) => key.startsWith(prefix)))
+        .map((key) => {
+          return new Promise<void>((resolve) => {
+            const dbRequest = globalThis.indexedDB.open("keyval-store", 1);
+            dbRequest.onsuccess = () => {
+              const db = dbRequest.result;
+              const deleteReq = db
+                .transaction("keyval", "readwrite")
+                .objectStore("keyval")
+                .delete(key);
+              deleteReq.onerror = () => resolve();
+              deleteReq.onsuccess = () => resolve();
+            };
+            dbRequest.onerror = () => resolve();
+          });
         });
-      });
       await Promise.all(deletePromises);
     }
 
-    console.log("All caches cleared successfully");
+    console.log("API caches cleared successfully (company list preserved)");
   } catch (error) {
     console.error("Error clearing caches:", error);
   }
