@@ -91,7 +91,7 @@ export class CompanyHeader extends LitElement {
             </button>
             <button
               type="button"
-              class="rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] p-2 text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+              class="rounded-[var(--radius-sm)] p-2 text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
               @click=${this.handleRefresh}
               title="Refresh data"
             >
