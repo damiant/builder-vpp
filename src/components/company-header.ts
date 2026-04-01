@@ -24,10 +24,16 @@ export class CompanyHeader extends LitElement {
   protected updated(changedProperties: PropertyValues<this>) {
     // Sync select element value when selectedCompanyId changes
     if (changedProperties.has("selectedCompanyId")) {
-      const selectElement = this.querySelector<HTMLSelectElement>("#company-select");
-      if (selectElement) {
-        selectElement.value = this.selectedCompanyId;
-      }
+      void this.updateComplete.then(() => {
+        const selectElement = this.querySelector<HTMLSelectElement>("#company-select");
+        if (selectElement && selectElement.value !== this.selectedCompanyId) {
+          selectElement.value = this.selectedCompanyId;
+          console.log(
+            `Synced select value to ${this.selectedCompanyId}, select value is now:`,
+            selectElement.value,
+          );
+        }
+      });
     }
   }
 
@@ -79,7 +85,13 @@ export class CompanyHeader extends LitElement {
                 class="rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text-primary)] transition hover:border-[var(--color-border-strong)]"
               >
                 ${this.companies.map(
-                  (company) => html`<option value=${company.id}>${company.name}</option>`,
+                  (company) =>
+                    html`<option
+                      value=${company.id}
+                      ?selected=${company.id === this.selectedCompanyId}
+                    >
+                      ${company.name}
+                    </option>`,
                 )}
               </select>
             </div>
