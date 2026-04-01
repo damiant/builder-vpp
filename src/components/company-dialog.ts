@@ -223,23 +223,16 @@ export class CompanyDialog extends LitElement {
               <button
                 type="button"
                 class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
-                @click=${this.closeDialog}
+                @click=${this.connectCompany}
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
-                @click=${this.saveCompany}
-              >
-                Save
+                Connect
               </button>
               <button
                 type="button"
                 class="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-inverse)] transition hover:bg-[var(--color-brand-strong)]"
-                @click=${this.connectCompany}
+                @click=${this.saveCompany}
               >
-                Connect
+                Save
               </button>
             </div>
           </div>
