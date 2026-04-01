@@ -77,7 +77,7 @@ export class CompanyHeader extends LitElement {
           <div class="flex items-center gap-2">
             <button
               type="button"
-              class="rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] px-3 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
+              class="rounded-[var(--radius-sm)] text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
               @click=${this.handleEditCompany}
             >
               Edit
