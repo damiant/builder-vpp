@@ -6,15 +6,18 @@ export class CompanyHeader extends LitElement {
   static properties = {
     companies: { attribute: false },
     selectedCompanyId: { attribute: false },
+    isExportingPdf: { type: Boolean, attribute: false },
   };
 
   declare companies: CompanyConfig[];
   declare selectedCompanyId: string;
+  declare isExportingPdf: boolean;
 
   constructor() {
     super();
     this.companies = [];
     this.selectedCompanyId = "";
+    this.isExportingPdf = false;
   }
 
   createRenderRoot() {
@@ -59,6 +62,10 @@ export class CompanyHeader extends LitElement {
 
   private handleRefresh = () => {
     this.dispatchEvent(new CustomEvent("refresh-data", { bubbles: true, composed: true }));
+  };
+
+  private handleExportPdf = () => {
+    this.dispatchEvent(new CustomEvent("export-pdf", { bubbles: true, composed: true }));
   };
 
   render() {
@@ -111,6 +118,14 @@ export class CompanyHeader extends LitElement {
               @click=${this.addCompany}
             >
               Add
+            </button>
+            <button
+              type="button"
+              class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+              @click=${this.handleExportPdf}
+              ?disabled=${this.isExportingPdf}
+            >
+              ${this.isExportingPdf ? "Generating PDF..." : "PDF"}
             </button>
             <button
               type="button"

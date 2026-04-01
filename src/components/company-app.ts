@@ -1,4 +1,5 @@
 import { LitElement, html } from "lit";
+import { jsPDF } from "jspdf";
 import type { CompanyConfig } from "../lib/company-store";
 import {
   buildMetricsUrl,
@@ -64,6 +65,7 @@ export class CompanyApp extends LitElement {
     selectedYear: { type: Number, attribute: false },
     selectedSpaceId: { attribute: false },
     isFetchingUncachedMetrics: { type: Boolean, attribute: false },
+    isExportingPdf: { type: Boolean, attribute: false },
     modelMetrics: { attribute: false },
     projectMetrics: { attribute: false },
   };
@@ -80,6 +82,7 @@ export class CompanyApp extends LitElement {
   declare selectedYear: number;
   declare selectedSpaceId: string;
   declare isFetchingUncachedMetrics: boolean;
+  declare isExportingPdf: boolean;
   declare modelMetrics: ModelMetric[] | null;
   declare projectMetrics: ProjectMetric[] | null;
 
@@ -97,6 +100,7 @@ export class CompanyApp extends LitElement {
     this.metricsError = null;
     this.selectedSpaceId = "all";
     this.isFetchingUncachedMetrics = false;
+    this.isExportingPdf = false;
     this.modelMetrics = null;
     this.projectMetrics = null;
     const today = new Date();
@@ -204,6 +208,62 @@ export class CompanyApp extends LitElement {
     await clearAllCaches();
     void this.fetchMetrics();
     void this.fetchEventsData();
+  };
+
+  private handleExportPdf = async () => {
+    if (this.isExportingPdf) return;
+
+    const exportRoot = this.querySelector<HTMLElement>("company-summary main");
+    if (!exportRoot) {
+      console.error("Unable to find page content for PDF export");
+      return;
+    }
+
+    this.isExportingPdf = true;
+    const previousScrollX = window.scrollX;
+    const previousScrollY = window.scrollY;
+
+    try {
+      await this.updateComplete;
+      await customElements.whenDefined("company-summary");
+      await document.fonts.ready;
+      window.scrollTo(0, 0);
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4",
+      });
+      const companyName = this.selectedCompany.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const month = String(this.selectedMonth + 1).padStart(2, "0");
+      const filename = `fusion-metrics-${companyName}-${this.selectedYear}-${month}.pdf`;
+
+      await new Promise<void>((resolve, reject) => {
+        pdf
+          .html(exportRoot, {
+            margin: 24,
+            autoPaging: "text",
+            html2canvas: {
+              backgroundColor: "#ffffff",
+              scale: 0.8,
+              useCORS: true,
+              scrollX: 0,
+              scrollY: 0,
+              windowWidth: exportRoot.scrollWidth,
+            },
+            callback: (doc) => {
+              doc.save(filename);
+              resolve();
+            },
+          })
+          .catch(reject);
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+    } finally {
+      window.scrollTo(previousScrollX, previousScrollY);
+      this.isExportingPdf = false;
+    }
   };
 
   private getUniqueSpaces(): Array<{ id: string; name: string }> {
@@ -765,9 +825,11 @@ export class CompanyApp extends LitElement {
         <company-header
           .companies=${this.companies}
           .selectedCompanyId=${this.selectedCompanyId}
+          .isExportingPdf=${this.isExportingPdf}
           @company-change=${this.handleCompanyChange}
           @add-company=${this.addCompany}
           @edit-company=${this.openDialog}
+          @export-pdf=${this.handleExportPdf}
           @refresh-data=${this.handleRefresh}
         ></company-header>
 
