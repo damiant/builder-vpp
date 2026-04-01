@@ -1,4 +1,5 @@
 import { LitElement, html } from "lit";
+import type { PropertyValues } from "lit";
 import type { CompanyConfig } from "../lib/company-store";
 
 export class CompanyHeader extends LitElement {
@@ -18,6 +19,16 @@ export class CompanyHeader extends LitElement {
 
   createRenderRoot() {
     return this;
+  }
+
+  protected updated(changedProperties: PropertyValues<this>) {
+    // Sync select element value when selectedCompanyId changes
+    if (changedProperties.has("selectedCompanyId")) {
+      const selectElement = this.querySelector<HTMLSelectElement>("#company-select");
+      if (selectElement) {
+        selectElement.value = this.selectedCompanyId;
+      }
+    }
   }
 
   private addCompany = () => {
