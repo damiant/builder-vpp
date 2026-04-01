@@ -57,6 +57,13 @@ export class MetricsCharts extends LitElement {
     return this;
   }
 
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    // Clean up all charts when component is removed
+    this.charts.forEach((chart) => chart.destroy());
+    this.charts.clear();
+  }
+
   override updated(changedProperties: Map<string, unknown>) {
     const dataChanged = changedProperties.has("data");
     const usersContextChanged =
@@ -308,6 +315,12 @@ export class MetricsCharts extends LitElement {
   ) {
     const canvas = this.querySelector<HTMLCanvasElement>(`#chart-${config.id}`);
     if (!canvas) return;
+
+    // Destroy existing chart if it exists
+    const existingChart = this.charts.get(config.id);
+    if (existingChart) {
+      existingChart.destroy();
+    }
 
     const dates = this.data!.map((d) => d.period);
     const formattedDates = dates.map((d) => this.formatDateLabel(d));
