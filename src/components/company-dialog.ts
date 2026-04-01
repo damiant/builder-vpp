@@ -169,7 +169,7 @@ export class CompanyDialog extends LitElement {
             </div>
             <button
               type="button"
-              class="p-2 text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+              class="px-1 py-0 text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
               aria-label="Close dialog"
               @click=${this.closeDialog}
             >
