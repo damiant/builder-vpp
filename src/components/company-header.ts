@@ -113,7 +113,7 @@ export class CompanyHeader extends LitElement {
               Add
             </button>
             <button
-              type="button"  style="margin-left:-4px"
+              type="button" 
               class="rounded-[var(--radius-sm)] p-2 text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
               @click=${this.handleRefresh}
               title="Refresh data"
