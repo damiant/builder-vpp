@@ -33,6 +33,7 @@ export class MetricsCharts extends LitElement {
     selectedYear: { type: Number, attribute: false },
     usersData: { attribute: false },
     modelMetrics: { attribute: false },
+    projectMetrics: { attribute: false },
   };
 
   declare data: MetricsData | null;
@@ -47,6 +48,11 @@ export class MetricsCharts extends LitElement {
     events: number;
     creditsUsed: number;
   }> | null;
+  declare projectMetrics: Array<{
+    projectName: string;
+    totalLines: number;
+    creditsUsed: number;
+  }> | null;
 
   private charts: Map<string, Chart<any>> = new Map();
 
@@ -59,6 +65,7 @@ export class MetricsCharts extends LitElement {
     this.selectedYear = new Date().getFullYear();
     this.usersData = null;
     this.modelMetrics = null;
+    this.projectMetrics = null;
   }
 
   createRenderRoot() {
@@ -357,6 +364,7 @@ export class MetricsCharts extends LitElement {
     const spaceMetrics = this.getSpaceMetrics();
     const shouldShowSpacesTable = this.selectedSpaceId === "all" && spaceMetrics.length > 0;
     const shouldShowModelsTable = this.modelMetrics && this.modelMetrics.length > 0;
+    const shouldShowProjectsTable = this.projectMetrics && this.projectMetrics.length > 0;
 
     return html`
       <div class="mt-8 space-y-6">
@@ -547,6 +555,83 @@ export class MetricsCharts extends LitElement {
                             <td class="px-4 py-3">
                               <div class="w-full max-w-xs">
                                 <div class="rounded-full bg-[var(--color-border-subtle)] p-0.5 h-6">
+                                  <div
+                                    class="h-full rounded-full bg-[#10b981] transition-all duration-300"
+                                    style="width: ${creditPercentage}%"
+                                  ></div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        `;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `
+          : ""}
+        ${shouldShowProjectsTable
+          ? html`
+              <div>
+                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  Projects Summary
+                </h3>
+              </div>
+
+              <div
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-[var(--color-border-subtle)]">
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Project Name
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Total Lines
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Used
+                        </th>
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credit Distribution
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this.projectMetrics!.map((project) => {
+                        const maxCredits = Math.max(
+                          ...this.projectMetrics!.map((item) => item.creditsUsed),
+                          1,
+                        );
+                        const creditPercentage = (project.creditsUsed / maxCredits) * 100;
+
+                        return html`
+                          <tr
+                            class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                          >
+                            <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                              ${project.projectName}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${project.totalLines.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${Math.round(project.creditsUsed).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3">
+                              <div class="w-full max-w-xs">
+                                <div class="h-6 rounded-full bg-[var(--color-border-subtle)] p-0.5">
                                   <div
                                     class="h-full rounded-full bg-[#10b981] transition-all duration-300"
                                     style="width: ${creditPercentage}%"

@@ -44,6 +44,12 @@ type ModelMetric = {
   creditsUsed: number;
 };
 
+type ProjectMetric = {
+  projectName: string;
+  totalLines: number;
+  creditsUsed: number;
+};
+
 export class CompanyApp extends LitElement {
   static properties = {
     companies: { attribute: false },
@@ -59,6 +65,7 @@ export class CompanyApp extends LitElement {
     selectedSpaceId: { attribute: false },
     isFetchingUncachedMetrics: { type: Boolean, attribute: false },
     modelMetrics: { attribute: false },
+    projectMetrics: { attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -74,6 +81,7 @@ export class CompanyApp extends LitElement {
   declare selectedSpaceId: string;
   declare isFetchingUncachedMetrics: boolean;
   declare modelMetrics: ModelMetric[] | null;
+  declare projectMetrics: ProjectMetric[] | null;
 
   constructor() {
     super();
@@ -90,6 +98,7 @@ export class CompanyApp extends LitElement {
     this.selectedSpaceId = "all";
     this.isFetchingUncachedMetrics = false;
     this.modelMetrics = null;
+    this.projectMetrics = null;
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
@@ -364,6 +373,7 @@ export class CompanyApp extends LitElement {
     if (!company.privateKey) {
       console.log("Skipping events fetch - no private key");
       this.modelMetrics = null;
+      this.projectMetrics = null;
       return;
     }
 
@@ -437,7 +447,7 @@ export class CompanyApp extends LitElement {
       }
     }
 
-    // Aggregate models from events
+    // Aggregate models and projects from events
     const modelMap = new Map<
       string,
       {
@@ -447,10 +457,20 @@ export class CompanyApp extends LitElement {
         creditsUsed: number;
       }
     >();
+    const projectMap = new Map<
+      string,
+      {
+        projectName: string;
+        totalLines: number;
+        creditsUsed: number;
+      }
+    >();
 
     allEvents.forEach((event: any) => {
       const metadata = event.metadata;
-      if (metadata && metadata.model) {
+      if (!metadata) return;
+
+      if (metadata.model) {
         const model = metadata.model;
         if (!modelMap.has(model)) {
           modelMap.set(model, {
@@ -465,10 +485,26 @@ export class CompanyApp extends LitElement {
         modelData.events += 1;
         modelData.creditsUsed += Number(metadata.creditsUsed) || 0;
       }
+
+      const projectName = String(metadata.projectName || event.projectName || "Unknown");
+      if (!projectMap.has(projectName)) {
+        projectMap.set(projectName, {
+          projectName,
+          totalLines: 0,
+          creditsUsed: 0,
+        });
+      }
+      const projectData = projectMap.get(projectName)!;
+      projectData.totalLines += Number(metadata.linesOfCode) || 0;
+      projectData.creditsUsed += Number(metadata.creditsUsed) || 0;
     });
 
     this.modelMetrics = Array.from(modelMap.values()).sort((a, b) => b.creditsUsed - a.creditsUsed);
+    this.projectMetrics = Array.from(projectMap.values()).sort(
+      (a, b) => b.creditsUsed - a.creditsUsed,
+    );
     console.log("Aggregated model metrics:", this.modelMetrics);
+    console.log("Aggregated project metrics:", this.projectMetrics);
   }
 
   private async fetchMetrics() {
@@ -744,6 +780,7 @@ export class CompanyApp extends LitElement {
           .spaces=${this.getUniqueSpaces()}
           .selectedSpaceId=${this.selectedSpaceId}
           .modelMetrics=${this.modelMetrics}
+          .projectMetrics=${this.projectMetrics}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}
         ></company-summary>
