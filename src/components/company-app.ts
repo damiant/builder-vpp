@@ -149,6 +149,7 @@ export class CompanyApp extends LitElement {
   private handleCompanyChange = (event: CustomEvent<{ companyId: string }>) => {
     this.selectedCompanyId = event.detail.companyId;
     void this.fetchMetrics();
+    void this.fetchEventsData();
   };
 
   private handleDateChange = (event: CustomEvent<{ month: number; year: number }>) => {
@@ -362,7 +363,8 @@ export class CompanyApp extends LitElement {
 
       console.log("Fetching events data with pagination");
 
-      while (hasMore) {
+      const maxPages = 10; // Limit to 10 pages (10,000 events) to avoid excessive API calls
+      while (hasMore && page <= maxPages) {
         try {
           const url = buildEventsUrl(startDate, endDate, page, limit);
           const headers = {
@@ -389,10 +391,17 @@ export class CompanyApp extends LitElement {
           page += 1;
 
           console.log(`Fetched page ${page - 1}, total events so far: ${allEvents.length}`);
+          if (page > maxPages) {
+            console.warn(`Reached maximum page limit (${maxPages}), stopping pagination`);
+          }
         } catch (error) {
           console.error("Error fetching events page:", error);
           break;
         }
+      }
+
+      if (allEvents.length === 0) {
+        console.warn("No events found for the selected date range");
       }
 
       // Cache the events
