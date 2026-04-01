@@ -688,14 +688,25 @@ export class MetricsCharts extends LitElement {
                         >
                           Credits Used
                         </th>
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credit Distribution
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       ${this.usersData
                         .filter((user: any) => user.userEmail) // Filter out unknown users
                         .sort((a: any, b: any) => b.metrics.creditsUsed - a.metrics.creditsUsed)
-                        .map(
-                          (user: any) => html`
+                        .map((user: any, _index: number, users: any[]) => {
+                          const maxCredits = Math.max(
+                            ...users.map((item: any) => item.metrics.creditsUsed),
+                            1,
+                          );
+                          const creditPercentage = (user.metrics.creditsUsed / maxCredits) * 100;
+
+                          return html`
                             <tr
                               class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
                             >
@@ -714,9 +725,21 @@ export class MetricsCharts extends LitElement {
                               <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                                 ${Math.ceil(user.metrics.creditsUsed).toLocaleString()}
                               </td>
+                              <td class="px-4 py-3">
+                                <div class="w-full max-w-xs">
+                                  <div
+                                    class="h-6 rounded-full bg-[var(--color-border-subtle)] p-0.5"
+                                  >
+                                    <div
+                                      class="h-full rounded-full bg-[#10b981] transition-all duration-300"
+                                      style="width: ${creditPercentage}%"
+                                    ></div>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
-                          `,
-                        )}
+                          `;
+                        })}
                     </tbody>
                   </table>
                 </div>
