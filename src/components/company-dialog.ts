@@ -185,6 +185,7 @@ export class CompanyDialog extends LitElement {
                 class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 type="text"
                 placeholder="Enter company name"
+                autocomplete="off"
                 value=${company.name}
               />
             </label>
@@ -198,6 +199,7 @@ export class CompanyDialog extends LitElement {
                 class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 type="password"
                 placeholder="Enter private key"
+                autocomplete="off"
                 value=${company.privateKey}
               />
             </label>
