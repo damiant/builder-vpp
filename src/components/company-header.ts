@@ -119,9 +119,9 @@ export class CompanyHeader extends LitElement {
               title="Refresh data"
             >
               <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
+                width="28"
+                height="28"
+                viewBox="0 0 28 28"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
