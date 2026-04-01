@@ -519,7 +519,7 @@ export class MetricsCharts extends LitElement {
                               ${model.totalLines.toLocaleString()}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${model.creditsUsed.toFixed(3)}
+                              ${Math.round(model.creditsUsed).toLocaleString()}
                             </td>
                             <td class="px-4 py-3">
                               <div class="w-full max-w-xs">
