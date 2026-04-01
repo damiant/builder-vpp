@@ -416,7 +416,7 @@ export class MetricsCharts extends LitElement {
           ? html`
               <div>
                 <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
-                  Spaces Summary
+                  Spaces
                 </h3>
               </div>
 
@@ -480,7 +480,7 @@ export class MetricsCharts extends LitElement {
           ? html`
               <div>
                 <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
-                  Models Summary
+                  Models
                 </h3>
               </div>
 
@@ -575,7 +575,7 @@ export class MetricsCharts extends LitElement {
           ? html`
               <div>
                 <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
-                  Projects Summary
+                  Projects
                 </h3>
               </div>
 
@@ -652,7 +652,7 @@ export class MetricsCharts extends LitElement {
           ? html`
               <div>
                 <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
-                  Users Summary
+                  Users
                 </h3>
               </div>
 
