@@ -121,7 +121,7 @@ export class CompanyHeader extends LitElement {
               <svg
                 width="28"
                 height="28"
-                viewBox="-5 -5 28 28"
+                viewBox="5 -5 33 28"
                 fill="none"
                 stroke="currentColor"
                 stroke-width="2"
