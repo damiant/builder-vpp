@@ -237,19 +237,25 @@ export class CompanyApp extends LitElement {
       const companyName = this.selectedCompany.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
       const month = String(this.selectedMonth + 1).padStart(2, "0");
       const filename = `fusion-metrics-${companyName}-${this.selectedYear}-${month}.pdf`;
+      const margin = 24;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const availableWidth = pageWidth - margin * 2;
+      const contentWidth = Math.max(exportRoot.scrollWidth, exportRoot.clientWidth);
 
       await new Promise<void>((resolve, reject) => {
         pdf
           .html(exportRoot, {
-            margin: 24,
+            margin,
+            width: availableWidth,
+            windowWidth: contentWidth,
             autoPaging: "text",
             html2canvas: {
               backgroundColor: "#ffffff",
-              scale: 0.8,
+              scale: 1,
               useCORS: true,
               scrollX: 0,
               scrollY: 0,
-              windowWidth: exportRoot.scrollWidth,
+              windowWidth: contentWidth,
             },
             callback: (doc) => {
               doc.save(filename);
