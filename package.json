@@ -6,7 +6,16 @@
   "scripts": {
     "dev": "vp dev",
     "build": "tsc && vp build",
+    "check": "vp check",
     "preview": "vp preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.2.2",
+    "chart.js": "^4.5.1",
+    "idb-keyval": "^6.2.2",
+    "lit": "^3.3.2",
+    "recharts": "^3.8.1",
+    "tailwindcss": "^4.2.2"
   },
   "devDependencies": {
     "typescript": "~5.9.3",
