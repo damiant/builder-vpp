@@ -40,6 +40,7 @@ type ConnectionResult = {
 type ModelMetric = {
   model: string;
   totalLines: number;
+  events: number;
   creditsUsed: number;
 };
 
@@ -442,6 +443,7 @@ export class CompanyApp extends LitElement {
       {
         model: string;
         totalLines: number;
+        events: number;
         creditsUsed: number;
       }
     >();
@@ -454,11 +456,13 @@ export class CompanyApp extends LitElement {
           modelMap.set(model, {
             model,
             totalLines: 0,
+            events: 0,
             creditsUsed: 0,
           });
         }
         const modelData = modelMap.get(model)!;
         modelData.totalLines += Number(metadata.linesOfCode) || 0;
+        modelData.events += 1;
         modelData.creditsUsed += Number(metadata.creditsUsed) || 0;
       }
     });

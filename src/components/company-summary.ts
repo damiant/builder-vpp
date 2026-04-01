@@ -24,7 +24,12 @@ export class CompanySummary extends LitElement {
   declare selectedYear: number;
   declare spaces: Array<{ id: string; name: string }>;
   declare selectedSpaceId: string;
-  declare modelMetrics: Array<{ model: string; totalLines: number; creditsUsed: number }> | null;
+  declare modelMetrics: Array<{
+    model: string;
+    totalLines: number;
+    events: number;
+    creditsUsed: number;
+  }> | null;
 
   constructor() {
     super();

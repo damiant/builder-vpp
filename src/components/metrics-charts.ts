@@ -41,7 +41,12 @@ export class MetricsCharts extends LitElement {
   declare selectedMonth: number;
   declare selectedYear: number;
   declare usersData: Array<any> | null;
-  declare modelMetrics: Array<{ model: string; totalLines: number; creditsUsed: number }> | null;
+  declare modelMetrics: Array<{
+    model: string;
+    totalLines: number;
+    events: number;
+    creditsUsed: number;
+  }> | null;
 
   private charts: Map<string, Chart<any>> = new Map();
 
@@ -491,7 +496,17 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
+                          Events
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
                           Credits Used
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Per Event
                         </th>
                         <th
                           class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
@@ -507,6 +522,8 @@ export class MetricsCharts extends LitElement {
                           1,
                         );
                         const creditPercentage = (model.creditsUsed / maxCredits) * 100;
+                        const creditsPerEvent =
+                          model.events > 0 ? model.creditsUsed / model.events : 0;
 
                         return html`
                           <tr
@@ -519,7 +536,13 @@ export class MetricsCharts extends LitElement {
                               ${model.totalLines.toLocaleString()}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${model.events.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                               ${Math.round(model.creditsUsed).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${creditsPerEvent.toFixed(2)}
                             </td>
                             <td class="px-4 py-3">
                               <div class="w-full max-w-xs">
