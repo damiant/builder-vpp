@@ -676,7 +676,7 @@ export class CompanyApp extends LitElement {
         totalCreditsUsed: user.totalCreditsUsed,
         models: Array.from(user.models.values()).sort((a, b) => b.creditsUsed - a.creditsUsed),
       }))
-      .sort((a, b) => b.totalCreditsUsed - a.totalCreditsUsed);
+      .sort((a, b) => a.userEmail.localeCompare(b.userEmail));
     console.log("Aggregated model metrics:", this.modelMetrics);
     console.log("Aggregated project metrics:", this.projectMetrics);
     console.log("Aggregated user model metrics:", this.userModelMetrics);
