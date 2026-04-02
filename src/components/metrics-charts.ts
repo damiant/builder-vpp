@@ -77,6 +77,7 @@ export class MetricsCharts extends LitElement {
     type: "Design" | "Prompt";
     count: number;
     creditsUsed: number;
+    uniqueDesigns: number;
   }> | null;
 
   private charts: Map<string, Chart<any>> = new Map();
@@ -641,6 +642,11 @@ export class MetricsCharts extends LitElement {
                         >
                           Credits Used
                         </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Unique Designs
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -655,6 +661,9 @@ export class MetricsCharts extends LitElement {
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                               ${Math.round(item.creditsUsed).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${item.uniqueDesigns.toLocaleString()}
                             </td>
                           </tr>
                         `;

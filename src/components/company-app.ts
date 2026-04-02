@@ -75,6 +75,7 @@ type DesignVsPromptMetric = {
   type: "Design" | "Prompt";
   count: number;
   creditsUsed: number;
+  uniqueDesigns: number;
 };
 
 export class CompanyApp extends LitElement {
@@ -906,6 +907,7 @@ export class CompanyApp extends LitElement {
     let designCreditsUsed = 0;
     let promptCount = 0;
     let promptCreditsUsed = 0;
+    const designUniqueIds = new Set<string>();
 
     allEvents.forEach((event: any) => {
       const creditsUsed = Number(event.metadata?.creditsUsed ?? event.creditsUsed) || 0;
@@ -914,6 +916,7 @@ export class CompanyApp extends LitElement {
       if (designExportId) {
         designCount += 1;
         designCreditsUsed += creditsUsed;
+        designUniqueIds.add(String(designExportId));
       } else {
         promptCount += 1;
         promptCreditsUsed += creditsUsed;
@@ -925,11 +928,13 @@ export class CompanyApp extends LitElement {
         type: "Design",
         count: designCount,
         creditsUsed: designCreditsUsed,
+        uniqueDesigns: designUniqueIds.size,
       },
       {
         type: "Prompt",
         count: promptCount,
         creditsUsed: promptCreditsUsed,
+        uniqueDesigns: 0,
       },
     ];
 

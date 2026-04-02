@@ -60,6 +60,7 @@ export class CompanySummary extends LitElement {
     type: "Design" | "Prompt";
     count: number;
     creditsUsed: number;
+    uniqueDesigns: number;
   }> | null;
 
   constructor() {
