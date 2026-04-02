@@ -72,6 +72,11 @@ export class SelectedCompanyCard extends LitElement {
     );
   };
 
+  private formatUsdAmount(credits: number): string {
+    const usdAmount = credits * 0.05;
+    return `$${usdAmount.toFixed(2)}`;
+  }
+
   private getSummaryStats() {
     if (!this.metricsData || this.metricsData.length === 0) {
       return null;
@@ -198,9 +203,14 @@ export class SelectedCompanyCard extends LitElement {
                   >
                     Credits used
                   </p>
-                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-                    ${Math.ceil(stats.totals.creditsUsed).toLocaleString()}
-                  </p>
+                  <div class="mt-2 flex items-baseline justify-between">
+                    <p class="text-2xl font-semibold text-[var(--color-text-primary)]">
+                      ${Math.ceil(stats.totals.creditsUsed).toLocaleString()}
+                    </p>
+                    <p class="text-sm font-medium text-[var(--color-text-secondary)]">
+                      ${this.formatUsdAmount(Math.ceil(stats.totals.creditsUsed))}
+                    </p>
+                  </div>
                 </div>
 
                 <div
@@ -263,9 +273,14 @@ export class SelectedCompanyCard extends LitElement {
                   >
                     Avg Credits per day
                   </p>
-                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-                    ${Math.ceil(stats.avgCreditsPerDay).toLocaleString()}
-                  </p>
+                  <div class="mt-2 flex items-baseline justify-between">
+                    <p class="text-2xl font-semibold text-[var(--color-text-primary)]">
+                      ${Math.ceil(stats.avgCreditsPerDay).toLocaleString()}
+                    </p>
+                    <p class="text-sm font-medium text-[var(--color-text-secondary)]">
+                      ${this.formatUsdAmount(Math.ceil(stats.avgCreditsPerDay))}
+                    </p>
+                  </div>
                 </div>
 
                 <div
