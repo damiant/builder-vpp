@@ -50,7 +50,6 @@ export class MetricsCharts extends LitElement {
     totalLines: number;
     events: number;
     creditsUsed: number;
-    uniqueDesigns: number;
   }> | null;
   declare projectMetrics: Array<{
     projectName: string;
@@ -550,11 +549,6 @@ export class MetricsCharts extends LitElement {
                           Credits Per Event
                         </th>
                         <th
-                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
-                        >
-                          Unique Designs
-                        </th>
-                        <th
                           class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
                         >
                           Credit Distribution
@@ -589,9 +583,6 @@ export class MetricsCharts extends LitElement {
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                               ${creditsPerEvent.toFixed(2)}
-                            </td>
-                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${model.uniqueDesigns.toLocaleString()}
                             </td>
                             <td class="px-4 py-3">
                               <div class="w-full max-w-xs">
