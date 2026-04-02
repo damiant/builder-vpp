@@ -117,6 +117,8 @@ export class CompanyApp extends LitElement {
   declare featureMetrics: FeatureMetric[] | null;
   declare userModelMetrics: UserModelMetric[] | null;
 
+  private eventsFetchRequestId = 0;
+
   constructor() {
     super();
     this.companies = [...defaultCompanies];
@@ -509,9 +511,15 @@ export class CompanyApp extends LitElement {
   }
 
   private async fetchEventsData() {
+    const requestId = ++this.eventsFetchRequestId;
+    const isLatestRequest = () => requestId === this.eventsFetchRequestId;
     const company = this.selectedCompany;
 
     if (!company.privateKey) {
+      if (!isLatestRequest()) {
+        return;
+      }
+
       console.log("Skipping events fetch - no private key");
       this.isFetchingEventPages = false;
       this.currentEventPage = 1;
@@ -533,11 +541,18 @@ export class CompanyApp extends LitElement {
       endDate,
     );
 
+    if (!isLatestRequest()) {
+      return;
+    }
+
     let allEvents: any[] = [];
 
     if (cachedEvents && Array.isArray(cachedEvents)) {
       console.log("Using cached events data");
       allEvents = cachedEvents;
+      this.isFetchingEventPages = false;
+      this.currentEventPage = 1;
+      this.totalEventPages = 1;
     } else {
       // Fetch all events with pagination
       let hasMore = true;
@@ -551,6 +566,10 @@ export class CompanyApp extends LitElement {
 
       while (hasMore) {
         try {
+          if (!isLatestRequest()) {
+            return;
+          }
+
           this.currentEventPage = page;
           const url = buildEventsUrl(startDate, endDate, page, limit);
           const headers = {
@@ -563,12 +582,21 @@ export class CompanyApp extends LitElement {
             headers: headers,
           });
 
+          if (!isLatestRequest()) {
+            return;
+          }
+
           if (!response.ok) {
             console.error("Failed to fetch events, stopping pagination:", response.status);
             break;
           }
 
           const data = await response.json();
+
+          if (!isLatestRequest()) {
+            return;
+          }
+
           const events = data.data || [];
           allEvents = allEvents.concat(events);
 
@@ -584,6 +612,10 @@ export class CompanyApp extends LitElement {
         }
       }
 
+      if (!isLatestRequest()) {
+        return;
+      }
+
       this.isFetchingEventPages = false;
       this.currentEventPage = 1;
       this.totalEventPages = 1;
@@ -596,6 +628,10 @@ export class CompanyApp extends LitElement {
       if (allEvents.length > 0) {
         await cacheEvents(company.publicKey, company.privateKey, startDate, endDate, allEvents);
       }
+    }
+
+    if (!isLatestRequest()) {
+      return;
     }
 
     // Aggregate models and projects from events
