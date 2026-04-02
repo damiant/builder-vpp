@@ -44,6 +44,7 @@ type ModelMetric = {
   totalLines: number;
   events: number;
   creditsUsed: number;
+  uniqueDesigns: number;
 };
 
 type ProjectMetric = {
@@ -759,6 +760,7 @@ export class CompanyApp extends LitElement {
         totalLines: number;
         events: number;
         creditsUsed: number;
+        designExportIds: Set<string>;
       }
     >();
     const projectMap = new Map<
@@ -808,12 +810,18 @@ export class CompanyApp extends LitElement {
             totalLines: 0,
             events: 0,
             creditsUsed: 0,
+            designExportIds: new Set(),
           });
         }
         const modelData = modelMap.get(model)!;
         modelData.totalLines += totalLines;
         modelData.events += 1;
         modelData.creditsUsed += creditsUsed;
+
+        const designExportId = event.designExportId || event.metadata?.designExportId;
+        if (designExportId) {
+          modelData.designExportIds.add(String(designExportId));
+        }
       }
 
       const projectName = String(metadata.projectName || event.projectName || "Unknown");
@@ -870,7 +878,15 @@ export class CompanyApp extends LitElement {
       userModelData.creditsUsed += creditsUsed;
     });
 
-    this.modelMetrics = Array.from(modelMap.values()).sort((a, b) => b.creditsUsed - a.creditsUsed);
+    this.modelMetrics = Array.from(modelMap.values())
+      .map((model) => ({
+        model: model.model,
+        totalLines: model.totalLines,
+        events: model.events,
+        creditsUsed: model.creditsUsed,
+        uniqueDesigns: model.designExportIds.size,
+      }))
+      .sort((a, b) => b.creditsUsed - a.creditsUsed);
     this.projectMetrics = Array.from(projectMap.values()).sort(
       (a, b) => b.creditsUsed - a.creditsUsed,
     );

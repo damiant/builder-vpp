@@ -33,6 +33,7 @@ export class CompanySummary extends LitElement {
     totalLines: number;
     events: number;
     creditsUsed: number;
+    uniqueDesigns: number;
   }> | null;
   declare projectMetrics: Array<{
     projectName: string;
