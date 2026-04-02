@@ -696,9 +696,9 @@ export class CompanyApp extends LitElement {
       this.currentEventPage = 1;
       this.totalEventPages = 1;
     } else {
-      // Fetch all events with concurrent pagination (4 at a time)
+      // Fetch all events with concurrent pagination (8 at a time)
       const limit = 1000;
-      const concurrency = 4;
+      const concurrency = 8;
 
       console.log("Fetching events data with pagination");
       this.isFetchingEventPages = true;
