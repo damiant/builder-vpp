@@ -34,6 +34,7 @@ export class MetricsCharts extends LitElement {
     usersData: { attribute: false },
     modelMetrics: { attribute: false },
     projectMetrics: { attribute: false },
+    featureMetrics: { attribute: false },
     userModelMetrics: { attribute: false },
   };
 
@@ -52,6 +53,12 @@ export class MetricsCharts extends LitElement {
   declare projectMetrics: Array<{
     projectName: string;
     totalLines: number;
+    creditsUsed: number;
+  }> | null;
+  declare featureMetrics: Array<{
+    feature: string;
+    totalLines: number;
+    events: number;
     creditsUsed: number;
   }> | null;
   declare userModelMetrics: Array<{
@@ -77,6 +84,7 @@ export class MetricsCharts extends LitElement {
     this.usersData = null;
     this.modelMetrics = null;
     this.projectMetrics = null;
+    this.featureMetrics = null;
     this.userModelMetrics = null;
   }
 
@@ -377,6 +385,7 @@ export class MetricsCharts extends LitElement {
     const shouldShowSpacesTable = this.selectedSpaceId === "all" && spaceMetrics.length > 0;
     const shouldShowModelsTable = this.modelMetrics && this.modelMetrics.length > 0;
     const shouldShowProjectsTable = this.projectMetrics && this.projectMetrics.length > 0;
+    const shouldShowFeaturesTable = this.featureMetrics && this.featureMetrics.length > 0;
     const shouldShowUserModelBreakdown = this.userModelMetrics && this.userModelMetrics.length > 0;
 
     return html`
@@ -641,6 +650,101 @@ export class MetricsCharts extends LitElement {
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                               ${Math.round(project.creditsUsed).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3">
+                              <div class="w-full max-w-xs">
+                                <div class="h-6 rounded-full bg-[var(--color-border-subtle)] p-0.5">
+                                  <div
+                                    class="h-full rounded-full bg-[#10b981] transition-all duration-300"
+                                    style="width: ${creditPercentage}%"
+                                  ></div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        `;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `
+          : ""}
+        ${shouldShowFeaturesTable
+          ? html`
+              <div>
+                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  Feature
+                </h3>
+              </div>
+
+              <div
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-[var(--color-border-subtle)]">
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Feature
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Total Lines
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Events
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Used
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Per Event
+                        </th>
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credit Distribution
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this.featureMetrics!.map((feature) => {
+                        const maxCredits = Math.max(
+                          ...this.featureMetrics!.map((item) => item.creditsUsed),
+                          1,
+                        );
+                        const creditPercentage = (feature.creditsUsed / maxCredits) * 100;
+                        const creditsPerEvent =
+                          feature.events > 0 ? feature.creditsUsed / feature.events : 0;
+
+                        return html`
+                          <tr
+                            class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                          >
+                            <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                              ${feature.feature}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${feature.totalLines.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${feature.events.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${Math.round(feature.creditsUsed).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${creditsPerEvent.toFixed(2)}
                             </td>
                             <td class="px-4 py-3">
                               <div class="w-full max-w-xs">

@@ -52,6 +52,13 @@ type ProjectMetric = {
   creditsUsed: number;
 };
 
+type FeatureMetric = {
+  feature: string;
+  totalLines: number;
+  events: number;
+  creditsUsed: number;
+};
+
 type UserModelMetric = {
   userEmail: string;
   totalCreditsUsed: number;
@@ -84,6 +91,7 @@ export class CompanyApp extends LitElement {
     isExportingPng: { type: Boolean, attribute: false },
     modelMetrics: { attribute: false },
     projectMetrics: { attribute: false },
+    featureMetrics: { attribute: false },
     userModelMetrics: { attribute: false },
   };
 
@@ -106,6 +114,7 @@ export class CompanyApp extends LitElement {
   declare isExportingPng: boolean;
   declare modelMetrics: ModelMetric[] | null;
   declare projectMetrics: ProjectMetric[] | null;
+  declare featureMetrics: FeatureMetric[] | null;
   declare userModelMetrics: UserModelMetric[] | null;
 
   constructor() {
@@ -129,6 +138,7 @@ export class CompanyApp extends LitElement {
     this.isExportingPng = false;
     this.modelMetrics = null;
     this.projectMetrics = null;
+    this.featureMetrics = null;
     this.userModelMetrics = null;
     const today = new Date();
     this.selectedMonth = today.getMonth();
@@ -508,6 +518,7 @@ export class CompanyApp extends LitElement {
       this.totalEventPages = 1;
       this.modelMetrics = null;
       this.projectMetrics = null;
+      this.featureMetrics = null;
       this.userModelMetrics = null;
       return;
     }
@@ -605,6 +616,15 @@ export class CompanyApp extends LitElement {
         creditsUsed: number;
       }
     >();
+    const featureMap = new Map<
+      string,
+      {
+        feature: string;
+        totalLines: number;
+        events: number;
+        creditsUsed: number;
+      }
+    >();
     const userModelMap = new Map<
       string,
       {
@@ -655,6 +675,20 @@ export class CompanyApp extends LitElement {
       projectData.totalLines += totalLines;
       projectData.creditsUsed += creditsUsed;
 
+      const feature = String(event.feature || metadata.feature || "Unknown");
+      if (!featureMap.has(feature)) {
+        featureMap.set(feature, {
+          feature,
+          totalLines: 0,
+          events: 0,
+          creditsUsed: 0,
+        });
+      }
+      const featureData = featureMap.get(feature)!;
+      featureData.totalLines += totalLines;
+      featureData.events += 1;
+      featureData.creditsUsed += creditsUsed;
+
       const userEmail = String(
         event.userEmail || metadata.userEmail || event.userId || metadata.userId || "Unknown",
       );
@@ -687,6 +721,9 @@ export class CompanyApp extends LitElement {
     this.projectMetrics = Array.from(projectMap.values()).sort(
       (a, b) => b.creditsUsed - a.creditsUsed,
     );
+    this.featureMetrics = Array.from(featureMap.values()).sort(
+      (a, b) => b.creditsUsed - a.creditsUsed,
+    );
     this.userModelMetrics = Array.from(userModelMap.values())
       .map((user) => ({
         userEmail: user.userEmail,
@@ -696,6 +733,7 @@ export class CompanyApp extends LitElement {
       .sort((a, b) => a.userEmail.localeCompare(b.userEmail));
     console.log("Aggregated model metrics:", this.modelMetrics);
     console.log("Aggregated project metrics:", this.projectMetrics);
+    console.log("Aggregated feature metrics:", this.featureMetrics);
     console.log("Aggregated user model metrics:", this.userModelMetrics);
   }
 
@@ -977,6 +1015,7 @@ export class CompanyApp extends LitElement {
           .selectedSpaceId=${this.selectedSpaceId}
           .modelMetrics=${this.modelMetrics}
           .projectMetrics=${this.projectMetrics}
+          .featureMetrics=${this.featureMetrics}
           .userModelMetrics=${this.userModelMetrics}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}

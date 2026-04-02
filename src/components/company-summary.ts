@@ -16,6 +16,7 @@ export class CompanySummary extends LitElement {
     selectedSpaceId: { attribute: false },
     modelMetrics: { attribute: false },
     projectMetrics: { attribute: false },
+    featureMetrics: { attribute: false },
     userModelMetrics: { attribute: false },
   };
 
@@ -35,6 +36,12 @@ export class CompanySummary extends LitElement {
   declare projectMetrics: Array<{
     projectName: string;
     totalLines: number;
+    creditsUsed: number;
+  }> | null;
+  declare featureMetrics: Array<{
+    feature: string;
+    totalLines: number;
+    events: number;
     creditsUsed: number;
   }> | null;
   declare userModelMetrics: Array<{
@@ -57,6 +64,7 @@ export class CompanySummary extends LitElement {
     this.selectedSpaceId = "all";
     this.modelMetrics = null;
     this.projectMetrics = null;
+    this.featureMetrics = null;
     this.userModelMetrics = null;
   }
 
@@ -109,6 +117,7 @@ export class CompanySummary extends LitElement {
                   .selectedYear=${this.selectedYear}
                   .modelMetrics=${this.modelMetrics}
                   .projectMetrics=${this.projectMetrics}
+                  .featureMetrics=${this.featureMetrics}
                   .userModelMetrics=${this.userModelMetrics}
                 ></metrics-charts>
               </section>
