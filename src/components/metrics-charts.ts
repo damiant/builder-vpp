@@ -37,6 +37,7 @@ export class MetricsCharts extends LitElement {
     featureMetrics: { attribute: false },
     userModelMetrics: { attribute: false },
     designVsPromptMetrics: { attribute: false },
+    projectsApiData: { attribute: false },
   };
 
   declare data: MetricsData | null;
@@ -78,6 +79,20 @@ export class MetricsCharts extends LitElement {
     creditsUsed: number;
     uniqueDesigns: number;
   }> | null;
+  declare projectsApiData: Array<{
+    projectId: string;
+    projectName: string;
+    metrics: {
+      linesAdded: number;
+      linesRemoved: number;
+      linesAccepted: number;
+      userPrompts: number;
+      creditsUsed: number;
+      activeUsers: number;
+      prsMerged: number;
+      prsCreated: number;
+    };
+  }> | null;
 
   private charts: Map<string, Chart<any>> = new Map();
 
@@ -94,6 +109,7 @@ export class MetricsCharts extends LitElement {
     this.featureMetrics = null;
     this.userModelMetrics = null;
     this.designVsPromptMetrics = null;
+    this.projectsApiData = null;
   }
 
   createRenderRoot() {
@@ -394,7 +410,7 @@ export class MetricsCharts extends LitElement {
     const shouldShowModelsTable = this.modelMetrics && this.modelMetrics.length > 0;
     const shouldShowDesignVsPromptTable =
       this.designVsPromptMetrics && this.designVsPromptMetrics.length > 0;
-    const shouldShowProjectsTable = this.projectMetrics && this.projectMetrics.length > 0;
+    const shouldShowProjectsTable = this.projectsApiData && this.projectsApiData.length > 0;
     const shouldShowFeaturesTable = this.featureMetrics && this.featureMetrics.length > 0;
     const shouldShowUserModelBreakdown = this.userModelMetrics && this.userModelMetrics.length > 0;
 
@@ -688,12 +704,37 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
-                          Total Lines
+                          Lines Added
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Lines Removed
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          User Prompts
                         </th>
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
                           Credits Used
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Active Users
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          PRs Merged
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          PRs Created
                         </th>
                         <th
                           class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
@@ -703,12 +744,12 @@ export class MetricsCharts extends LitElement {
                       </tr>
                     </thead>
                     <tbody>
-                      ${this.projectMetrics!.map((project) => {
+                      ${this.projectsApiData!.map((project) => {
                         const maxCredits = Math.max(
-                          ...this.projectMetrics!.map((item) => item.creditsUsed),
+                          ...this.projectsApiData!.map((item) => item.metrics.creditsUsed),
                           1,
                         );
-                        const creditPercentage = (project.creditsUsed / maxCredits) * 100;
+                        const creditPercentage = (project.metrics.creditsUsed / maxCredits) * 100;
 
                         return html`
                           <tr
@@ -718,10 +759,25 @@ export class MetricsCharts extends LitElement {
                               ${project.projectName}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${project.totalLines.toLocaleString()}
+                              ${project.metrics.linesAdded.toLocaleString()}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${Math.round(project.creditsUsed).toLocaleString()}
+                              ${project.metrics.linesRemoved.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${project.metrics.userPrompts.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${Math.round(project.metrics.creditsUsed).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${project.metrics.activeUsers.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${project.metrics.prsMerged.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${project.metrics.prsCreated.toLocaleString()}
                             </td>
                             <td class="px-4 py-3">
                               <div class="w-full max-w-xs">

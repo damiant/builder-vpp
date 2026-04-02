@@ -5,6 +5,7 @@ import type { CompanyConfig } from "../lib/company-store";
 import {
   buildMetricsUrl,
   buildEventsUrl,
+  buildProjectsUrl,
   createCompany,
   defaultCompanies,
   deleteCompany,
@@ -18,6 +19,8 @@ import {
   getCachedMetrics,
   cacheEvents,
   getCachedEvents,
+  cacheProjects,
+  getCachedProjects,
   clearAllCaches,
 } from "../lib/metrics-cache";
 import "./company-dialog";
@@ -77,6 +80,21 @@ type DesignVsPromptMetric = {
   uniqueDesigns: number;
 };
 
+type ProjectApiData = {
+  projectId: string;
+  projectName: string;
+  metrics: {
+    linesAdded: number;
+    linesRemoved: number;
+    linesAccepted: number;
+    userPrompts: number;
+    creditsUsed: number;
+    activeUsers: number;
+    prsMerged: number;
+    prsCreated: number;
+  };
+};
+
 export class CompanyApp extends LitElement {
   static properties = {
     companies: { attribute: false },
@@ -103,6 +121,7 @@ export class CompanyApp extends LitElement {
     userModelMetrics: { attribute: false },
     designVsPromptMetrics: { attribute: false },
     eventsData: { attribute: false },
+    projectsApiData: { attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -129,6 +148,7 @@ export class CompanyApp extends LitElement {
   declare userModelMetrics: UserModelMetric[] | null;
   declare designVsPromptMetrics: DesignVsPromptMetric[] | null;
   declare eventsData: any[] | null;
+  declare projectsApiData: ProjectApiData[] | null;
 
   private eventsFetchRequestId = 0;
 
@@ -158,6 +178,7 @@ export class CompanyApp extends LitElement {
     this.userModelMetrics = null;
     this.designVsPromptMetrics = null;
     this.eventsData = null;
+    this.projectsApiData = null;
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
@@ -176,6 +197,7 @@ export class CompanyApp extends LitElement {
     await this.restoreCompanies();
     await this.fetchMetrics();
     await this.fetchEventsData();
+    await this.fetchProjectsData();
   }
 
   private get selectedCompany() {
@@ -245,6 +267,7 @@ export class CompanyApp extends LitElement {
     this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
     void this.fetchMetrics();
     void this.fetchEventsData();
+    void this.fetchProjectsData();
   };
 
   private handleDateChange = (event: CustomEvent<{ month: number; year: number }>) => {
@@ -252,6 +275,7 @@ export class CompanyApp extends LitElement {
     this.selectedYear = event.detail.year;
     void this.fetchMetrics();
     void this.fetchEventsData();
+    void this.fetchProjectsData();
   };
 
   private handleSpaceChange = (event: CustomEvent<{ spaceId: string }>) => {
@@ -263,6 +287,7 @@ export class CompanyApp extends LitElement {
     await clearAllCaches();
     void this.fetchMetrics();
     void this.fetchEventsData();
+    void this.fetchProjectsData();
   };
 
   private handleExportPdf = async () => {
@@ -929,6 +954,63 @@ export class CompanyApp extends LitElement {
     console.log("Design vs Prompt metrics:", this.designVsPromptMetrics);
   }
 
+  private async fetchProjectsData() {
+    const company = this.selectedCompany;
+
+    if (!company.privateKey) {
+      console.log("Skipping projects fetch - no private key");
+      this.projectsApiData = null;
+      return;
+    }
+
+    const { startDate, endDate } = this.getMetricsDateRange();
+
+    // Check cache first
+    const cachedData = await getCachedProjects(
+      company.publicKey,
+      company.privateKey,
+      startDate,
+      endDate,
+    );
+
+    if (cachedData) {
+      console.log("Using cached projects data");
+      this.projectsApiData = (cachedData as ProjectApiData[]) || null;
+      return;
+    }
+
+    const url = buildProjectsUrl(startDate, endDate);
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${company.privateKey}`,
+    };
+
+    try {
+      console.log("Fetching projects data from:", url.toString());
+      const response = await fetch(url, {
+        method: "GET",
+        headers: headers,
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch projects data:", response.status);
+        this.projectsApiData = null;
+        return;
+      }
+
+      const responseData = await response.json();
+      const projectsArray = Array.isArray(responseData) ? responseData : responseData.data || [];
+
+      await cacheProjects(company.publicKey, company.privateKey, startDate, endDate, projectsArray);
+
+      this.projectsApiData = projectsArray;
+      console.log("Projects data fetched and cached:", projectsArray);
+    } catch (error) {
+      console.error("Error fetching projects data:", error);
+      this.projectsApiData = null;
+    }
+  }
+
   private async fetchMetrics() {
     const company = this.selectedCompany;
 
@@ -1220,6 +1302,7 @@ export class CompanyApp extends LitElement {
           .featureMetrics=${this.featureMetrics}
           .userModelMetrics=${this.userModelMetrics}
           .designVsPromptMetrics=${this.designVsPromptMetrics}
+          .projectsApiData=${this.projectsApiData}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}
         ></company-summary>
