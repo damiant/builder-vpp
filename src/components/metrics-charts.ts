@@ -663,7 +663,7 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
-                          Credits Used
+                          Credits
                         </th>
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
