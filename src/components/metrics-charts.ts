@@ -934,6 +934,11 @@ export class MetricsCharts extends LitElement {
                           Credits Used
                         </th>
                         <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Amount (USD)
+                        </th>
+                        <th
                           class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
                         >
                           Credit Distribution
@@ -969,6 +974,9 @@ export class MetricsCharts extends LitElement {
                               </td>
                               <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                                 ${Math.ceil(user.metrics.creditsUsed).toLocaleString()}
+                              </td>
+                              <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                                $${(Math.ceil(user.metrics.creditsUsed) * 0.05).toFixed(2)}
                               </td>
                               <td class="px-4 py-3">
                                 <div class="w-full max-w-xs">
