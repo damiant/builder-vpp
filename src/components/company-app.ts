@@ -624,10 +624,8 @@ export class CompanyApp extends LitElement {
         console.warn("No events found for the selected date range");
       }
 
-      // Cache the events
-      if (allEvents.length > 0) {
-        await cacheEvents(company.publicKey, company.privateKey, startDate, endDate, allEvents);
-      }
+      // Cache events (including empty arrays) so empty periods don't re-fetch every time
+      await cacheEvents(company.publicKey, company.privateKey, startDate, endDate, allEvents);
     }
 
     if (!isLatestRequest()) {
@@ -870,6 +868,9 @@ export class CompanyApp extends LitElement {
         return;
       }
 
+      // Cache the original data (including empty arrays) so subsequent calls are fast
+      await cacheMetrics(company.publicKey, company.privateKey, startDate, endDate, dataArray);
+
       if (dataArray.length === 0) {
         this.metricsError = "No metrics data available for the selected period";
         this.metricsData = null;
@@ -880,9 +881,6 @@ export class CompanyApp extends LitElement {
         const transformedData = this.transformMetricsData(dataArray);
 
         console.log("Transformed metrics:", transformedData);
-
-        // Cache the original data
-        await cacheMetrics(company.publicKey, company.privateKey, startDate, endDate, dataArray);
 
         this.metricsData = transformedData;
         this.metricsError = null;
@@ -979,20 +977,28 @@ export class CompanyApp extends LitElement {
       };
 
       this.resultDialogOpen = true;
-      if (response.ok && Array.isArray(data)) {
-        // Cache the metrics
-        const { startDate, endDate } = this.getMetricsDateRange();
-        await cacheMetrics(
-          updatedCompany.publicKey,
-          updatedCompany.privateKey,
-          startDate,
-          endDate,
-          data,
-        );
-        const transformedData = this.transformMetricsData(data);
-        this.metricsData = transformedData;
-        await this.fetchEventsData();
-        setTimeout(() => this.closeDialog(), 1000);
+      if (response.ok) {
+        const metricsArray = Array.isArray(data)
+          ? data
+          : data && typeof data === "object" && Array.isArray((data as { data?: unknown[] }).data)
+            ? (data as { data: unknown[] }).data
+            : null;
+
+        if (metricsArray) {
+          // Cache the metrics
+          const { startDate, endDate } = this.getMetricsDateRange();
+          await cacheMetrics(
+            updatedCompany.publicKey,
+            updatedCompany.privateKey,
+            startDate,
+            endDate,
+            metricsArray,
+          );
+          const transformedData = this.transformMetricsData(metricsArray as any[]);
+          this.metricsData = transformedData;
+          await this.fetchEventsData();
+          setTimeout(() => this.closeDialog(), 1000);
+        }
       }
     } catch (error) {
       this.connectionResult = {
