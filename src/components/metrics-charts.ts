@@ -36,6 +36,7 @@ export class MetricsCharts extends LitElement {
     projectMetrics: { attribute: false },
     featureMetrics: { attribute: false },
     userModelMetrics: { attribute: false },
+    designVsPromptMetrics: { attribute: false },
   };
 
   declare data: MetricsData | null;
@@ -71,6 +72,11 @@ export class MetricsCharts extends LitElement {
       creditsUsed: number;
     }>;
   }> | null;
+  declare designVsPromptMetrics: Array<{
+    type: "Design" | "Prompt";
+    count: number;
+    creditsUsed: number;
+  }> | null;
 
   private charts: Map<string, Chart<any>> = new Map();
 
@@ -86,6 +92,7 @@ export class MetricsCharts extends LitElement {
     this.projectMetrics = null;
     this.featureMetrics = null;
     this.userModelMetrics = null;
+    this.designVsPromptMetrics = null;
   }
 
   createRenderRoot() {
@@ -384,6 +391,8 @@ export class MetricsCharts extends LitElement {
     const spaceMetrics = this.getSpaceMetrics();
     const shouldShowSpacesTable = this.selectedSpaceId === "all" && spaceMetrics.length > 0;
     const shouldShowModelsTable = this.modelMetrics && this.modelMetrics.length > 0;
+    const shouldShowDesignVsPromptTable =
+      this.designVsPromptMetrics && this.designVsPromptMetrics.length > 0;
     const shouldShowProjectsTable = this.projectMetrics && this.projectMetrics.length > 0;
     const shouldShowFeaturesTable = this.featureMetrics && this.featureMetrics.length > 0;
     const shouldShowUserModelBreakdown = this.userModelMetrics && this.userModelMetrics.length > 0;
@@ -583,6 +592,60 @@ export class MetricsCharts extends LitElement {
                                   ></div>
                                 </div>
                               </div>
+                            </td>
+                          </tr>
+                        `;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `
+          : ""}
+        ${shouldShowDesignVsPromptTable
+          ? html`
+              <div>
+                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  Design vs Prompt
+                </h3>
+              </div>
+
+              <div
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-[var(--color-border-subtle)]">
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Type
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Count
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Used
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this.designVsPromptMetrics!.map((item) => {
+                        return html`
+                          <tr
+                            class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                          >
+                            <td class="px-4 py-3 text-[var(--color-text-primary)]">${item.type}</td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${item.count.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${Math.round(item.creditsUsed).toLocaleString()}
                             </td>
                           </tr>
                         `;

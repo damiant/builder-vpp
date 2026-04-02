@@ -70,6 +70,12 @@ type UserModelMetric = {
   }>;
 };
 
+type DesignVsPromptMetric = {
+  type: "Design" | "Prompt";
+  count: number;
+  creditsUsed: number;
+};
+
 export class CompanyApp extends LitElement {
   static properties = {
     companies: { attribute: false },
@@ -94,6 +100,7 @@ export class CompanyApp extends LitElement {
     projectMetrics: { attribute: false },
     featureMetrics: { attribute: false },
     userModelMetrics: { attribute: false },
+    designVsPromptMetrics: { attribute: false },
     eventsData: { attribute: false },
   };
 
@@ -119,6 +126,7 @@ export class CompanyApp extends LitElement {
   declare projectMetrics: ProjectMetric[] | null;
   declare featureMetrics: FeatureMetric[] | null;
   declare userModelMetrics: UserModelMetric[] | null;
+  declare designVsPromptMetrics: DesignVsPromptMetric[] | null;
   declare eventsData: any[] | null;
 
   private eventsFetchRequestId = 0;
@@ -147,6 +155,7 @@ export class CompanyApp extends LitElement {
     this.projectMetrics = null;
     this.featureMetrics = null;
     this.userModelMetrics = null;
+    this.designVsPromptMetrics = null;
     this.eventsData = null;
     const today = new Date();
     this.selectedMonth = today.getMonth();
@@ -633,6 +642,7 @@ export class CompanyApp extends LitElement {
       this.projectMetrics = null;
       this.featureMetrics = null;
       this.userModelMetrics = null;
+      this.designVsPromptMetrics = null;
       return;
     }
 
@@ -874,10 +884,44 @@ export class CompanyApp extends LitElement {
         models: Array.from(user.models.values()).sort((a, b) => b.creditsUsed - a.creditsUsed),
       }))
       .sort((a, b) => a.userEmail.localeCompare(b.userEmail));
+
+    // Calculate Design vs Prompt metrics
+    let designCount = 0;
+    let designCreditsUsed = 0;
+    let promptCount = 0;
+    let promptCreditsUsed = 0;
+
+    allEvents.forEach((event: any) => {
+      const creditsUsed = Number(event.metadata?.creditsUsed ?? event.creditsUsed) || 0;
+      const designExportId = event.designExportId || event.metadata?.designExportId;
+
+      if (designExportId) {
+        designCount += 1;
+        designCreditsUsed += creditsUsed;
+      } else {
+        promptCount += 1;
+        promptCreditsUsed += creditsUsed;
+      }
+    });
+
+    this.designVsPromptMetrics = [
+      {
+        type: "Design",
+        count: designCount,
+        creditsUsed: designCreditsUsed,
+      },
+      {
+        type: "Prompt",
+        count: promptCount,
+        creditsUsed: promptCreditsUsed,
+      },
+    ];
+
     console.log("Aggregated model metrics:", this.modelMetrics);
     console.log("Aggregated project metrics:", this.projectMetrics);
     console.log("Aggregated feature metrics:", this.featureMetrics);
     console.log("Aggregated user model metrics:", this.userModelMetrics);
+    console.log("Design vs Prompt metrics:", this.designVsPromptMetrics);
   }
 
   private async fetchMetrics() {
@@ -1170,6 +1214,7 @@ export class CompanyApp extends LitElement {
           .projectMetrics=${this.projectMetrics}
           .featureMetrics=${this.featureMetrics}
           .userModelMetrics=${this.userModelMetrics}
+          .designVsPromptMetrics=${this.designVsPromptMetrics}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}
         ></company-summary>

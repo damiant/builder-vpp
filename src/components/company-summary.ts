@@ -18,6 +18,7 @@ export class CompanySummary extends LitElement {
     projectMetrics: { attribute: false },
     featureMetrics: { attribute: false },
     userModelMetrics: { attribute: false },
+    designVsPromptMetrics: { attribute: false },
   };
 
   declare company: CompanyConfig | null;
@@ -54,6 +55,11 @@ export class CompanySummary extends LitElement {
       creditsUsed: number;
     }>;
   }> | null;
+  declare designVsPromptMetrics: Array<{
+    type: "Design" | "Prompt";
+    count: number;
+    creditsUsed: number;
+  }> | null;
 
   constructor() {
     super();
@@ -66,6 +72,7 @@ export class CompanySummary extends LitElement {
     this.projectMetrics = null;
     this.featureMetrics = null;
     this.userModelMetrics = null;
+    this.designVsPromptMetrics = null;
   }
 
   createRenderRoot() {
@@ -119,6 +126,7 @@ export class CompanySummary extends LitElement {
                   .projectMetrics=${this.projectMetrics}
                   .featureMetrics=${this.featureMetrics}
                   .userModelMetrics=${this.userModelMetrics}
+                  .designVsPromptMetrics=${this.designVsPromptMetrics}
                 ></metrics-charts>
               </section>
             `
