@@ -952,7 +952,7 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
-                          Amount
+                          Amount/Day
                         </th>
                         <th
                           class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
