@@ -89,10 +89,12 @@ export class CompanyApp extends LitElement {
     totalEventPages: { type: Number, attribute: false },
     isExportingPdf: { type: Boolean, attribute: false },
     isExportingPng: { type: Boolean, attribute: false },
+    isExportingCsv: { type: Boolean, attribute: false },
     modelMetrics: { attribute: false },
     projectMetrics: { attribute: false },
     featureMetrics: { attribute: false },
     userModelMetrics: { attribute: false },
+    eventsData: { attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -112,10 +114,12 @@ export class CompanyApp extends LitElement {
   declare totalEventPages: number;
   declare isExportingPdf: boolean;
   declare isExportingPng: boolean;
+  declare isExportingCsv: boolean;
   declare modelMetrics: ModelMetric[] | null;
   declare projectMetrics: ProjectMetric[] | null;
   declare featureMetrics: FeatureMetric[] | null;
   declare userModelMetrics: UserModelMetric[] | null;
+  declare eventsData: any[] | null;
 
   private eventsFetchRequestId = 0;
 
@@ -138,10 +142,12 @@ export class CompanyApp extends LitElement {
     this.totalEventPages = 1;
     this.isExportingPdf = false;
     this.isExportingPng = false;
+    this.isExportingCsv = false;
     this.modelMetrics = null;
     this.projectMetrics = null;
     this.featureMetrics = null;
     this.userModelMetrics = null;
+    this.eventsData = null;
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
@@ -349,6 +355,104 @@ export class CompanyApp extends LitElement {
     }
   };
 
+  private handleExportCsv = async () => {
+    if (this.isExportingCsv || this.isExportingPdf || this.isExportingPng) return;
+
+    this.isExportingCsv = true;
+
+    try {
+      if (!this.eventsData || this.eventsData.length === 0) {
+        console.warn("No events data available for export");
+        alert("No events data available to export");
+        return;
+      }
+
+      // Generate CSV content
+      const csv = this.generateCsvContent(this.eventsData);
+
+      // Create download link
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      // Generate filename with company name, month, and year
+      const companyName = this.selectedCompany.name.replace(/[^a-zA-Z0-9 ]/g, "");
+      const monthName = new Date(this.selectedYear, this.selectedMonth).toLocaleDateString(
+        "en-US",
+        { month: "long" },
+      );
+      const filename = `${companyName}-${monthName}-${this.selectedYear}.csv`;
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      alert("Failed to export CSV");
+    } finally {
+      this.isExportingCsv = false;
+    }
+  };
+
+  private generateCsvContent(events: any[]): string {
+    // CSV headers
+    const headers = [
+      "timestamp",
+      "userEmail",
+      "spaceName",
+      "spaceId",
+      "projectName",
+      "designExportId",
+      "creditsUsed",
+      "linesOfCode",
+      "feature",
+      "model",
+    ];
+
+    // Helper function to escape CSV values
+    const escapeCsvValue = (value: unknown): string => {
+      if (value === null || value === undefined) {
+        return "";
+      }
+      let str: string;
+      if (typeof value === "string") {
+        str = value;
+      } else if (typeof value === "number" || typeof value === "boolean") {
+        str = String(value);
+      } else {
+        str = JSON.stringify(value);
+      }
+      // If the value contains comma, newline, or double quote, wrap in double quotes and escape double quotes
+      if (str.includes(",") || str.includes("\n") || str.includes('"')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    // Convert events to CSV rows
+    const rows = events.map((event: any) => {
+      const metadata = event.metadata || {};
+      return [
+        escapeCsvValue(event.timestamp || ""),
+        escapeCsvValue(event.userEmail || metadata.userEmail || ""),
+        escapeCsvValue(event.spaceName || metadata.spaceName || ""),
+        escapeCsvValue(event.spaceId || metadata.spaceId || ""),
+        escapeCsvValue(event.projectName || metadata.projectName || ""),
+        escapeCsvValue(event.designExportId || metadata.designExportId || ""),
+        escapeCsvValue(event.creditsUsed || metadata.creditsUsed || ""),
+        escapeCsvValue(event.linesOfCode || metadata.linesOfCode || ""),
+        escapeCsvValue(event.feature || metadata.feature || ""),
+        escapeCsvValue(event.model || metadata.model || ""),
+      ].join(",");
+    });
+
+    // Combine headers and rows
+    return [headers.join(","), ...rows].join("\n");
+  }
+
   private getUniqueSpaces(): Array<{ id: string; name: string }> {
     if (!this.metricsData || !Array.isArray(this.metricsData)) {
       return [];
@@ -524,6 +628,7 @@ export class CompanyApp extends LitElement {
       this.isFetchingEventPages = false;
       this.currentEventPage = 1;
       this.totalEventPages = 1;
+      this.eventsData = null;
       this.modelMetrics = null;
       this.projectMetrics = null;
       this.featureMetrics = null;
@@ -550,6 +655,7 @@ export class CompanyApp extends LitElement {
     if (cachedEvents && Array.isArray(cachedEvents)) {
       console.log("Using cached events data");
       allEvents = cachedEvents;
+      this.eventsData = allEvents;
       this.isFetchingEventPages = false;
       this.currentEventPage = 1;
       this.totalEventPages = 1;
@@ -631,6 +737,9 @@ export class CompanyApp extends LitElement {
     if (!isLatestRequest()) {
       return;
     }
+
+    // Store events data for export
+    this.eventsData = allEvents;
 
     // Aggregate models and projects from events
     const modelMap = new Map<
@@ -1039,11 +1148,13 @@ export class CompanyApp extends LitElement {
           .selectedCompanyId=${this.selectedCompanyId}
           .isExportingPdf=${this.isExportingPdf}
           .isExportingPng=${this.isExportingPng}
+          .isExportingCsv=${this.isExportingCsv}
           @company-change=${this.handleCompanyChange}
           @add-company=${this.addCompany}
           @edit-company=${this.openDialog}
           @export-png=${this.handleExportPng}
           @export-pdf=${this.handleExportPdf}
+          @export-csv=${this.handleExportCsv}
           @refresh-data=${this.handleRefresh}
         ></company-header>
 
