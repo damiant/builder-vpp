@@ -16,6 +16,7 @@ type MetricsItem = {
   users: number;
   spaceIds: string[];
   spaces: Array<{ id: string; name: string }>;
+  models?: Array<{ model: string; tokensUsed: number; creditsUsed: number; linesOfCode: number }>;
 };
 
 type MetricsData = {
@@ -31,6 +32,11 @@ export class MetricsCharts extends LitElement {
     selectedMonth: { type: Number, attribute: false },
     selectedYear: { type: Number, attribute: false },
     usersData: { attribute: false },
+    modelMetrics: { attribute: false },
+    projectMetrics: { attribute: false },
+    featureMetrics: { attribute: false },
+    userModelMetrics: { attribute: false },
+    designVsPromptMetrics: { attribute: false },
   };
 
   declare data: MetricsData | null;
@@ -39,6 +45,39 @@ export class MetricsCharts extends LitElement {
   declare selectedMonth: number;
   declare selectedYear: number;
   declare usersData: Array<any> | null;
+  declare modelMetrics: Array<{
+    model: string;
+    totalLines: number;
+    events: number;
+    creditsUsed: number;
+  }> | null;
+  declare projectMetrics: Array<{
+    projectName: string;
+    totalLines: number;
+    creditsUsed: number;
+  }> | null;
+  declare featureMetrics: Array<{
+    feature: string;
+    totalLines: number;
+    events: number;
+    creditsUsed: number;
+  }> | null;
+  declare userModelMetrics: Array<{
+    userEmail: string;
+    totalCreditsUsed: number;
+    models: Array<{
+      model: string;
+      totalLines: number;
+      events: number;
+      creditsUsed: number;
+    }>;
+  }> | null;
+  declare designVsPromptMetrics: Array<{
+    type: "Design" | "Prompt";
+    count: number;
+    creditsUsed: number;
+    uniqueDesigns: number;
+  }> | null;
 
   private charts: Map<string, Chart<any>> = new Map();
 
@@ -50,10 +89,22 @@ export class MetricsCharts extends LitElement {
     this.selectedMonth = new Date().getMonth();
     this.selectedYear = new Date().getFullYear();
     this.usersData = null;
+    this.modelMetrics = null;
+    this.projectMetrics = null;
+    this.featureMetrics = null;
+    this.userModelMetrics = null;
+    this.designVsPromptMetrics = null;
   }
 
   createRenderRoot() {
     return this;
+  }
+
+  override disconnectedCallback() {
+    super.disconnectedCallback();
+    // Clean up all charts when component is removed
+    this.charts.forEach((chart) => chart.destroy());
+    this.charts.clear();
   }
 
   override updated(changedProperties: Map<string, unknown>) {
@@ -270,6 +321,12 @@ export class MetricsCharts extends LitElement {
     const canvas = this.querySelector<HTMLCanvasElement>(`#chart-${config.id}`);
     if (!canvas) return;
 
+    // Destroy existing chart if it exists
+    const existingChart = this.charts.get(config.id);
+    if (existingChart) {
+      existingChart.destroy();
+    }
+
     const dates = this.data!.map((d) => d.period);
     const formattedDates = dates.map((d) => this.formatDateLabel(d));
     const values = this.data!.map((d) => d.metrics[config.dataKey]);
@@ -334,6 +391,12 @@ export class MetricsCharts extends LitElement {
 
     const spaceMetrics = this.getSpaceMetrics();
     const shouldShowSpacesTable = this.selectedSpaceId === "all" && spaceMetrics.length > 0;
+    const shouldShowModelsTable = this.modelMetrics && this.modelMetrics.length > 0;
+    const shouldShowDesignVsPromptTable =
+      this.designVsPromptMetrics && this.designVsPromptMetrics.length > 0;
+    const shouldShowProjectsTable = this.projectMetrics && this.projectMetrics.length > 0;
+    const shouldShowFeaturesTable = this.featureMetrics && this.featureMetrics.length > 0;
+    const shouldShowUserModelBreakdown = this.userModelMetrics && this.userModelMetrics.length > 0;
 
     return html`
       <div class="mt-8 space-y-6">
@@ -385,7 +448,7 @@ export class MetricsCharts extends LitElement {
           ? html`
               <div>
                 <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
-                  Spaces Summary
+                  Spaces
                 </h3>
               </div>
 
@@ -445,11 +508,340 @@ export class MetricsCharts extends LitElement {
               </div>
             `
           : ""}
+        ${shouldShowModelsTable
+          ? html`
+              <div>
+                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  Models
+                </h3>
+              </div>
+
+              <div
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-[var(--color-border-subtle)]">
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Model
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Total Lines
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Events
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Used
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Per Event
+                        </th>
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credit Distribution
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this.modelMetrics!.map((model) => {
+                        const maxCredits = Math.max(
+                          ...this.modelMetrics!.map((m) => m.creditsUsed),
+                          1,
+                        );
+                        const creditPercentage = (model.creditsUsed / maxCredits) * 100;
+                        const creditsPerEvent =
+                          model.events > 0 ? model.creditsUsed / model.events : 0;
+
+                        return html`
+                          <tr
+                            class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                          >
+                            <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                              ${model.model}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${model.totalLines.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${model.events.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${Math.round(model.creditsUsed).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${creditsPerEvent.toFixed(2)}
+                            </td>
+                            <td class="px-4 py-3">
+                              <div class="w-full max-w-xs">
+                                <div class="rounded-full bg-[var(--color-border-subtle)] p-0.5 h-6">
+                                  <div
+                                    class="h-full rounded-full bg-[#10b981] transition-all duration-300"
+                                    style="width: ${creditPercentage}%"
+                                  ></div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        `;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `
+          : ""}
+        ${shouldShowDesignVsPromptTable
+          ? html`
+              <div>
+                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  Design vs Prompt
+                </h3>
+              </div>
+
+              <div
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-[var(--color-border-subtle)]">
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Type
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Count
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Used
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Unique Designs
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this.designVsPromptMetrics!.map((item) => {
+                        return html`
+                          <tr
+                            class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                          >
+                            <td class="px-4 py-3 text-[var(--color-text-primary)]">${item.type}</td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${item.count.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${Math.round(item.creditsUsed).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${item.uniqueDesigns.toLocaleString()}
+                            </td>
+                          </tr>
+                        `;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `
+          : ""}
+        ${shouldShowProjectsTable
+          ? html`
+              <div>
+                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  Projects
+                </h3>
+              </div>
+
+              <div
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-[var(--color-border-subtle)]">
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Project Name
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Total Lines
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Used
+                        </th>
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credit Distribution
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this.projectMetrics!.map((project) => {
+                        const maxCredits = Math.max(
+                          ...this.projectMetrics!.map((item) => item.creditsUsed),
+                          1,
+                        );
+                        const creditPercentage = (project.creditsUsed / maxCredits) * 100;
+
+                        return html`
+                          <tr
+                            class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                          >
+                            <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                              ${project.projectName}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${project.totalLines.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${Math.round(project.creditsUsed).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3">
+                              <div class="w-full max-w-xs">
+                                <div class="h-6 rounded-full bg-[var(--color-border-subtle)] p-0.5">
+                                  <div
+                                    class="h-full rounded-full bg-[#10b981] transition-all duration-300"
+                                    style="width: ${creditPercentage}%"
+                                  ></div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        `;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `
+          : ""}
+        ${shouldShowFeaturesTable
+          ? html`
+              <div>
+                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  Feature
+                </h3>
+              </div>
+
+              <div
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm">
+                    <thead>
+                      <tr class="border-b border-[var(--color-border-subtle)]">
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Feature
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Total Lines
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Events
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Used
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits Per Event
+                        </th>
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credit Distribution
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${this.featureMetrics!.map((feature) => {
+                        const maxCredits = Math.max(
+                          ...this.featureMetrics!.map((item) => item.creditsUsed),
+                          1,
+                        );
+                        const creditPercentage = (feature.creditsUsed / maxCredits) * 100;
+                        const creditsPerEvent =
+                          feature.events > 0 ? feature.creditsUsed / feature.events : 0;
+
+                        return html`
+                          <tr
+                            class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                          >
+                            <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                              ${feature.feature}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${feature.totalLines.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${feature.events.toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${Math.round(feature.creditsUsed).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${creditsPerEvent.toFixed(2)}
+                            </td>
+                            <td class="px-4 py-3">
+                              <div class="w-full max-w-xs">
+                                <div class="h-6 rounded-full bg-[var(--color-border-subtle)] p-0.5">
+                                  <div
+                                    class="h-full rounded-full bg-[#10b981] transition-all duration-300"
+                                    style="width: ${creditPercentage}%"
+                                  ></div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        `;
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            `
+          : ""}
         ${this.usersData && Array.isArray(this.usersData) && this.usersData.length > 0
           ? html`
               <div>
                 <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
-                  Users Summary
+                  Users
                 </h3>
               </div>
 
@@ -485,14 +877,25 @@ export class MetricsCharts extends LitElement {
                         >
                           Credits Used
                         </th>
+                        <th
+                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credit Distribution
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       ${this.usersData
                         .filter((user: any) => user.userEmail) // Filter out unknown users
                         .sort((a: any, b: any) => b.metrics.creditsUsed - a.metrics.creditsUsed)
-                        .map(
-                          (user: any) => html`
+                        .map((user: any, _index: number, users: any[]) => {
+                          const maxCredits = Math.max(
+                            ...users.map((item: any) => item.metrics.creditsUsed),
+                            1,
+                          );
+                          const creditPercentage = (user.metrics.creditsUsed / maxCredits) * 100;
+
+                          return html`
                             <tr
                               class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
                             >
@@ -511,13 +914,153 @@ export class MetricsCharts extends LitElement {
                               <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                                 ${Math.ceil(user.metrics.creditsUsed).toLocaleString()}
                               </td>
+                              <td class="px-4 py-3">
+                                <div class="w-full max-w-xs">
+                                  <div
+                                    class="h-6 rounded-full bg-[var(--color-border-subtle)] p-0.5"
+                                  >
+                                    <div
+                                      class="h-full rounded-full bg-[#10b981] transition-all duration-300"
+                                      style="width: ${creditPercentage}%"
+                                    ></div>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
-                          `,
-                        )}
+                          `;
+                        })}
                     </tbody>
                   </table>
                 </div>
               </div>
+            `
+          : ""}
+        ${shouldShowUserModelBreakdown
+          ? html`
+              <details
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <summary class="cursor-pointer list-none">
+                  <div class="flex items-center justify-between gap-4">
+                    <h3
+                      class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]"
+                    >
+                      User-Level Model Usage Breakdown
+                    </h3>
+                    <span class="text-sm font-medium text-[var(--color-text-secondary)]">
+                      Expand
+                    </span>
+                  </div>
+                </summary>
+
+                <div class="mt-4 space-y-4">
+                  ${this.userModelMetrics!.map((user) => {
+                    const maxCredits = Math.max(
+                      ...user.models.map((model) => model.creditsUsed),
+                      1,
+                    );
+
+                    return html`
+                      <div
+                        class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-4"
+                      >
+                        <div class="border-b border-[var(--color-border-subtle)] px-4 pb-3">
+                          <h4 class="text-base font-semibold text-[var(--color-text-primary)]">
+                            ${user.userEmail}
+                          </h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                          <table class="w-full text-sm">
+                            <thead>
+                              <tr class="border-b border-[var(--color-border-subtle)]">
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Model
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Total Lines
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Events
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Credits Per Event
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Credits Used
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Credit Distribution
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              ${user.models.map((model) => {
+                                const creditPercentage = (model.creditsUsed / maxCredits) * 100;
+                                const creditsPerEvent =
+                                  model.events > 0 ? model.creditsUsed / model.events : 0;
+
+                                return html`
+                                  <tr
+                                    class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-elevated)]"
+                                  >
+                                    <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                                      ${model.model}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      ${model.totalLines.toLocaleString()}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      ${model.events.toLocaleString()}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      ${creditsPerEvent.toFixed(2)}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      ${Math.round(model.creditsUsed).toLocaleString()}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                      <div class="w-full max-w-xs">
+                                        <div
+                                          class="h-6 rounded-full bg-[var(--color-border-subtle)] p-0.5"
+                                        >
+                                          <div
+                                            class="h-full rounded-full bg-[#10b981] transition-all duration-300"
+                                            style="width: ${creditPercentage}%"
+                                          ></div>
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                `;
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    `;
+                  })}
+                </div>
+              </details>
             `
           : ""}
       </div>

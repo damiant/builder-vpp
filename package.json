@@ -12,7 +12,9 @@
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
     "chart.js": "^4.5.1",
+    "html-to-image": "^1.11.13",
     "idb-keyval": "^6.2.2",
+    "jspdf": "^4.2.1",
     "lit": "^3.3.2",
     "recharts": "^3.8.1",
     "tailwindcss": "^4.2.2"
@@ -26,5 +28,5 @@
     "vite": "npm:@voidzero-dev/vite-plus-core@latest",
     "vitest": "npm:@voidzero-dev/vite-plus-test@latest"
   },
-  "packageManager": "npm@11.12.1"
+  "packageManager": "bun@latest"
 }

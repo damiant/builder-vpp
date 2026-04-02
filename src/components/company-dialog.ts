@@ -169,7 +169,7 @@ export class CompanyDialog extends LitElement {
             </div>
             <button
               type="button"
-              class="p-2 text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
+              class="px-1 py-0 text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
               aria-label="Close dialog"
               @click=${this.closeDialog}
             >
@@ -185,6 +185,7 @@ export class CompanyDialog extends LitElement {
                 class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 type="text"
                 placeholder="Enter company name"
+                autocomplete="off"
                 value=${company.name}
               />
             </label>
@@ -198,6 +199,7 @@ export class CompanyDialog extends LitElement {
                 class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 type="password"
                 placeholder="Enter private key"
+                autocomplete="off"
                 value=${company.privateKey}
               />
             </label>
@@ -221,23 +223,16 @@ export class CompanyDialog extends LitElement {
               <button
                 type="button"
                 class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
-                @click=${this.closeDialog}
+                @click=${this.connectCompany}
               >
-                Cancel
-              </button>
-              <button
-                type="button"
-                class="rounded-[var(--radius-sm)] border border-[var(--color-border-default)] bg-[var(--color-surface)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)]"
-                @click=${this.saveCompany}
-              >
-                Save
+                Connect
               </button>
               <button
                 type="button"
                 class="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-2.5 text-sm font-medium text-[var(--color-text-inverse)] transition hover:bg-[var(--color-brand-strong)]"
-                @click=${this.connectCompany}
+                @click=${this.saveCompany}
               >
-                Connect
+                Save
               </button>
             </div>
           </div>

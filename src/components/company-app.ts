@@ -1,7 +1,10 @@
 import { LitElement, html } from "lit";
+import { toPng } from "html-to-image";
+import { jsPDF } from "jspdf";
 import type { CompanyConfig } from "../lib/company-store";
 import {
   buildMetricsUrl,
+  buildEventsUrl,
   createCompany,
   defaultCompanies,
   deleteCompany,
@@ -10,7 +13,13 @@ import {
   saveCompanies,
   upsertCompany,
 } from "../lib/company-store";
-import { cacheMetrics, getCachedMetrics } from "../lib/metrics-cache";
+import {
+  cacheMetrics,
+  getCachedMetrics,
+  cacheEvents,
+  getCachedEvents,
+  clearAllCaches,
+} from "../lib/metrics-cache";
 import "./company-dialog";
 import "./company-header";
 import "./company-summary";
@@ -30,6 +39,44 @@ type ConnectionResult = {
   headers?: Record<string, string>;
 };
 
+type ModelMetric = {
+  model: string;
+  totalLines: number;
+  events: number;
+  creditsUsed: number;
+};
+
+type ProjectMetric = {
+  projectName: string;
+  totalLines: number;
+  creditsUsed: number;
+};
+
+type FeatureMetric = {
+  feature: string;
+  totalLines: number;
+  events: number;
+  creditsUsed: number;
+};
+
+type UserModelMetric = {
+  userEmail: string;
+  totalCreditsUsed: number;
+  models: Array<{
+    model: string;
+    totalLines: number;
+    events: number;
+    creditsUsed: number;
+  }>;
+};
+
+type DesignVsPromptMetric = {
+  type: "Design" | "Prompt";
+  count: number;
+  creditsUsed: number;
+  uniqueDesigns: number;
+};
+
 export class CompanyApp extends LitElement {
   static properties = {
     companies: { attribute: false },
@@ -44,6 +91,18 @@ export class CompanyApp extends LitElement {
     selectedYear: { type: Number, attribute: false },
     selectedSpaceId: { attribute: false },
     isFetchingUncachedMetrics: { type: Boolean, attribute: false },
+    isFetchingEventPages: { type: Boolean, attribute: false },
+    currentEventPage: { type: Number, attribute: false },
+    totalEventPages: { type: Number, attribute: false },
+    isExportingPdf: { type: Boolean, attribute: false },
+    isExportingPng: { type: Boolean, attribute: false },
+    isExportingCsv: { type: Boolean, attribute: false },
+    modelMetrics: { attribute: false },
+    projectMetrics: { attribute: false },
+    featureMetrics: { attribute: false },
+    userModelMetrics: { attribute: false },
+    designVsPromptMetrics: { attribute: false },
+    eventsData: { attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -58,11 +117,27 @@ export class CompanyApp extends LitElement {
   declare selectedYear: number;
   declare selectedSpaceId: string;
   declare isFetchingUncachedMetrics: boolean;
+  declare isFetchingEventPages: boolean;
+  declare currentEventPage: number;
+  declare totalEventPages: number;
+  declare isExportingPdf: boolean;
+  declare isExportingPng: boolean;
+  declare isExportingCsv: boolean;
+  declare modelMetrics: ModelMetric[] | null;
+  declare projectMetrics: ProjectMetric[] | null;
+  declare featureMetrics: FeatureMetric[] | null;
+  declare userModelMetrics: UserModelMetric[] | null;
+  declare designVsPromptMetrics: DesignVsPromptMetric[] | null;
+  declare eventsData: any[] | null;
+
+  private eventsFetchRequestId = 0;
 
   constructor() {
     super();
     this.companies = [...defaultCompanies];
-    this.selectedCompanyId = this.companies[0]?.id ?? defaultCompanies[0].id;
+    // Try to load saved company ID from localStorage, otherwise use first company
+    const savedCompanyId = this.getSelectedCompanyIdFromStorage();
+    this.selectedCompanyId = savedCompanyId || this.companies[0]?.id || defaultCompanies[0].id;
     this.dialogOpen = false;
     this.dialogCompany = null;
     this.connectionResult = null;
@@ -71,6 +146,18 @@ export class CompanyApp extends LitElement {
     this.metricsError = null;
     this.selectedSpaceId = "all";
     this.isFetchingUncachedMetrics = false;
+    this.isFetchingEventPages = false;
+    this.currentEventPage = 1;
+    this.totalEventPages = 1;
+    this.isExportingPdf = false;
+    this.isExportingPng = false;
+    this.isExportingCsv = false;
+    this.modelMetrics = null;
+    this.projectMetrics = null;
+    this.featureMetrics = null;
+    this.userModelMetrics = null;
+    this.designVsPromptMetrics = null;
+    this.eventsData = null;
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
@@ -88,6 +175,7 @@ export class CompanyApp extends LitElement {
   private async initializeApp() {
     await this.restoreCompanies();
     await this.fetchMetrics();
+    await this.fetchEventsData();
   }
 
   private get selectedCompany() {
@@ -122,27 +210,258 @@ export class CompanyApp extends LitElement {
     const companies = await loadCompanies();
 
     this.companies = companies;
-    this.selectedCompanyId = getSelectedCompany(companies, this.selectedCompanyId).id;
+    // Load saved company ID from localStorage, or use first company in list
+    const savedCompanyId = this.getSelectedCompanyIdFromStorage();
+    const initialCompanyId = savedCompanyId || companies[0]?.id || defaultCompanies[0].id;
+
+    // Verify the selected company exists in the loaded companies list
+    this.selectedCompanyId = getSelectedCompany(companies, initialCompanyId).id;
+    this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
   }
 
   private async persistCompanies() {
     await saveCompanies(this.companies);
   }
 
+  private getSelectedCompanyIdFromStorage(): string | null {
+    try {
+      return window.localStorage.getItem("selectedCompanyId");
+    } catch (error) {
+      console.error("Error reading from localStorage:", error);
+      return null;
+    }
+  }
+
+  private saveSelectedCompanyIdToStorage(companyId: string): void {
+    try {
+      window.localStorage.setItem("selectedCompanyId", companyId);
+    } catch (error) {
+      console.error("Error writing to localStorage:", error);
+    }
+  }
+
   private handleCompanyChange = (event: CustomEvent<{ companyId: string }>) => {
     this.selectedCompanyId = event.detail.companyId;
+    this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
     void this.fetchMetrics();
+    void this.fetchEventsData();
   };
 
   private handleDateChange = (event: CustomEvent<{ month: number; year: number }>) => {
     this.selectedMonth = event.detail.month;
     this.selectedYear = event.detail.year;
     void this.fetchMetrics();
+    void this.fetchEventsData();
   };
 
   private handleSpaceChange = (event: CustomEvent<{ spaceId: string }>) => {
     this.selectedSpaceId = event.detail.spaceId;
   };
+
+  private handleRefresh = async () => {
+    console.log("Clearing caches and refreshing data...");
+    await clearAllCaches();
+    void this.fetchMetrics();
+    void this.fetchEventsData();
+  };
+
+  private handleExportPdf = async () => {
+    if (this.isExportingPdf || this.isExportingPng) return;
+
+    const exportRoot = this.querySelector<HTMLElement>("company-summary main");
+    if (!exportRoot) {
+      console.error("Unable to find page content for PDF export");
+      return;
+    }
+
+    this.isExportingPdf = true;
+    const previousScrollX = window.scrollX;
+    const previousScrollY = window.scrollY;
+
+    try {
+      await this.updateComplete;
+      await customElements.whenDefined("company-summary");
+      await document.fonts.ready;
+      window.scrollTo(0, 0);
+
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "pt",
+        format: "a4",
+      });
+      const companyName = this.selectedCompany.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const month = String(this.selectedMonth + 1).padStart(2, "0");
+      const filename = `fusion-metrics-${companyName}-${this.selectedYear}-${month}.pdf`;
+      const margin = 24;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const availableWidth = pageWidth - margin * 2;
+      const contentWidth = Math.max(exportRoot.scrollWidth, exportRoot.clientWidth);
+
+      await new Promise<void>((resolve, reject) => {
+        pdf
+          .html(exportRoot, {
+            margin,
+            width: availableWidth,
+            windowWidth: contentWidth,
+            autoPaging: "text",
+            html2canvas: {
+              backgroundColor: "#ffffff",
+              scale: 0.5,
+              useCORS: true,
+              scrollX: 0,
+              scrollY: 0,
+              windowWidth: contentWidth,
+            },
+            callback: (doc) => {
+              doc.save(filename);
+              resolve();
+            },
+          })
+          .catch(reject);
+      });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+    } finally {
+      window.scrollTo(previousScrollX, previousScrollY);
+      this.isExportingPdf = false;
+    }
+  };
+
+  private handleExportPng = async () => {
+    if (this.isExportingPng || this.isExportingPdf) return;
+
+    const exportRoot = this.querySelector<HTMLElement>("company-summary main");
+    if (!exportRoot) {
+      console.error("Unable to find page content for PNG export");
+      return;
+    }
+
+    this.isExportingPng = true;
+
+    try {
+      await this.updateComplete;
+      await customElements.whenDefined("company-summary");
+      await document.fonts.ready;
+
+      const companyName = this.selectedCompany.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const month = String(this.selectedMonth + 1).padStart(2, "0");
+      const filename = `fusion-metrics-${companyName}-${this.selectedYear}-${month}.png`;
+      const contentWidth = Math.max(exportRoot.scrollWidth, exportRoot.clientWidth);
+      const dataUrl = await toPng(exportRoot, {
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+        pixelRatio: 2,
+        canvasWidth: contentWidth,
+        width: contentWidth,
+      });
+      const link = document.createElement("a");
+      link.download = filename;
+      link.href = dataUrl;
+      link.click();
+    } catch (error) {
+      console.error("Error exporting PNG:", error);
+    } finally {
+      this.isExportingPng = false;
+    }
+  };
+
+  private handleExportCsv = async () => {
+    if (this.isExportingCsv || this.isExportingPdf || this.isExportingPng) return;
+
+    this.isExportingCsv = true;
+
+    try {
+      if (!this.eventsData || this.eventsData.length === 0) {
+        console.warn("No events data available for export");
+        alert("No events data available to export");
+        return;
+      }
+
+      // Generate CSV content
+      const csv = this.generateCsvContent(this.eventsData);
+
+      // Create download link
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      // Generate filename with company name, month, and year
+      const companyName = this.selectedCompany.name.replace(/[^a-zA-Z0-9 ]/g, "");
+      const monthName = new Date(this.selectedYear, this.selectedMonth).toLocaleDateString(
+        "en-US",
+        { month: "long" },
+      );
+      const filename = `${companyName}-${monthName}-${this.selectedYear}.csv`;
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error exporting CSV:", error);
+      alert("Failed to export CSV");
+    } finally {
+      this.isExportingCsv = false;
+    }
+  };
+
+  private generateCsvContent(events: any[]): string {
+    // CSV headers
+    const headers = [
+      "timestamp",
+      "userEmail",
+      "spaceName",
+      "spaceId",
+      "projectName",
+      "designExportId",
+      "creditsUsed",
+      "linesOfCode",
+      "feature",
+      "model",
+    ];
+
+    // Helper function to escape CSV values
+    const escapeCsvValue = (value: unknown): string => {
+      if (value === null || value === undefined) {
+        return "";
+      }
+      let str: string;
+      if (typeof value === "string") {
+        str = value;
+      } else if (typeof value === "number" || typeof value === "boolean") {
+        str = String(value);
+      } else {
+        str = JSON.stringify(value);
+      }
+      // If the value contains comma, newline, or double quote, wrap in double quotes and escape double quotes
+      if (str.includes(",") || str.includes("\n") || str.includes('"')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    // Convert events to CSV rows
+    const rows = events.map((event: any) => {
+      const metadata = event.metadata || {};
+      return [
+        escapeCsvValue(event.timestamp || ""),
+        escapeCsvValue(event.userEmail || metadata.userEmail || ""),
+        escapeCsvValue(event.spaceName || metadata.spaceName || ""),
+        escapeCsvValue(event.spaceId || metadata.spaceId || ""),
+        escapeCsvValue(event.projectName || metadata.projectName || ""),
+        escapeCsvValue(event.designExportId || metadata.designExportId || ""),
+        escapeCsvValue(event.creditsUsed || metadata.creditsUsed || ""),
+        escapeCsvValue(event.linesOfCode || metadata.linesOfCode || ""),
+        escapeCsvValue(event.feature || metadata.feature || ""),
+        escapeCsvValue(event.model || metadata.model || ""),
+      ].join(",");
+    });
+
+    // Combine headers and rows
+    return [headers.join(","), ...rows].join("\n");
+  }
 
   private getUniqueSpaces(): Array<{ id: string; name: string }> {
     if (!this.metricsData || !Array.isArray(this.metricsData)) {
@@ -226,10 +545,28 @@ export class CompanyApp extends LitElement {
           );
       }
 
+      // Extract and normalize models from metadata
+      let models: Array<{
+        model: string;
+        tokensUsed: number;
+        creditsUsed: number;
+        linesOfCode: number;
+      }> = [];
+
       const toNumber = (val: any): number => {
         const num = Number(val);
         return isNaN(num) ? 0 : num;
       };
+
+      // Check if there's metadata with model information
+      if (metrics.metadata && metrics.metadata.model) {
+        models.push({
+          model: metrics.metadata.model,
+          tokensUsed: toNumber(metrics.metadata.tokensUsed),
+          creditsUsed: toNumber(metrics.metadata.creditsUsed),
+          linesOfCode: toNumber(metrics.metadata.linesOfCode),
+        });
+      }
 
       return {
         period: item.period || item.date || "",
@@ -244,6 +581,7 @@ export class CompanyApp extends LitElement {
           users: toNumber(metrics.users),
           spaceIds: spaceIds,
           spaces: spaces,
+          models: models,
         },
       };
     });
@@ -277,12 +615,318 @@ export class CompanyApp extends LitElement {
           events: toNumber(metrics.events),
           users: toNumber(metrics.users),
           spaces: metrics.spaces || [],
+          metadata: metrics.metadata || {},
         },
       };
     });
 
     // Normalize spaces in all items (extract spaceIds from space objects)
     return this.normalizeSpaces(transformedData);
+  }
+
+  private async fetchEventsData() {
+    const requestId = ++this.eventsFetchRequestId;
+    const isLatestRequest = () => requestId === this.eventsFetchRequestId;
+    const company = this.selectedCompany;
+
+    if (!company.privateKey) {
+      if (!isLatestRequest()) {
+        return;
+      }
+
+      console.log("Skipping events fetch - no private key");
+      this.isFetchingEventPages = false;
+      this.currentEventPage = 1;
+      this.totalEventPages = 1;
+      this.eventsData = null;
+      this.modelMetrics = null;
+      this.projectMetrics = null;
+      this.featureMetrics = null;
+      this.userModelMetrics = null;
+      this.designVsPromptMetrics = null;
+      return;
+    }
+
+    const { startDate, endDate } = this.getMetricsDateRange();
+
+    // Check cache first
+    const cachedEvents = await getCachedEvents(
+      company.publicKey,
+      company.privateKey,
+      startDate,
+      endDate,
+    );
+
+    if (!isLatestRequest()) {
+      return;
+    }
+
+    let allEvents: any[] = [];
+
+    if (cachedEvents && Array.isArray(cachedEvents)) {
+      console.log("Using cached events data");
+      allEvents = cachedEvents;
+      this.eventsData = allEvents;
+      this.isFetchingEventPages = false;
+      this.currentEventPage = 1;
+      this.totalEventPages = 1;
+    } else {
+      // Fetch all events with pagination
+      let hasMore = true;
+      let page = 1;
+      const limit = 1000;
+
+      console.log("Fetching events data with pagination");
+      this.isFetchingEventPages = true;
+      this.currentEventPage = 1;
+      this.totalEventPages = 1;
+
+      while (hasMore) {
+        try {
+          if (!isLatestRequest()) {
+            return;
+          }
+
+          this.currentEventPage = page;
+          const url = buildEventsUrl(startDate, endDate, page, limit);
+          const headers = {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${company.privateKey}`,
+          };
+
+          const response = await fetch(url, {
+            method: "GET",
+            headers: headers,
+          });
+
+          if (!isLatestRequest()) {
+            return;
+          }
+
+          if (!response.ok) {
+            console.error("Failed to fetch events, stopping pagination:", response.status);
+            break;
+          }
+
+          const data = await response.json();
+
+          if (!isLatestRequest()) {
+            return;
+          }
+
+          const events = data.data || [];
+          allEvents = allEvents.concat(events);
+
+          const pagination = data.pagination || {};
+          this.totalEventPages = Number(pagination.totalPages) || page;
+          hasMore = pagination.hasNext ?? page < this.totalEventPages;
+          page += 1;
+
+          console.log(`Fetched page ${page - 1}, total events so far: ${allEvents.length}`);
+        } catch (error) {
+          console.error("Error fetching events page:", error);
+          break;
+        }
+      }
+
+      if (!isLatestRequest()) {
+        return;
+      }
+
+      this.isFetchingEventPages = false;
+      this.currentEventPage = 1;
+      this.totalEventPages = 1;
+
+      if (allEvents.length === 0) {
+        console.warn("No events found for the selected date range");
+      }
+
+      // Cache events (including empty arrays) so empty periods don't re-fetch every time
+      await cacheEvents(company.publicKey, company.privateKey, startDate, endDate, allEvents);
+    }
+
+    if (!isLatestRequest()) {
+      return;
+    }
+
+    // Store events data for export
+    this.eventsData = allEvents;
+
+    // Aggregate models and projects from events
+    const modelMap = new Map<
+      string,
+      {
+        model: string;
+        totalLines: number;
+        events: number;
+        creditsUsed: number;
+      }
+    >();
+    const projectMap = new Map<
+      string,
+      {
+        projectName: string;
+        totalLines: number;
+        creditsUsed: number;
+      }
+    >();
+    const featureMap = new Map<
+      string,
+      {
+        feature: string;
+        totalLines: number;
+        events: number;
+        creditsUsed: number;
+      }
+    >();
+    const userModelMap = new Map<
+      string,
+      {
+        userEmail: string;
+        totalCreditsUsed: number;
+        models: Map<
+          string,
+          {
+            model: string;
+            totalLines: number;
+            events: number;
+            creditsUsed: number;
+          }
+        >;
+      }
+    >();
+
+    allEvents.forEach((event: any) => {
+      const metadata = event.metadata || {};
+      const creditsUsed = Number(metadata.creditsUsed ?? event.creditsUsed) || 0;
+      const totalLines = Number(metadata.linesOfCode ?? event.linesOfCode) || 0;
+      const model = metadata.model || event.model;
+
+      if (model) {
+        if (!modelMap.has(model)) {
+          modelMap.set(model, {
+            model,
+            totalLines: 0,
+            events: 0,
+            creditsUsed: 0,
+          });
+        }
+        const modelData = modelMap.get(model)!;
+        modelData.totalLines += totalLines;
+        modelData.events += 1;
+        modelData.creditsUsed += creditsUsed;
+      }
+
+      const projectName = String(metadata.projectName || event.projectName || "Unknown");
+      if (!projectMap.has(projectName)) {
+        projectMap.set(projectName, {
+          projectName,
+          totalLines: 0,
+          creditsUsed: 0,
+        });
+      }
+      const projectData = projectMap.get(projectName)!;
+      projectData.totalLines += totalLines;
+      projectData.creditsUsed += creditsUsed;
+
+      const feature = String(event.feature || metadata.feature || "Unknown");
+      if (!featureMap.has(feature)) {
+        featureMap.set(feature, {
+          feature,
+          totalLines: 0,
+          events: 0,
+          creditsUsed: 0,
+        });
+      }
+      const featureData = featureMap.get(feature)!;
+      featureData.totalLines += totalLines;
+      featureData.events += 1;
+      featureData.creditsUsed += creditsUsed;
+
+      const userEmail = String(
+        event.userEmail || metadata.userEmail || event.userId || metadata.userId || "Unknown",
+      );
+      const modelName = String(model || "Unknown");
+      if (!userModelMap.has(userEmail)) {
+        userModelMap.set(userEmail, {
+          userEmail,
+          totalCreditsUsed: 0,
+          models: new Map(),
+        });
+      }
+      const userData = userModelMap.get(userEmail)!;
+      userData.totalCreditsUsed += creditsUsed;
+
+      if (!userData.models.has(modelName)) {
+        userData.models.set(modelName, {
+          model: modelName,
+          totalLines: 0,
+          events: 0,
+          creditsUsed: 0,
+        });
+      }
+      const userModelData = userData.models.get(modelName)!;
+      userModelData.totalLines += totalLines;
+      userModelData.events += 1;
+      userModelData.creditsUsed += creditsUsed;
+    });
+
+    this.modelMetrics = Array.from(modelMap.values()).sort((a, b) => b.creditsUsed - a.creditsUsed);
+    this.projectMetrics = Array.from(projectMap.values()).sort(
+      (a, b) => b.creditsUsed - a.creditsUsed,
+    );
+    this.featureMetrics = Array.from(featureMap.values()).sort(
+      (a, b) => b.creditsUsed - a.creditsUsed,
+    );
+    this.userModelMetrics = Array.from(userModelMap.values())
+      .map((user) => ({
+        userEmail: user.userEmail,
+        totalCreditsUsed: user.totalCreditsUsed,
+        models: Array.from(user.models.values()).sort((a, b) => b.creditsUsed - a.creditsUsed),
+      }))
+      .sort((a, b) => a.userEmail.localeCompare(b.userEmail));
+
+    // Calculate Design vs Prompt metrics
+    let designCount = 0;
+    let designCreditsUsed = 0;
+    let promptCount = 0;
+    let promptCreditsUsed = 0;
+    const designUniqueIds = new Set<string>();
+
+    allEvents.forEach((event: any) => {
+      const creditsUsed = Number(event.metadata?.creditsUsed ?? event.creditsUsed) || 0;
+      const designExportId = event.designExportId || event.metadata?.designExportId;
+
+      if (designExportId) {
+        designCount += 1;
+        designCreditsUsed += creditsUsed;
+        designUniqueIds.add(String(designExportId));
+      } else {
+        promptCount += 1;
+        promptCreditsUsed += creditsUsed;
+      }
+    });
+
+    this.designVsPromptMetrics = [
+      {
+        type: "Design",
+        count: designCount,
+        creditsUsed: designCreditsUsed,
+        uniqueDesigns: designUniqueIds.size,
+      },
+      {
+        type: "Prompt",
+        count: promptCount,
+        creditsUsed: promptCreditsUsed,
+        uniqueDesigns: 0,
+      },
+    ];
+
+    console.log("Aggregated model metrics:", this.modelMetrics);
+    console.log("Aggregated project metrics:", this.projectMetrics);
+    console.log("Aggregated feature metrics:", this.featureMetrics);
+    console.log("Aggregated user model metrics:", this.userModelMetrics);
+    console.log("Design vs Prompt metrics:", this.designVsPromptMetrics);
   }
 
   private async fetchMetrics() {
@@ -382,6 +1026,9 @@ export class CompanyApp extends LitElement {
         return;
       }
 
+      // Cache the original data (including empty arrays) so subsequent calls are fast
+      await cacheMetrics(company.publicKey, company.privateKey, startDate, endDate, dataArray);
+
       if (dataArray.length === 0) {
         this.metricsError = "No metrics data available for the selected period";
         this.metricsData = null;
@@ -392,9 +1039,6 @@ export class CompanyApp extends LitElement {
         const transformedData = this.transformMetricsData(dataArray);
 
         console.log("Transformed metrics:", transformedData);
-
-        // Cache the original data
-        await cacheMetrics(company.publicKey, company.privateKey, startDate, endDate, dataArray);
 
         this.metricsData = transformedData;
         this.metricsError = null;
@@ -438,6 +1082,7 @@ export class CompanyApp extends LitElement {
 
     this.companies = upsertCompany(this.companies, updatedCompany);
     this.selectedCompanyId = updatedCompany.id;
+    this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
     await this.persistCompanies();
     this.metricsError = null;
     this.closeDialog();
@@ -448,6 +1093,7 @@ export class CompanyApp extends LitElement {
 
     this.companies = upsertCompany(this.companies, updatedCompany);
     this.selectedCompanyId = updatedCompany.id;
+    this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
     await this.persistCompanies();
 
     if (!updatedCompany.privateKey) {
@@ -489,19 +1135,28 @@ export class CompanyApp extends LitElement {
       };
 
       this.resultDialogOpen = true;
-      if (response.ok && Array.isArray(data)) {
-        // Cache the metrics
-        const { startDate, endDate } = this.getMetricsDateRange();
-        await cacheMetrics(
-          updatedCompany.publicKey,
-          updatedCompany.privateKey,
-          startDate,
-          endDate,
-          data,
-        );
-        const transformedData = this.transformMetricsData(data);
-        this.metricsData = transformedData;
-        setTimeout(() => this.closeDialog(), 1000);
+      if (response.ok) {
+        const metricsArray = Array.isArray(data)
+          ? data
+          : data && typeof data === "object" && Array.isArray((data as { data?: unknown[] }).data)
+            ? (data as { data: unknown[] }).data
+            : null;
+
+        if (metricsArray) {
+          // Cache the metrics
+          const { startDate, endDate } = this.getMetricsDateRange();
+          await cacheMetrics(
+            updatedCompany.publicKey,
+            updatedCompany.privateKey,
+            startDate,
+            endDate,
+            metricsArray,
+          );
+          const transformedData = this.transformMetricsData(metricsArray as any[]);
+          this.metricsData = transformedData;
+          await this.fetchEventsData();
+          setTimeout(() => this.closeDialog(), 1000);
+        }
       }
     } catch (error) {
       this.connectionResult = {
@@ -524,6 +1179,7 @@ export class CompanyApp extends LitElement {
     // If the deleted company was selected, select another one
     if (this.selectedCompanyId === companyId) {
       this.selectedCompanyId = this.companies[0]?.id ?? defaultCompanies[0].id;
+      this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
     }
 
     this.closeDialog();
@@ -539,9 +1195,16 @@ export class CompanyApp extends LitElement {
         <company-header
           .companies=${this.companies}
           .selectedCompanyId=${this.selectedCompanyId}
+          .isExportingPdf=${this.isExportingPdf}
+          .isExportingPng=${this.isExportingPng}
+          .isExportingCsv=${this.isExportingCsv}
           @company-change=${this.handleCompanyChange}
           @add-company=${this.addCompany}
           @edit-company=${this.openDialog}
+          @export-png=${this.handleExportPng}
+          @export-pdf=${this.handleExportPdf}
+          @export-csv=${this.handleExportCsv}
+          @refresh-data=${this.handleRefresh}
         ></company-header>
 
         <company-summary
@@ -552,6 +1215,11 @@ export class CompanyApp extends LitElement {
           .selectedYear=${this.selectedYear}
           .spaces=${this.getUniqueSpaces()}
           .selectedSpaceId=${this.selectedSpaceId}
+          .modelMetrics=${this.modelMetrics}
+          .projectMetrics=${this.projectMetrics}
+          .featureMetrics=${this.featureMetrics}
+          .userModelMetrics=${this.userModelMetrics}
+          .designVsPromptMetrics=${this.designVsPromptMetrics}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}
         ></company-summary>
@@ -565,7 +1233,7 @@ export class CompanyApp extends LitElement {
           @delete-company=${this.removeCompany}
         ></company-dialog>
 
-        ${this.isFetchingUncachedMetrics
+        ${this.isFetchingUncachedMetrics || this.isFetchingEventPages
           ? html`
               <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
                 <div
@@ -575,7 +1243,9 @@ export class CompanyApp extends LitElement {
                     class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-border-subtle)] border-t-[var(--color-brand)]"
                   ></div>
                   <p class="text-sm font-medium text-[var(--color-text-secondary)]">
-                    Loading metrics...
+                    ${this.isFetchingEventPages
+                      ? `reading page ${this.currentEventPage} of ${this.totalEventPages}`
+                      : "Loading metrics..."}
                   </p>
                 </div>
               </div>

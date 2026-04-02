@@ -14,6 +14,11 @@ export class CompanySummary extends LitElement {
     selectedYear: { type: Number, attribute: false },
     spaces: { attribute: false },
     selectedSpaceId: { attribute: false },
+    modelMetrics: { attribute: false },
+    projectMetrics: { attribute: false },
+    featureMetrics: { attribute: false },
+    userModelMetrics: { attribute: false },
+    designVsPromptMetrics: { attribute: false },
   };
 
   declare company: CompanyConfig | null;
@@ -23,6 +28,39 @@ export class CompanySummary extends LitElement {
   declare selectedYear: number;
   declare spaces: Array<{ id: string; name: string }>;
   declare selectedSpaceId: string;
+  declare modelMetrics: Array<{
+    model: string;
+    totalLines: number;
+    events: number;
+    creditsUsed: number;
+  }> | null;
+  declare projectMetrics: Array<{
+    projectName: string;
+    totalLines: number;
+    creditsUsed: number;
+  }> | null;
+  declare featureMetrics: Array<{
+    feature: string;
+    totalLines: number;
+    events: number;
+    creditsUsed: number;
+  }> | null;
+  declare userModelMetrics: Array<{
+    userEmail: string;
+    totalCreditsUsed: number;
+    models: Array<{
+      model: string;
+      totalLines: number;
+      events: number;
+      creditsUsed: number;
+    }>;
+  }> | null;
+  declare designVsPromptMetrics: Array<{
+    type: "Design" | "Prompt";
+    count: number;
+    creditsUsed: number;
+    uniqueDesigns: number;
+  }> | null;
 
   constructor() {
     super();
@@ -31,6 +69,11 @@ export class CompanySummary extends LitElement {
     this.metricsError = null;
     this.spaces = [];
     this.selectedSpaceId = "all";
+    this.modelMetrics = null;
+    this.projectMetrics = null;
+    this.featureMetrics = null;
+    this.userModelMetrics = null;
+    this.designVsPromptMetrics = null;
   }
 
   createRenderRoot() {
@@ -80,6 +123,11 @@ export class CompanySummary extends LitElement {
                   .company=${this.company}
                   .selectedMonth=${this.selectedMonth}
                   .selectedYear=${this.selectedYear}
+                  .modelMetrics=${this.modelMetrics}
+                  .projectMetrics=${this.projectMetrics}
+                  .featureMetrics=${this.featureMetrics}
+                  .userModelMetrics=${this.userModelMetrics}
+                  .designVsPromptMetrics=${this.designVsPromptMetrics}
                 ></metrics-charts>
               </section>
             `

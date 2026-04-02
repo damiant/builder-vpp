@@ -1,1 +1,4 @@
-- Build after code changes: bun run check (this will format, lint and typecheck the code). Fix any errors afterwards
+- Always use `bun` as the package manager and runtime, never use `npm` or `yarn`
+- For package installation: use `bun install`
+- For running scripts: use `bun run <script>` (e.g., `bun run dev`, `bun run build`)
+- Build after code changes: `bun run check` (this will format, lint and typecheck the code). Fix any errors afterwards
