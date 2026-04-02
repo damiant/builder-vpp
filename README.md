@@ -35,19 +35,19 @@ A web application for tracking and visualizing metrics from the Fusion API. Moni
 
 ### Prerequisites
 
-- Node.js 18+ with npm
+- Bun 1.0+ (JavaScript runtime and package manager)
 - Fusion API credentials (public and private keys)
 
 ### Installation
 
 ```bash
-npm install
+bun install
 ```
 
 ### Development
 
 ```bash
-npm run dev
+bun run dev
 ```
 
 The application will start at `http://localhost:5173` (or your configured dev port).
@@ -55,13 +55,13 @@ The application will start at `http://localhost:5173` (or your configured dev po
 ### Build
 
 ```bash
-npm run build
+bun run build
 ```
 
 ### Type Checking & Linting
 
 ```bash
-npm run check
+bun run check
 ```
 
 ## Configuration
@@ -188,7 +188,7 @@ src/
 
 ### Code Quality
 
-The project uses TypeScript for type safety and includes linting and formatting checks via `npm run check`.
+The project uses TypeScript for type safety and includes linting and formatting checks via `bun run check`.
 
 ### Adding New Features
 
