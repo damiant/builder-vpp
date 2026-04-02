@@ -562,6 +562,11 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
+                          Amount
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
                           Credits Per Event
                         </th>
                         <th
@@ -596,6 +601,9 @@ export class MetricsCharts extends LitElement {
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                               ${Math.round(model.creditsUsed).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              $${(Math.round(model.creditsUsed) * 0.05).toFixed(2)}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                               ${creditsPerEvent.toFixed(2)}
