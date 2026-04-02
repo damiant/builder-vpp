@@ -696,71 +696,117 @@ export class CompanyApp extends LitElement {
       this.currentEventPage = 1;
       this.totalEventPages = 1;
     } else {
-      // Fetch all events with pagination
-      let hasMore = true;
-      let page = 1;
+      // Fetch all events with concurrent pagination (4 at a time)
       const limit = 1000;
+      const concurrency = 4;
 
       console.log("Fetching events data with pagination");
       this.isFetchingEventPages = true;
       this.currentEventPage = 1;
       this.totalEventPages = 1;
 
-      while (hasMore) {
-        try {
-          if (!isLatestRequest()) {
-            return;
-          }
-
-          this.currentEventPage = page;
-          const url = buildEventsUrl(startDate, endDate, page, limit);
-          const headers = {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${company.privateKey}`,
-          };
-
-          const response = await fetch(url, {
-            method: "GET",
-            headers: headers,
-          });
-
-          if (!isLatestRequest()) {
-            return;
-          }
-
-          if (!response.ok) {
-            console.error("Failed to fetch events, stopping pagination:", response.status);
-            break;
-          }
-
-          const data = await response.json();
-
-          if (!isLatestRequest()) {
-            return;
-          }
-
-          const events = data.data || [];
-          allEvents = allEvents.concat(events);
-
-          const pagination = data.pagination || {};
-          this.totalEventPages = Number(pagination.totalPages) || page;
-          hasMore = pagination.hasNext ?? page < this.totalEventPages;
-          page += 1;
-
-          console.log(`Fetched page ${page - 1}, total events so far: ${allEvents.length}`);
-        } catch (error) {
-          console.error("Error fetching events page:", error);
-          break;
+      // Fetch first page to get total pages
+      try {
+        if (!isLatestRequest()) {
+          return;
         }
+
+        const firstPageUrl = buildEventsUrl(startDate, endDate, 1, limit);
+        const headers = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${company.privateKey}`,
+        };
+
+        const firstResponse = await fetch(firstPageUrl, {
+          method: "GET",
+          headers: headers,
+        });
+
+        if (!isLatestRequest()) {
+          return;
+        }
+
+        if (!firstResponse.ok) {
+          console.error("Failed to fetch first page of events:", firstResponse.status);
+          this.isFetchingEventPages = false;
+          this.currentEventPage = 1;
+          this.totalEventPages = 1;
+          return;
+        }
+
+        const firstData = await firstResponse.json();
+        const firstPageEvents = firstData.data || [];
+        allEvents = allEvents.concat(firstPageEvents);
+
+        const pagination = firstData.pagination || {};
+        const totalPages = Number(pagination.totalPages) || 1;
+        this.totalEventPages = totalPages;
+
+        console.log(
+          `Fetched page 1, total pages: ${totalPages}, total events so far: ${allEvents.length}`,
+        );
+
+        // Fetch remaining pages in batches of 4
+        if (totalPages > 1) {
+          for (let batchStart = 2; batchStart <= totalPages; batchStart += concurrency) {
+            if (!isLatestRequest()) {
+              return;
+            }
+
+            // Create batch of up to 4 page requests
+            const batchEnd = Math.min(batchStart + concurrency - 1, totalPages);
+            const pagePromises = [];
+
+            for (let page = batchStart; page <= batchEnd; page++) {
+              const pageUrl = buildEventsUrl(startDate, endDate, page, limit);
+              pagePromises.push(
+                fetch(pageUrl, {
+                  method: "GET",
+                  headers: headers,
+                }).then((response) => {
+                  if (!response.ok) {
+                    console.error(`Failed to fetch page ${page}:`, response.status);
+                    return null;
+                  }
+                  return response.json();
+                }),
+              );
+            }
+
+            // Wait for all requests in this batch to complete
+            const batchResults = await Promise.all(pagePromises);
+
+            if (!isLatestRequest()) {
+              return;
+            }
+
+            // Process batch results
+            for (const data of batchResults) {
+              if (data) {
+                const events = data.data || [];
+                allEvents = allEvents.concat(events);
+              }
+            }
+
+            this.currentEventPage = Math.min(batchEnd, totalPages);
+            console.log(
+              `Fetched pages ${batchStart}-${batchEnd}, total events so far: ${allEvents.length}`,
+            );
+          }
+        }
+
+        this.isFetchingEventPages = false;
+        this.currentEventPage = 1;
+      } catch (error) {
+        console.error("Error fetching events:", error);
+        this.isFetchingEventPages = false;
+        this.currentEventPage = 1;
+        this.totalEventPages = 1;
       }
 
       if (!isLatestRequest()) {
         return;
       }
-
-      this.isFetchingEventPages = false;
-      this.currentEventPage = 1;
-      this.totalEventPages = 1;
 
       if (allEvents.length === 0) {
         console.warn("No events found for the selected date range");
