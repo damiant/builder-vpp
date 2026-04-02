@@ -263,6 +263,14 @@ export class MetricsCharts extends LitElement {
     };
   }
 
+  private getDaysInSelectedMonth(): number {
+    const startDate = new Date(this.selectedYear, this.selectedMonth, 1);
+    const endDate = new Date(this.selectedYear, this.selectedMonth + 1, 0);
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+    return diffDays;
+  }
+
   private getSpaceMetrics(): Array<{
     spaceId: string;
     spaceName: string;
@@ -963,6 +971,9 @@ export class MetricsCharts extends LitElement {
                             1,
                           );
                           const creditPercentage = (user.metrics.creditsUsed / maxCredits) * 100;
+                          const daysInMonth = this.getDaysInSelectedMonth();
+                          const amountPerDay =
+                            (Math.ceil(user.metrics.creditsUsed) * 0.05) / daysInMonth;
 
                           return html`
                             <tr
@@ -984,7 +995,7 @@ export class MetricsCharts extends LitElement {
                                 ${Math.ceil(user.metrics.creditsUsed).toLocaleString()}
                               </td>
                               <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                                $${(Math.ceil(user.metrics.creditsUsed) * 0.05).toFixed(2)}
+                                $${amountPerDay.toFixed(2)}
                               </td>
                               <td class="px-4 py-3">
                                 <div class="w-full max-w-xs">
