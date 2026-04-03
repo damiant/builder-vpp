@@ -1084,12 +1084,17 @@ export class MetricsCharts extends LitElement {
                                 <th
                                   class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                                 >
-                                  Credits Used
+                                  Credits
                                 </th>
                                 <th
                                   class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                                 >
-                                  Tokens Used
+                                  Amount
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Tokens
                                 </th>
                                 <th
                                   class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
@@ -1100,17 +1105,15 @@ export class MetricsCharts extends LitElement {
                             </thead>
                             <tbody>
                               ${design.records.map((record) => {
-                                const formattedTimestamp = new Date(record.timestamp).toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    year: "numeric",
-                                    month: "2-digit",
-                                    day: "2-digit",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    second: "2-digit",
-                                  },
-                                );
+                                const date = new Date(record.timestamp);
+                                const formattedTimestamp = date.toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                });
+                                const creditsRounded = Math.round(record.creditsUsed);
+                                const amount = (creditsRounded * 0.05).toFixed(2);
 
                                 return html`
                                   <tr
@@ -1127,7 +1130,12 @@ export class MetricsCharts extends LitElement {
                                     <td
                                       class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
                                     >
-                                      ${Math.round(record.creditsUsed).toLocaleString()}
+                                      ${creditsRounded.toLocaleString()}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      $${amount}
                                     </td>
                                     <td
                                       class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
