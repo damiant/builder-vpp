@@ -624,7 +624,7 @@ export class MetricsCharts extends LitElement {
                               ${Math.round(model.creditsUsed).toLocaleString()}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              $${(Math.round(model.creditsUsed) * 0.05).toFixed(2)}
+                              $${(model.creditsUsed * 0.05).toFixed(2)}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                               ${creditsPerEvent.toFixed(2)}
@@ -993,7 +993,7 @@ export class MetricsCharts extends LitElement {
                           const creditPercentage = (user.metrics.creditsUsed / maxCredits) * 100;
                           const daysInMonth = this.getDaysInSelectedMonth();
                           const amountPerDay =
-                            (Math.ceil(user.metrics.creditsUsed) * 0.05) / daysInMonth;
+                            (user.metrics.creditsUsed * 0.05) / daysInMonth;
 
                           return html`
                             <tr
@@ -1113,7 +1113,7 @@ export class MetricsCharts extends LitElement {
                                   minute: "2-digit",
                                 });
                                 const creditsRounded = Math.round(record.creditsUsed);
-                                const amount = (creditsRounded * 0.05).toFixed(2);
+                                const amount = (record.creditsUsed * 0.05).toFixed(2);
 
                                 return html`
                                   <tr
