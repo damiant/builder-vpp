@@ -687,6 +687,9 @@ export class MetricsCharts extends LitElement {
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                               ${item.uniqueDesigns.toLocaleString()}
+                              <span class="text-xs text-[var(--color-text-tertiary)]">
+                                ($${((item.creditsUsed / item.uniqueDesigns) * 0.05).toFixed(2)} per design)
+                              </span>
                             </td>
                           </tr>
                         `;
