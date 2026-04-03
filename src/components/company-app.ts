@@ -271,6 +271,7 @@ export class CompanyApp extends LitElement {
   };
 
   private handleDateChange = (event: CustomEvent<{ month: number; year: number }>) => {
+    console.log("Date changed to:", event.detail.month, event.detail.year);
     this.selectedMonth = event.detail.month;
     this.selectedYear = event.detail.year;
     void this.fetchMetrics();

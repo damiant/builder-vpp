@@ -778,25 +778,25 @@ export class MetricsCharts extends LitElement {
                               ${project.projectName}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${project.metrics.linesAdded.toLocaleString()}
+                              ${(project.metrics.linesAdded ?? 0).toLocaleString()}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${project.metrics.linesRemoved.toLocaleString()}
+                              ${(project.metrics.linesRemoved ?? 0).toLocaleString()}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${project.metrics.userPrompts.toLocaleString()}
+                              ${(project.metrics.userPrompts ?? 0).toLocaleString()}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${Math.round(project.metrics.creditsUsed).toLocaleString()}
+                              ${Math.round(project.metrics.creditsUsed ?? 0).toLocaleString()}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${project.metrics.activeUsers.toLocaleString()}
+                              ${(project.metrics.activeUsers ?? 0).toLocaleString()}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${project.metrics.prsMerged.toLocaleString()}
+                              ${(project.metrics.prsMerged ?? 0).toLocaleString()}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${project.metrics.prsCreated.toLocaleString()}
+                              ${(project.metrics.prsCreated ?? 0).toLocaleString()}
                             </td>
                             <td class="px-4 py-3">
                               <div class="w-full max-w-xs">

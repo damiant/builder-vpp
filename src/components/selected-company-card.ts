@@ -52,7 +52,22 @@ export class SelectedCompanyCard extends LitElement {
     return this;
   }
 
+  override updated() {
+    const dateSelector = this.querySelector<any>("date-range-selector");
+    if (dateSelector) {
+      dateSelector.removeEventListener("date-change", this.handleDateChange);
+      dateSelector.addEventListener("date-change", this.handleDateChange);
+    }
+
+    const spaceSelector = this.querySelector<any>("space-selector");
+    if (spaceSelector) {
+      spaceSelector.removeEventListener("space-change", this.handleSpaceChange);
+      spaceSelector.addEventListener("space-change", this.handleSpaceChange);
+    }
+  }
+
   private handleDateChange = (event: CustomEvent<{ month: number; year: number }>) => {
+    console.log("selected-company-card received date-change event:", event.detail);
     this.dispatchEvent(
       new CustomEvent("date-change", {
         detail: event.detail,
@@ -63,6 +78,7 @@ export class SelectedCompanyCard extends LitElement {
   };
 
   private handleSpaceChange = (event: CustomEvent<{ spaceId: string }>) => {
+    console.log("selected-company-card received space-change event:", event.detail);
     this.dispatchEvent(
       new CustomEvent("space-change", {
         detail: event.detail,
@@ -161,7 +177,6 @@ export class SelectedCompanyCard extends LitElement {
                 <date-range-selector
                   .month=${this.selectedMonth}
                   .year=${this.selectedYear}
-                  @date-change=${this.handleDateChange}
                 ></date-range-selector>
               </div>
               ${this.spaces.length > 0
@@ -170,7 +185,6 @@ export class SelectedCompanyCard extends LitElement {
                       <space-selector
                         .spaces=${this.spaces}
                         .selectedSpaceId=${this.selectedSpaceId}
-                        @space-change=${this.handleSpaceChange}
                       ></space-selector>
                     </div>
                   `

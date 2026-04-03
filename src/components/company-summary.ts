@@ -97,6 +97,7 @@ export class CompanySummary extends LitElement {
   }
 
   private handleDateChange = (event: CustomEvent<{ month: number; year: number }>) => {
+    console.log("company-summary received date-change event:", event.detail);
     this.dispatchEvent(
       new CustomEvent("date-change", {
         detail: event.detail,
@@ -107,6 +108,7 @@ export class CompanySummary extends LitElement {
   };
 
   private handleSpaceChange = (event: CustomEvent<{ spaceId: string }>) => {
+    console.log("company-summary received space-change event:", event.detail);
     this.dispatchEvent(
       new CustomEvent("space-change", {
         detail: event.detail,
