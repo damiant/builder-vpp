@@ -1149,6 +1149,30 @@ export class MetricsCharts extends LitElement {
                                 `;
                               })}
                             </tbody>
+                            <tfoot>
+                              ${(() => {
+                                const totalAmount = design.records.reduce((sum, record) => sum + (record.creditsUsed * 0.05), 0);
+                                const totalTokens = design.records.reduce((sum, record) => sum + record.tokensUsed, 0);
+                                const formattedTokens = totalTokens >= 1000000
+                                  ? (totalTokens / 1000000).toFixed(1) + 'mil'
+                                  : totalTokens.toLocaleString();
+
+                                return html`
+                                  <tr class="border-t-2 border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]">
+                                    <td class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]" colspan="3">
+                                      Total
+                                    </td>
+                                    <td class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]">
+                                      $${totalAmount.toFixed(2)}
+                                    </td>
+                                    <td class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]">
+                                      ${formattedTokens}
+                                    </td>
+                                    <td class="px-4 py-3 text-[var(--color-text-primary)]"></td>
+                                  </tr>
+                                `;
+                              })()}
+                            </tfoot>
                           </table>
                         </div>
                       </div>
