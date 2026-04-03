@@ -106,6 +106,14 @@ export function buildEventsUrl(
   return url;
 }
 
+export function buildProjectsUrl(startDate: string, endDate: string) {
+  const url = new URL("https://cdn.builder.io/api/v1/orgs/fusion/projects");
+  url.searchParams.set("startDate", startDate);
+  url.searchParams.set("endDate", endDate);
+
+  return url;
+}
+
 export function createCompany(name = "") {
   return {
     id: globalThis.crypto?.randomUUID?.() ?? `company-${Date.now()}`,

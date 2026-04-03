@@ -9,6 +9,7 @@ export class CompanyHeader extends LitElement {
     isExportingPdf: { type: Boolean, attribute: false },
     isExportingPng: { type: Boolean, attribute: false },
     isExportingCsv: { type: Boolean, attribute: false },
+    isExportingHtml: { type: Boolean, attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -16,6 +17,7 @@ export class CompanyHeader extends LitElement {
   declare isExportingPdf: boolean;
   declare isExportingPng: boolean;
   declare isExportingCsv: boolean;
+  declare isExportingHtml: boolean;
 
   constructor() {
     super();
@@ -24,6 +26,7 @@ export class CompanyHeader extends LitElement {
     this.isExportingPdf = false;
     this.isExportingPng = false;
     this.isExportingCsv = false;
+    this.isExportingHtml = false;
   }
 
   createRenderRoot() {
@@ -82,6 +85,10 @@ export class CompanyHeader extends LitElement {
     this.dispatchEvent(new CustomEvent("export-csv", { bubbles: true, composed: true }));
   };
 
+  private handleExportHtml = () => {
+    this.dispatchEvent(new CustomEvent("export-html", { bubbles: true, composed: true }));
+  };
+
   render() {
     return html`
       <header
@@ -123,7 +130,10 @@ export class CompanyHeader extends LitElement {
               type="button"
               class="rounded-[var(--radius-sm)] text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
               @click=${this.handleEditCompany}
-              ?disabled=${this.isExportingPdf || this.isExportingPng || this.isExportingCsv}
+              ?disabled=${this.isExportingPdf ||
+              this.isExportingPng ||
+              this.isExportingCsv ||
+              this.isExportingHtml}
             >
               Edit
             </button>
@@ -138,7 +148,10 @@ export class CompanyHeader extends LitElement {
               type="button"
               class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
               @click=${this.handleExportPng}
-              ?disabled=${this.isExportingPng || this.isExportingPdf || this.isExportingCsv}
+              ?disabled=${this.isExportingPng ||
+              this.isExportingPdf ||
+              this.isExportingCsv ||
+              this.isExportingHtml}
             >
               ${this.isExportingPng ? "Generating PNG..." : "PNG"}
             </button>
@@ -146,7 +159,10 @@ export class CompanyHeader extends LitElement {
               type="button"
               class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
               @click=${this.handleExportPdf}
-              ?disabled=${this.isExportingPdf || this.isExportingPng || this.isExportingCsv}
+              ?disabled=${this.isExportingPdf ||
+              this.isExportingPng ||
+              this.isExportingCsv ||
+              this.isExportingHtml}
             >
               ${this.isExportingPdf ? "Generating PDF..." : "PDF"}
             </button>
@@ -154,9 +170,23 @@ export class CompanyHeader extends LitElement {
               type="button"
               class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
               @click=${this.handleExportCsv}
-              ?disabled=${this.isExportingCsv || this.isExportingPdf || this.isExportingPng}
+              ?disabled=${this.isExportingCsv ||
+              this.isExportingPdf ||
+              this.isExportingPng ||
+              this.isExportingHtml}
             >
               ${this.isExportingCsv ? "Generating CSV..." : "CSV"}
+            </button>
+            <button
+              type="button"
+              class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+              @click=${this.handleExportHtml}
+              ?disabled=${this.isExportingHtml ||
+              this.isExportingPdf ||
+              this.isExportingPng ||
+              this.isExportingCsv}
+            >
+              ${this.isExportingHtml ? "Generating HTML..." : "HTML"}
             </button>
             <button
               type="button"

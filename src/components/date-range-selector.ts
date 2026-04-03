@@ -16,6 +16,7 @@ export class DateRangeSelector extends LitElement {
   private handleMonthChange = (event: Event) => {
     const target = event.target as HTMLSelectElement;
     this.month = parseInt(target.value, 10);
+    console.log("Month changed to:", this.month);
     this.dispatchEvent(
       new CustomEvent("date-change", {
         detail: { month: this.month, year: this.year },
