@@ -393,7 +393,11 @@ export class MetricsCharts extends LitElement {
               font: { family: '"Inter", system-ui, sans-serif', size: 12 },
             },
           },
+          filler: {
+            propagate: true,
+          },
         },
+        backgroundColor: "#ffffff",
         scales: {
           y: {
             beginAtZero: true,
