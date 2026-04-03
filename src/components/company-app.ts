@@ -80,6 +80,19 @@ type DesignVsPromptMetric = {
   uniqueDesigns: number;
 };
 
+type DesignRecord = {
+  userEmail: string;
+  timestamp: string;
+  creditsUsed: number;
+  tokensUsed: number;
+  model: string;
+};
+
+type DesignMetric = {
+  designDocumentId: string;
+  records: DesignRecord[];
+};
+
 type ProjectApiData = {
   projectId: string;
   projectName: string;
@@ -120,6 +133,7 @@ export class CompanyApp extends LitElement {
     featureMetrics: { attribute: false },
     userModelMetrics: { attribute: false },
     designVsPromptMetrics: { attribute: false },
+    designMetrics: { attribute: false },
     eventsData: { attribute: false },
     projectsApiData: { attribute: false },
   };
@@ -147,6 +161,7 @@ export class CompanyApp extends LitElement {
   declare featureMetrics: FeatureMetric[] | null;
   declare userModelMetrics: UserModelMetric[] | null;
   declare designVsPromptMetrics: DesignVsPromptMetric[] | null;
+  declare designMetrics: DesignMetric[] | null;
   declare eventsData: any[] | null;
   declare projectsApiData: ProjectApiData[] | null;
 
@@ -177,6 +192,7 @@ export class CompanyApp extends LitElement {
     this.featureMetrics = null;
     this.userModelMetrics = null;
     this.designVsPromptMetrics = null;
+    this.designMetrics = null;
     this.eventsData = null;
     this.projectsApiData = null;
     const today = new Date();
@@ -670,6 +686,7 @@ export class CompanyApp extends LitElement {
       this.featureMetrics = null;
       this.userModelMetrics = null;
       this.designVsPromptMetrics = null;
+      this.designMetrics = null;
       return;
     }
 
@@ -994,11 +1011,48 @@ export class CompanyApp extends LitElement {
       },
     ];
 
+    // Aggregate design metrics
+    const designMap = new Map<string, DesignRecord[]>();
+
+    allEvents.forEach((event: any) => {
+      const designExportId = event.designExportId || event.metadata?.designExportId;
+
+      if (designExportId) {
+        const creditsUsed = Number(event.metadata?.creditsUsed ?? event.creditsUsed) || 0;
+        const tokensUsed = Number(event.metadata?.tokensUsed ?? event.tokensUsed) || 0;
+        const model = event.metadata?.model || event.model || "Unknown";
+        const userEmail = String(
+          event.userEmail || event.metadata?.userEmail || event.userId || event.metadata?.userId || "Unknown",
+        );
+        const timestamp = event.timestamp || new Date().toISOString();
+
+        if (!designMap.has(designExportId)) {
+          designMap.set(designExportId, []);
+        }
+
+        designMap.get(designExportId)!.push({
+          userEmail,
+          timestamp,
+          creditsUsed,
+          tokensUsed,
+          model,
+        });
+      }
+    });
+
+    this.designMetrics = Array.from(designMap.entries())
+      .map(([designDocumentId, records]) => ({
+        designDocumentId,
+        records: records.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
+      }))
+      .sort((a, b) => b.records.length - a.records.length);
+
     console.log("Aggregated model metrics:", this.modelMetrics);
     console.log("Aggregated project metrics:", this.projectMetrics);
     console.log("Aggregated feature metrics:", this.featureMetrics);
     console.log("Aggregated user model metrics:", this.userModelMetrics);
     console.log("Design vs Prompt metrics:", this.designVsPromptMetrics);
+    console.log("Design metrics:", this.designMetrics);
   }
 
   private async fetchProjectsData() {
@@ -1349,6 +1403,7 @@ export class CompanyApp extends LitElement {
           .featureMetrics=${this.featureMetrics}
           .userModelMetrics=${this.userModelMetrics}
           .designVsPromptMetrics=${this.designVsPromptMetrics}
+          .designMetrics=${this.designMetrics}
           .projectsApiData=${this.projectsApiData}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}

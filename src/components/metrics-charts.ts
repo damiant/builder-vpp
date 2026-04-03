@@ -37,6 +37,7 @@ export class MetricsCharts extends LitElement {
     featureMetrics: { attribute: false },
     userModelMetrics: { attribute: false },
     designVsPromptMetrics: { attribute: false },
+    designMetrics: { attribute: false },
     projectsApiData: { attribute: false },
   };
 
@@ -79,6 +80,16 @@ export class MetricsCharts extends LitElement {
     creditsUsed: number;
     uniqueDesigns: number;
   }> | null;
+  declare designMetrics: Array<{
+    designDocumentId: string;
+    records: Array<{
+      userEmail: string;
+      timestamp: string;
+      creditsUsed: number;
+      tokensUsed: number;
+      model: string;
+    }>;
+  }> | null;
   declare projectsApiData: Array<{
     projectId: string;
     projectName: string;
@@ -109,6 +120,7 @@ export class MetricsCharts extends LitElement {
     this.featureMetrics = null;
     this.userModelMetrics = null;
     this.designVsPromptMetrics = null;
+    this.designMetrics = null;
     this.projectsApiData = null;
   }
 
@@ -420,6 +432,7 @@ export class MetricsCharts extends LitElement {
       this.designVsPromptMetrics && this.designVsPromptMetrics.length > 0;
     const shouldShowProjectsTable = this.projectsApiData && this.projectsApiData.length > 0;
     const shouldShowFeaturesTable = this.featureMetrics && this.featureMetrics.length > 0;
+    const shouldShowDesignsTable = this.designMetrics && this.designMetrics.length > 0;
     const shouldShowUserModelBreakdown = this.userModelMetrics && this.userModelMetrics.length > 0;
 
     return html`
@@ -1023,6 +1036,118 @@ export class MetricsCharts extends LitElement {
                   </table>
                 </div>
               </div>
+            `
+          : ""}
+        ${shouldShowDesignsTable
+          ? html`
+              <details
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <summary class="cursor-pointer list-none">
+                  <div class="flex items-center justify-between gap-4">
+                    <h3
+                      class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]"
+                    >
+                      Designs
+                    </h3>
+                    <span class="text-sm font-medium text-[var(--color-text-secondary)]">
+                      Expand
+                    </span>
+                  </div>
+                </summary>
+
+                <div class="mt-4 space-y-4">
+                  ${this.designMetrics!.map((design) => {
+                    return html`
+                      <div
+                        class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-4"
+                      >
+                        <div class="border-b border-[var(--color-border-subtle)] px-4 pb-3">
+                          <h4 class="text-base font-semibold text-[var(--color-text-primary)]">
+                            ${design.designDocumentId}
+                          </h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                          <table class="w-full text-sm">
+                            <thead>
+                              <tr class="border-b border-[var(--color-border-subtle)]">
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  User Email
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Timestamp
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Credits Used
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Tokens Used
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Model
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              ${design.records.map((record) => {
+                                const formattedTimestamp = new Date(record.timestamp).toLocaleDateString(
+                                  "en-US",
+                                  {
+                                    year: "numeric",
+                                    month: "2-digit",
+                                    day: "2-digit",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    second: "2-digit",
+                                  },
+                                );
+
+                                return html`
+                                  <tr
+                                    class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-elevated)]"
+                                  >
+                                    <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                                      ${record.userEmail}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-left text-[var(--color-text-secondary)]"
+                                    >
+                                      ${formattedTimestamp}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      ${Math.round(record.creditsUsed).toLocaleString()}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      ${record.tokensUsed.toLocaleString()}
+                                    </td>
+                                    <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                                      ${record.model}
+                                    </td>
+                                  </tr>
+                                `;
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    `;
+                  })}
+                </div>
+              </details>
             `
           : ""}
         ${shouldShowUserModelBreakdown
