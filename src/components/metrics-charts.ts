@@ -993,8 +993,8 @@ export class MetricsCharts extends LitElement {
                           );
                           const creditPercentage = (user.metrics.creditsUsed / maxCredits) * 100;
                           const daysInMonth = this.getDaysInSelectedMonth();
-                          const amountPerDay =
-                            (user.metrics.creditsUsed * 0.05) / daysInMonth;
+                          const totalAmount = user.metrics.creditsUsed * 0.05;
+                          const amountPerDay = totalAmount / daysInMonth;
 
                           return html`
                             <tr
@@ -1016,7 +1016,7 @@ export class MetricsCharts extends LitElement {
                                 ${Math.ceil(user.metrics.creditsUsed).toLocaleString()}
                               </td>
                               <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                                $${amountPerDay.toFixed(2)}
+                                $${totalAmount.toFixed(2)} / $${amountPerDay.toFixed(2)}
                               </td>
                               <td class="px-4 py-3">
                                 <div class="w-full max-w-xs">
