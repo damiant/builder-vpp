@@ -85,6 +85,7 @@ export class MetricsCharts extends LitElement {
     records: Array<{
       userEmail: string;
       timestamp: string;
+      earliestTimestamp?: string;
       creditsUsed: number;
       tokensUsed: number;
       model: string;
@@ -1105,13 +1106,34 @@ export class MetricsCharts extends LitElement {
                             </thead>
                             <tbody>
                               ${design.records.map((record) => {
-                                const date = new Date(record.timestamp);
-                                const formattedTimestamp = date.toLocaleDateString("en-US", {
+                                const endDate = new Date(record.timestamp);
+                                const startDate = record.earliestTimestamp
+                                  ? new Date(record.earliestTimestamp)
+                                  : endDate;
+
+                                // Format: "Apr 3, 1:54am-2:05am" or just date/time if single record
+                                let formattedTimestamp: string;
+                                const dateStr = startDate.toLocaleDateString("en-US", {
                                   month: "short",
                                   day: "numeric",
+                                });
+                                const startTimeStr = startDate.toLocaleTimeString("en-US", {
                                   hour: "2-digit",
                                   minute: "2-digit",
-                                });
+                                  hour12: true,
+                                }).toLowerCase();
+                                const endTimeStr = endDate.toLocaleTimeString("en-US", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                }).toLowerCase();
+
+                                if (record.earliestTimestamp && startDate.getTime() !== endDate.getTime()) {
+                                  formattedTimestamp = `${dateStr}, ${startTimeStr}-${endTimeStr}`;
+                                } else {
+                                  formattedTimestamp = `${dateStr}, ${startTimeStr}`;
+                                }
+
                                 const creditsRounded = Math.round(record.creditsUsed);
                                 const amount = (record.creditsUsed * 0.05).toFixed(2);
 

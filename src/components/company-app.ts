@@ -83,6 +83,7 @@ type DesignVsPromptMetric = {
 type DesignRecord = {
   userEmail: string;
   timestamp: string;
+  earliestTimestamp?: string;
   creditsUsed: number;
   tokensUsed: number;
   model: string;
@@ -1065,9 +1066,15 @@ export class CompanyApp extends LitElement {
           lastMatchingGroup.tokensUsed += record.tokensUsed;
           // Update timestamp to the latest one
           lastMatchingGroup.timestamp = record.timestamp;
+          // Ensure earliestTimestamp is set (use the group's timestamp if not already set)
+          if (!lastMatchingGroup.earliestTimestamp) {
+            lastMatchingGroup.earliestTimestamp = lastMatchingGroup.timestamp;
+          }
         } else {
           // Add as new record
-          groupedRecords.push({ ...record });
+          const newRecord: DesignRecord = { ...record };
+          newRecord.earliestTimestamp = record.timestamp;
+          groupedRecords.push(newRecord);
         }
       }
 

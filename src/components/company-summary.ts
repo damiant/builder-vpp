@@ -68,6 +68,7 @@ export class CompanySummary extends LitElement {
     records: Array<{
       userEmail: string;
       timestamp: string;
+      earliestTimestamp?: string;
       creditsUsed: number;
       tokensUsed: number;
       model: string;
