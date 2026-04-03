@@ -1040,10 +1040,44 @@ export class CompanyApp extends LitElement {
       }
     });
 
+    // Group records within 5-minute windows for same user and model
+    const groupRecordsByWindow = (records: DesignRecord[]): DesignRecord[] => {
+      // Sort by timestamp ascending
+      const sortedRecords = records.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+      const groupedRecords: DesignRecord[] = [];
+      const fiveMinutesInMs = 5 * 60 * 1000;
+
+      for (const record of sortedRecords) {
+        // Find if there's a recent group for the same user and model
+        const lastMatchingGroup = groupedRecords.reverse().find((r) => {
+          if (r.userEmail !== record.userEmail || r.model !== record.model) {
+            return false;
+          }
+          const timeDiff = new Date(record.timestamp).getTime() - new Date(r.timestamp).getTime();
+          return timeDiff <= fiveMinutesInMs;
+        });
+        groupedRecords.reverse();
+
+        if (lastMatchingGroup) {
+          // Combine with existing group
+          lastMatchingGroup.creditsUsed += record.creditsUsed;
+          lastMatchingGroup.tokensUsed += record.tokensUsed;
+          // Update timestamp to the latest one
+          lastMatchingGroup.timestamp = record.timestamp;
+        } else {
+          // Add as new record
+          groupedRecords.push({ ...record });
+        }
+      }
+
+      return groupedRecords;
+    };
+
     this.designMetrics = Array.from(designMap.entries())
       .map(([designDocumentId, records]) => ({
         designDocumentId,
-        records: records.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
+        records: groupRecordsByWindow(records).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
       }))
       .sort((a, b) => b.records.length - a.records.length);
 
