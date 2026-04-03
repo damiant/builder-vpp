@@ -708,7 +708,10 @@ export class MetricsCharts extends LitElement {
                               ${item.uniqueDesigns > 0
                                 ? html`
                                     <span class="text-xs text-[var(--color-text-tertiary)]">
-                                      ($${((item.creditsUsed / item.uniqueDesigns) * 0.05).toFixed(2)} per design)
+                                      ($${((item.creditsUsed / item.uniqueDesigns) * 0.05).toFixed(
+                                        2,
+                                      )}
+                                      per design)
                                     </span>
                                   `
                                 : ""}
@@ -1121,18 +1124,25 @@ export class MetricsCharts extends LitElement {
                                   month: "short",
                                   day: "numeric",
                                 });
-                                const startTimeStr = startDate.toLocaleTimeString("en-US", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                }).toLowerCase();
-                                const endTimeStr = endDate.toLocaleTimeString("en-US", {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                  hour12: true,
-                                }).toLowerCase();
+                                const startTimeStr = startDate
+                                  .toLocaleTimeString("en-US", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  })
+                                  .toLowerCase();
+                                const endTimeStr = endDate
+                                  .toLocaleTimeString("en-US", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  })
+                                  .toLowerCase();
 
-                                if (record.earliestTimestamp && startDate.getTime() !== endDate.getTime()) {
+                                if (
+                                  record.earliestTimestamp &&
+                                  startDate.getTime() !== endDate.getTime()
+                                ) {
                                   formattedTimestamp = `${dateStr}, ${startTimeStr}-${endTimeStr}`;
                                 } else {
                                   formattedTimestamp = `${dateStr}, ${startTimeStr}`;
@@ -1177,21 +1187,37 @@ export class MetricsCharts extends LitElement {
                             </tbody>
                             <tfoot>
                               ${(() => {
-                                const totalAmount = design.records.reduce((sum, record) => sum + (record.creditsUsed * 0.05), 0);
-                                const totalTokens = design.records.reduce((sum, record) => sum + record.tokensUsed, 0);
-                                const formattedTokens = totalTokens >= 1000000
-                                  ? (totalTokens / 1000000).toFixed(1) + 'mil'
-                                  : totalTokens.toLocaleString();
+                                const totalAmount = design.records.reduce(
+                                  (sum, record) => sum + record.creditsUsed * 0.05,
+                                  0,
+                                );
+                                const totalTokens = design.records.reduce(
+                                  (sum, record) => sum + record.tokensUsed,
+                                  0,
+                                );
+                                const formattedTokens =
+                                  totalTokens >= 1000000
+                                    ? (totalTokens / 1000000).toFixed(1) + "mil"
+                                    : totalTokens.toLocaleString();
 
                                 return html`
-                                  <tr class="border-t-2 border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]">
-                                    <td class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]" colspan="3">
+                                  <tr
+                                    class="border-t-2 border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]"
+                                  >
+                                    <td
+                                      class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                      colspan="3"
+                                    >
                                       Total
                                     </td>
-                                    <td class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]">
+                                    <td
+                                      class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                    >
                                       $${totalAmount.toFixed(2)}
                                     </td>
-                                    <td class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]">
+                                    <td
+                                      class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                    >
                                       ${formattedTokens}
                                     </td>
                                     <td class="px-4 py-3 text-[var(--color-text-primary)]"></td>

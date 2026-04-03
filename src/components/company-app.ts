@@ -129,6 +129,7 @@ export class CompanyApp extends LitElement {
     isExportingPdf: { type: Boolean, attribute: false },
     isExportingPng: { type: Boolean, attribute: false },
     isExportingCsv: { type: Boolean, attribute: false },
+    isExportingHtml: { type: Boolean, attribute: false },
     modelMetrics: { attribute: false },
     projectMetrics: { attribute: false },
     featureMetrics: { attribute: false },
@@ -157,6 +158,7 @@ export class CompanyApp extends LitElement {
   declare isExportingPdf: boolean;
   declare isExportingPng: boolean;
   declare isExportingCsv: boolean;
+  declare isExportingHtml: boolean;
   declare modelMetrics: ModelMetric[] | null;
   declare projectMetrics: ProjectMetric[] | null;
   declare featureMetrics: FeatureMetric[] | null;
@@ -188,6 +190,7 @@ export class CompanyApp extends LitElement {
     this.isExportingPdf = false;
     this.isExportingPng = false;
     this.isExportingCsv = false;
+    this.isExportingHtml = false;
     this.modelMetrics = null;
     this.projectMetrics = null;
     this.featureMetrics = null;
@@ -447,6 +450,102 @@ export class CompanyApp extends LitElement {
       alert("Failed to export CSV");
     } finally {
       this.isExportingCsv = false;
+    }
+  };
+
+  private handleExportHtml = async () => {
+    if (this.isExportingHtml || this.isExportingPdf || this.isExportingPng || this.isExportingCsv)
+      return;
+
+    const exportRoot = this.querySelector<HTMLElement>("company-summary main");
+    if (!exportRoot) {
+      console.error("Unable to find page content for HTML export");
+      return;
+    }
+
+    this.isExportingHtml = true;
+
+    try {
+      await this.updateComplete;
+      await customElements.whenDefined("company-summary");
+      await document.fonts.ready;
+
+      // Clone the export root to avoid modifying the original
+      const clonedContent = exportRoot.cloneNode(true) as HTMLElement;
+
+      // Collect all CSS from stylesheets
+      let cssContent = "";
+
+      // Get CSS from all stylesheets
+      for (const stylesheet of document.styleSheets) {
+        try {
+          // Skip stylesheets from different origins
+          if (stylesheet.href && new URL(stylesheet.href).origin !== window.location.origin) {
+            continue;
+          }
+
+          if (stylesheet.cssRules) {
+            for (const rule of stylesheet.cssRules) {
+              cssContent += rule.cssText + "\n";
+            }
+          }
+        } catch {
+          // Skip stylesheets we can't access
+          continue;
+        }
+      }
+
+      // Get inline styles from all elements
+      const allElements = clonedContent.querySelectorAll("*");
+      let inlineStylesContent = "";
+
+      allElements.forEach((el) => {
+        if (el.hasAttribute("style")) {
+          const elementClass = el.className || `element-${Math.random().toString(36).slice(2, 9)}`;
+          if (!el.className) {
+            el.className = elementClass;
+          }
+          inlineStylesContent += `.${el.className} { ${el.getAttribute("style")} }\n`;
+        }
+      });
+
+      // Create the HTML document
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fusion Metrics - ${this.selectedCompany.name}</title>
+  <style>
+    ${cssContent}
+    ${inlineStylesContent}
+  </style>
+</head>
+<body>
+  ${clonedContent.outerHTML}
+</body>
+</html>`;
+
+      // Create download link
+      const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      const companyName = this.selectedCompany.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const month = String(this.selectedMonth + 1).padStart(2, "0");
+      const filename = `fusion-metrics-${companyName}-${this.selectedYear}-${month}.html`;
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error exporting HTML:", error);
+    } finally {
+      this.isExportingHtml = false;
     }
   };
 
@@ -1023,7 +1122,11 @@ export class CompanyApp extends LitElement {
         const tokensUsed = Number(event.metadata?.tokensUsed ?? event.tokensUsed) || 0;
         const model = event.metadata?.model || event.model || "Unknown";
         const userEmail = String(
-          event.userEmail || event.metadata?.userEmail || event.userId || event.metadata?.userId || "Unknown",
+          event.userEmail ||
+            event.metadata?.userEmail ||
+            event.userId ||
+            event.metadata?.userId ||
+            "Unknown",
         );
         const timestamp = event.timestamp || new Date().toISOString();
 
@@ -1044,7 +1147,9 @@ export class CompanyApp extends LitElement {
     // Group records within 5-minute windows for same user and model
     const groupRecordsByWindow = (records: DesignRecord[]): DesignRecord[] => {
       // Sort by timestamp ascending
-      const sortedRecords = records.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      const sortedRecords = records.sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      );
 
       const groupedRecords: DesignRecord[] = [];
       const fiveMinutesInMs = 5 * 60 * 1000;
@@ -1084,7 +1189,9 @@ export class CompanyApp extends LitElement {
     this.designMetrics = Array.from(designMap.entries())
       .map(([designDocumentId, records]) => ({
         designDocumentId,
-        records: groupRecordsByWindow(records).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()),
+        records: groupRecordsByWindow(records).sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        ),
       }))
       .sort((a, b) => b.records.length - a.records.length);
 
@@ -1422,12 +1529,14 @@ export class CompanyApp extends LitElement {
           .isExportingPdf=${this.isExportingPdf}
           .isExportingPng=${this.isExportingPng}
           .isExportingCsv=${this.isExportingCsv}
+          .isExportingHtml=${this.isExportingHtml}
           @company-change=${this.handleCompanyChange}
           @add-company=${this.addCompany}
           @edit-company=${this.openDialog}
           @export-png=${this.handleExportPng}
           @export-pdf=${this.handleExportPdf}
           @export-csv=${this.handleExportCsv}
+          @export-html=${this.handleExportHtml}
           @refresh-data=${this.handleRefresh}
         ></company-header>
 
