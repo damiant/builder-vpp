@@ -9,6 +9,7 @@ type MetricsItem = {
   creditsUsed: number;
   designsExported: number;
   prsMerged: number;
+  prsCreated: number;
   events: number;
   users: number;
   spaceIds: string[];
@@ -52,7 +53,22 @@ export class SelectedCompanyCard extends LitElement {
     return this;
   }
 
+  override updated() {
+    const dateSelector = this.querySelector<any>("date-range-selector");
+    if (dateSelector) {
+      dateSelector.removeEventListener("date-change", this.handleDateChange);
+      dateSelector.addEventListener("date-change", this.handleDateChange);
+    }
+
+    const spaceSelector = this.querySelector<any>("space-selector");
+    if (spaceSelector) {
+      spaceSelector.removeEventListener("space-change", this.handleSpaceChange);
+      spaceSelector.addEventListener("space-change", this.handleSpaceChange);
+    }
+  }
+
   private handleDateChange = (event: CustomEvent<{ month: number; year: number }>) => {
+    console.log("selected-company-card received date-change event:", event.detail);
     this.dispatchEvent(
       new CustomEvent("date-change", {
         detail: event.detail,
@@ -63,6 +79,7 @@ export class SelectedCompanyCard extends LitElement {
   };
 
   private handleSpaceChange = (event: CustomEvent<{ spaceId: string }>) => {
+    console.log("selected-company-card received space-change event:", event.detail);
     this.dispatchEvent(
       new CustomEvent("space-change", {
         detail: event.detail,
@@ -71,6 +88,11 @@ export class SelectedCompanyCard extends LitElement {
       }),
     );
   };
+
+  private formatUsdAmount(credits: number): string {
+    const usdAmount = credits * 0.05;
+    return `$${usdAmount.toFixed(2)}`;
+  }
 
   private getSummaryStats() {
     if (!this.metricsData || this.metricsData.length === 0) {
@@ -85,6 +107,7 @@ export class SelectedCompanyCard extends LitElement {
         creditsUsed: acc.creditsUsed + item.metrics.creditsUsed,
         designsExported: acc.designsExported + item.metrics.designsExported,
         prsMerged: acc.prsMerged + item.metrics.prsMerged,
+        prsCreated: acc.prsCreated + item.metrics.prsCreated,
         events: acc.events + item.metrics.events,
         users: Math.max(acc.users, item.metrics.users),
       }),
@@ -94,6 +117,7 @@ export class SelectedCompanyCard extends LitElement {
         creditsUsed: 0,
         designsExported: 0,
         prsMerged: 0,
+        prsCreated: 0,
         events: 0,
         users: 0,
       },
@@ -156,7 +180,6 @@ export class SelectedCompanyCard extends LitElement {
                 <date-range-selector
                   .month=${this.selectedMonth}
                   .year=${this.selectedYear}
-                  @date-change=${this.handleDateChange}
                 ></date-range-selector>
               </div>
               ${this.spaces.length > 0
@@ -165,7 +188,6 @@ export class SelectedCompanyCard extends LitElement {
                       <space-selector
                         .spaces=${this.spaces}
                         .selectedSpaceId=${this.selectedSpaceId}
-                        @space-change=${this.handleSpaceChange}
                       ></space-selector>
                     </div>
                   `
@@ -198,9 +220,14 @@ export class SelectedCompanyCard extends LitElement {
                   >
                     Credits used
                   </p>
-                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-                    ${Math.ceil(stats.totals.creditsUsed).toLocaleString()}
-                  </p>
+                  <div class="mt-2 flex items-baseline justify-between">
+                    <p class="text-2xl font-semibold text-[var(--color-text-primary)]">
+                      ${Math.ceil(stats.totals.creditsUsed).toLocaleString()}
+                    </p>
+                    <p class="text-sm font-medium text-[var(--color-text-secondary)]">
+                      ${this.formatUsdAmount(Math.ceil(stats.totals.creditsUsed))}
+                    </p>
+                  </div>
                 </div>
 
                 <div
@@ -213,6 +240,19 @@ export class SelectedCompanyCard extends LitElement {
                   </p>
                   <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
                     ${stats.totals.prsMerged.toLocaleString()}
+                  </p>
+                </div>
+
+                <div
+                  class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                >
+                  <p
+                    class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                  >
+                    Total PRs created
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                    ${stats.totals.prsCreated.toLocaleString()}
                   </p>
                 </div>
 
@@ -263,9 +303,14 @@ export class SelectedCompanyCard extends LitElement {
                   >
                     Avg Credits per day
                   </p>
-                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
-                    ${Math.ceil(stats.avgCreditsPerDay).toLocaleString()}
-                  </p>
+                  <div class="mt-2 flex items-baseline justify-between">
+                    <p class="text-2xl font-semibold text-[var(--color-text-primary)]">
+                      ${Math.ceil(stats.avgCreditsPerDay).toLocaleString()}
+                    </p>
+                    <p class="text-sm font-medium text-[var(--color-text-secondary)]">
+                      ${this.formatUsdAmount(Math.ceil(stats.avgCreditsPerDay))}
+                    </p>
+                  </div>
                 </div>
 
                 <div

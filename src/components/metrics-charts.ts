@@ -37,6 +37,8 @@ export class MetricsCharts extends LitElement {
     featureMetrics: { attribute: false },
     userModelMetrics: { attribute: false },
     designVsPromptMetrics: { attribute: false },
+    designMetrics: { attribute: false },
+    projectsApiData: { attribute: false },
   };
 
   declare data: MetricsData | null;
@@ -78,6 +80,31 @@ export class MetricsCharts extends LitElement {
     creditsUsed: number;
     uniqueDesigns: number;
   }> | null;
+  declare designMetrics: Array<{
+    designDocumentId: string;
+    records: Array<{
+      userEmail: string;
+      timestamp: string;
+      earliestTimestamp?: string;
+      creditsUsed: number;
+      tokensUsed: number;
+      model: string;
+    }>;
+  }> | null;
+  declare projectsApiData: Array<{
+    projectId: string;
+    projectName: string;
+    metrics: {
+      linesAdded: number;
+      linesRemoved: number;
+      linesAccepted: number;
+      userPrompts: number;
+      creditsUsed: number;
+      activeUsers: number;
+      prsMerged: number;
+      prsCreated: number;
+    };
+  }> | null;
 
   private charts: Map<string, Chart<any>> = new Map();
 
@@ -94,6 +121,8 @@ export class MetricsCharts extends LitElement {
     this.featureMetrics = null;
     this.userModelMetrics = null;
     this.designVsPromptMetrics = null;
+    this.designMetrics = null;
+    this.projectsApiData = null;
   }
 
   createRenderRoot() {
@@ -247,6 +276,14 @@ export class MetricsCharts extends LitElement {
     };
   }
 
+  private getDaysInSelectedMonth(): number {
+    const startDate = new Date(this.selectedYear, this.selectedMonth, 1);
+    const endDate = new Date(this.selectedYear, this.selectedMonth + 1, 0);
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both start and end dates
+    return diffDays;
+  }
+
   private getSpaceMetrics(): Array<{
     spaceId: string;
     spaceName: string;
@@ -356,7 +393,11 @@ export class MetricsCharts extends LitElement {
               font: { family: '"Inter", system-ui, sans-serif', size: 12 },
             },
           },
+          filler: {
+            propagate: true,
+          },
         },
+        backgroundColor: "#ffffff",
         scales: {
           y: {
             beginAtZero: true,
@@ -394,8 +435,9 @@ export class MetricsCharts extends LitElement {
     const shouldShowModelsTable = this.modelMetrics && this.modelMetrics.length > 0;
     const shouldShowDesignVsPromptTable =
       this.designVsPromptMetrics && this.designVsPromptMetrics.length > 0;
-    const shouldShowProjectsTable = this.projectMetrics && this.projectMetrics.length > 0;
+    const shouldShowProjectsTable = this.projectsApiData && this.projectsApiData.length > 0;
     const shouldShowFeaturesTable = this.featureMetrics && this.featureMetrics.length > 0;
+    const shouldShowDesignsTable = this.designMetrics && this.designMetrics.length > 0;
     const shouldShowUserModelBreakdown = this.userModelMetrics && this.userModelMetrics.length > 0;
 
     return html`
@@ -477,7 +519,7 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
-                          Credits Used
+                          Credits
                         </th>
                       </tr>
                     </thead>
@@ -541,7 +583,12 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
-                          Credits Used
+                          Credits
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Amount
                         </th>
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
@@ -580,6 +627,9 @@ export class MetricsCharts extends LitElement {
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                               ${Math.round(model.creditsUsed).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              $${(model.creditsUsed * 0.05).toFixed(2)}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                               ${creditsPerEvent.toFixed(2)}
@@ -631,7 +681,7 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
-                          Credits Used
+                          Credits
                         </th>
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
@@ -655,6 +705,16 @@ export class MetricsCharts extends LitElement {
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                               ${item.uniqueDesigns.toLocaleString()}
+                              ${item.uniqueDesigns > 0
+                                ? html`
+                                    <span class="text-xs text-[var(--color-text-tertiary)]">
+                                      ($${((item.creditsUsed / item.uniqueDesigns) * 0.05).toFixed(
+                                        2,
+                                      )}
+                                      per design)
+                                    </span>
+                                  `
+                                : ""}
                             </td>
                           </tr>
                         `;
@@ -688,12 +748,37 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
-                          Total Lines
+                          Lines Added
                         </th>
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
-                          Credits Used
+                          Lines Removed
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Prompts
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Credits
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Users
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          PRs Merged
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          PRs Created
                         </th>
                         <th
                           class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
@@ -703,12 +788,12 @@ export class MetricsCharts extends LitElement {
                       </tr>
                     </thead>
                     <tbody>
-                      ${this.projectMetrics!.map((project) => {
+                      ${this.projectsApiData!.map((project) => {
                         const maxCredits = Math.max(
-                          ...this.projectMetrics!.map((item) => item.creditsUsed),
+                          ...this.projectsApiData!.map((item) => item.metrics.creditsUsed),
                           1,
                         );
-                        const creditPercentage = (project.creditsUsed / maxCredits) * 100;
+                        const creditPercentage = (project.metrics.creditsUsed / maxCredits) * 100;
 
                         return html`
                           <tr
@@ -718,10 +803,25 @@ export class MetricsCharts extends LitElement {
                               ${project.projectName}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${project.totalLines.toLocaleString()}
+                              ${(project.metrics.linesAdded ?? 0).toLocaleString()}
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${Math.round(project.creditsUsed).toLocaleString()}
+                              ${(project.metrics.linesRemoved ?? 0).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${(project.metrics.userPrompts ?? 0).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${Math.round(project.metrics.creditsUsed ?? 0).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${(project.metrics.activeUsers ?? 0).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${(project.metrics.prsMerged ?? 0).toLocaleString()}
+                            </td>
+                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                              ${(project.metrics.prsCreated ?? 0).toLocaleString()}
                             </td>
                             <td class="px-4 py-3">
                               <div class="w-full max-w-xs">
@@ -775,7 +875,7 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
-                          Credits Used
+                          Credits
                         </th>
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
@@ -865,7 +965,7 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
-                          User Prompts
+                          Prompts
                         </th>
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
@@ -875,7 +975,12 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                         >
-                          Credits Used
+                          Credits
+                        </th>
+                        <th
+                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                        >
+                          Amount/Day
                         </th>
                         <th
                           class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
@@ -894,6 +999,9 @@ export class MetricsCharts extends LitElement {
                             1,
                           );
                           const creditPercentage = (user.metrics.creditsUsed / maxCredits) * 100;
+                          const daysInMonth = this.getDaysInSelectedMonth();
+                          const totalAmount = user.metrics.creditsUsed * 0.05;
+                          const amountPerDay = totalAmount / daysInMonth;
 
                           return html`
                             <tr
@@ -914,6 +1022,9 @@ export class MetricsCharts extends LitElement {
                               <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                                 ${Math.ceil(user.metrics.creditsUsed).toLocaleString()}
                               </td>
+                              <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                                $${totalAmount.toFixed(2)} / $${amountPerDay.toFixed(2)}
+                              </td>
                               <td class="px-4 py-3">
                                 <div class="w-full max-w-xs">
                                   <div
@@ -933,6 +1044,194 @@ export class MetricsCharts extends LitElement {
                   </table>
                 </div>
               </div>
+            `
+          : ""}
+        ${shouldShowDesignsTable
+          ? html`
+              <details
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <summary class="cursor-pointer list-none">
+                  <div class="flex items-center justify-between gap-4">
+                    <h3
+                      class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]"
+                    >
+                      Designs
+                    </h3>
+                    <span class="text-sm font-medium text-[var(--color-text-secondary)]">
+                      Expand
+                    </span>
+                  </div>
+                </summary>
+
+                <div class="mt-4 space-y-4">
+                  ${this.designMetrics!.map((design) => {
+                    return html`
+                      <div
+                        class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-4"
+                      >
+                        <div class="border-b border-[var(--color-border-subtle)] px-4 pb-3">
+                          <h4 class="text-base font-semibold text-[var(--color-text-primary)]">
+                            ${design.designDocumentId}
+                          </h4>
+                        </div>
+                        <div class="overflow-x-auto">
+                          <table class="w-full text-sm">
+                            <thead>
+                              <tr class="border-b border-[var(--color-border-subtle)]">
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  User Email
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Timestamp
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Credits
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Amount
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Tokens
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Model
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              ${design.records.map((record) => {
+                                const endDate = new Date(record.timestamp);
+                                const startDate = record.earliestTimestamp
+                                  ? new Date(record.earliestTimestamp)
+                                  : endDate;
+
+                                // Format: "Apr 3, 1:54am-2:05am" or just date/time if single record
+                                let formattedTimestamp: string;
+                                const dateStr = startDate.toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                });
+                                const startTimeStr = startDate
+                                  .toLocaleTimeString("en-US", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  })
+                                  .toLowerCase();
+                                const endTimeStr = endDate
+                                  .toLocaleTimeString("en-US", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                    hour12: true,
+                                  })
+                                  .toLowerCase();
+
+                                if (
+                                  record.earliestTimestamp &&
+                                  startDate.getTime() !== endDate.getTime()
+                                ) {
+                                  formattedTimestamp = `${dateStr}, ${startTimeStr}-${endTimeStr}`;
+                                } else {
+                                  formattedTimestamp = `${dateStr}, ${startTimeStr}`;
+                                }
+
+                                const creditsRounded = Math.round(record.creditsUsed);
+                                const amount = (record.creditsUsed * 0.05).toFixed(2);
+
+                                return html`
+                                  <tr
+                                    class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-elevated)]"
+                                  >
+                                    <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                                      ${record.userEmail}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-left text-[var(--color-text-secondary)]"
+                                    >
+                                      ${formattedTimestamp}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      ${creditsRounded.toLocaleString()}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      $${amount}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                    >
+                                      ${record.tokensUsed.toLocaleString()}
+                                    </td>
+                                    <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                                      ${record.model}
+                                    </td>
+                                  </tr>
+                                `;
+                              })}
+                            </tbody>
+                            <tfoot>
+                              ${(() => {
+                                const totalAmount = design.records.reduce(
+                                  (sum, record) => sum + record.creditsUsed * 0.05,
+                                  0,
+                                );
+                                const totalTokens = design.records.reduce(
+                                  (sum, record) => sum + record.tokensUsed,
+                                  0,
+                                );
+                                const formattedTokens =
+                                  totalTokens >= 1000000
+                                    ? (totalTokens / 1000000).toFixed(1) + "mil"
+                                    : totalTokens.toLocaleString();
+
+                                return html`
+                                  <tr
+                                    class="border-t-2 border-[var(--color-border-subtle)] bg-[var(--color-surface-muted)]"
+                                  >
+                                    <td
+                                      class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                      colspan="3"
+                                    >
+                                      Total
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                    >
+                                      $${totalAmount.toFixed(2)}
+                                    </td>
+                                    <td
+                                      class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                    >
+                                      ${formattedTokens}
+                                    </td>
+                                    <td class="px-4 py-3 text-[var(--color-text-primary)]"></td>
+                                  </tr>
+                                `;
+                              })()}
+                            </tfoot>
+                          </table>
+                        </div>
+                      </div>
+                    `;
+                  })}
+                </div>
+              </details>
             `
           : ""}
         ${shouldShowUserModelBreakdown
@@ -996,7 +1295,7 @@ export class MetricsCharts extends LitElement {
                                 <th
                                   class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
                                 >
-                                  Credits Used
+                                  Credits
                                 </th>
                                 <th
                                   class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"

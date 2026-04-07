@@ -5,6 +5,7 @@ import type { CompanyConfig } from "../lib/company-store";
 import {
   buildMetricsUrl,
   buildEventsUrl,
+  buildProjectsUrl,
   createCompany,
   defaultCompanies,
   deleteCompany,
@@ -18,6 +19,8 @@ import {
   getCachedMetrics,
   cacheEvents,
   getCachedEvents,
+  cacheProjects,
+  getCachedProjects,
   clearAllCaches,
 } from "../lib/metrics-cache";
 import "./company-dialog";
@@ -77,6 +80,35 @@ type DesignVsPromptMetric = {
   uniqueDesigns: number;
 };
 
+type DesignRecord = {
+  userEmail: string;
+  timestamp: string;
+  earliestTimestamp?: string;
+  creditsUsed: number;
+  tokensUsed: number;
+  model: string;
+};
+
+type DesignMetric = {
+  designDocumentId: string;
+  records: DesignRecord[];
+};
+
+type ProjectApiData = {
+  projectId: string;
+  projectName: string;
+  metrics: {
+    linesAdded: number;
+    linesRemoved: number;
+    linesAccepted: number;
+    userPrompts: number;
+    creditsUsed: number;
+    activeUsers: number;
+    prsMerged: number;
+    prsCreated: number;
+  };
+};
+
 export class CompanyApp extends LitElement {
   static properties = {
     companies: { attribute: false },
@@ -97,12 +129,15 @@ export class CompanyApp extends LitElement {
     isExportingPdf: { type: Boolean, attribute: false },
     isExportingPng: { type: Boolean, attribute: false },
     isExportingCsv: { type: Boolean, attribute: false },
+    isExportingHtml: { type: Boolean, attribute: false },
     modelMetrics: { attribute: false },
     projectMetrics: { attribute: false },
     featureMetrics: { attribute: false },
     userModelMetrics: { attribute: false },
     designVsPromptMetrics: { attribute: false },
+    designMetrics: { attribute: false },
     eventsData: { attribute: false },
+    projectsApiData: { attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -123,12 +158,15 @@ export class CompanyApp extends LitElement {
   declare isExportingPdf: boolean;
   declare isExportingPng: boolean;
   declare isExportingCsv: boolean;
+  declare isExportingHtml: boolean;
   declare modelMetrics: ModelMetric[] | null;
   declare projectMetrics: ProjectMetric[] | null;
   declare featureMetrics: FeatureMetric[] | null;
   declare userModelMetrics: UserModelMetric[] | null;
   declare designVsPromptMetrics: DesignVsPromptMetric[] | null;
+  declare designMetrics: DesignMetric[] | null;
   declare eventsData: any[] | null;
+  declare projectsApiData: ProjectApiData[] | null;
 
   private eventsFetchRequestId = 0;
 
@@ -152,12 +190,15 @@ export class CompanyApp extends LitElement {
     this.isExportingPdf = false;
     this.isExportingPng = false;
     this.isExportingCsv = false;
+    this.isExportingHtml = false;
     this.modelMetrics = null;
     this.projectMetrics = null;
     this.featureMetrics = null;
     this.userModelMetrics = null;
     this.designVsPromptMetrics = null;
+    this.designMetrics = null;
     this.eventsData = null;
+    this.projectsApiData = null;
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
@@ -176,6 +217,7 @@ export class CompanyApp extends LitElement {
     await this.restoreCompanies();
     await this.fetchMetrics();
     await this.fetchEventsData();
+    await this.fetchProjectsData();
   }
 
   private get selectedCompany() {
@@ -245,13 +287,16 @@ export class CompanyApp extends LitElement {
     this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
     void this.fetchMetrics();
     void this.fetchEventsData();
+    void this.fetchProjectsData();
   };
 
   private handleDateChange = (event: CustomEvent<{ month: number; year: number }>) => {
+    console.log("Date changed to:", event.detail.month, event.detail.year);
     this.selectedMonth = event.detail.month;
     this.selectedYear = event.detail.year;
     void this.fetchMetrics();
     void this.fetchEventsData();
+    void this.fetchProjectsData();
   };
 
   private handleSpaceChange = (event: CustomEvent<{ spaceId: string }>) => {
@@ -263,6 +308,7 @@ export class CompanyApp extends LitElement {
     await clearAllCaches();
     void this.fetchMetrics();
     void this.fetchEventsData();
+    void this.fetchProjectsData();
   };
 
   private handleExportPdf = async () => {
@@ -306,7 +352,7 @@ export class CompanyApp extends LitElement {
             autoPaging: "text",
             html2canvas: {
               backgroundColor: "#ffffff",
-              scale: 0.5,
+              scale: 0.45,
               useCORS: true,
               scrollX: 0,
               scrollY: 0,
@@ -404,6 +450,102 @@ export class CompanyApp extends LitElement {
       alert("Failed to export CSV");
     } finally {
       this.isExportingCsv = false;
+    }
+  };
+
+  private handleExportHtml = async () => {
+    if (this.isExportingHtml || this.isExportingPdf || this.isExportingPng || this.isExportingCsv)
+      return;
+
+    const exportRoot = this.querySelector<HTMLElement>("company-summary main");
+    if (!exportRoot) {
+      console.error("Unable to find page content for HTML export");
+      return;
+    }
+
+    this.isExportingHtml = true;
+
+    try {
+      await this.updateComplete;
+      await customElements.whenDefined("company-summary");
+      await document.fonts.ready;
+
+      // Clone the export root to avoid modifying the original
+      const clonedContent = exportRoot.cloneNode(true) as HTMLElement;
+
+      // Collect all CSS from stylesheets
+      let cssContent = "";
+
+      // Get CSS from all stylesheets
+      for (const stylesheet of document.styleSheets) {
+        try {
+          // Skip stylesheets from different origins
+          if (stylesheet.href && new URL(stylesheet.href).origin !== window.location.origin) {
+            continue;
+          }
+
+          if (stylesheet.cssRules) {
+            for (const rule of stylesheet.cssRules) {
+              cssContent += rule.cssText + "\n";
+            }
+          }
+        } catch {
+          // Skip stylesheets we can't access
+          continue;
+        }
+      }
+
+      // Get inline styles from all elements
+      const allElements = clonedContent.querySelectorAll("*");
+      let inlineStylesContent = "";
+
+      allElements.forEach((el) => {
+        if (el.hasAttribute("style")) {
+          const elementClass = el.className || `element-${Math.random().toString(36).slice(2, 9)}`;
+          if (!el.className) {
+            el.className = elementClass;
+          }
+          inlineStylesContent += `.${el.className} { ${el.getAttribute("style")} }\n`;
+        }
+      });
+
+      // Create the HTML document
+      const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fusion Metrics - ${this.selectedCompany.name}</title>
+  <style>
+    ${cssContent}
+    ${inlineStylesContent}
+  </style>
+</head>
+<body>
+  ${clonedContent.outerHTML}
+</body>
+</html>`;
+
+      // Create download link
+      const blob = new Blob([htmlContent], { type: "text/html;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      const companyName = this.selectedCompany.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+      const month = String(this.selectedMonth + 1).padStart(2, "0");
+      const filename = `fusion-metrics-${companyName}-${this.selectedYear}-${month}.html`;
+
+      link.setAttribute("href", url);
+      link.setAttribute("download", filename);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error exporting HTML:", error);
+    } finally {
+      this.isExportingHtml = false;
     }
   };
 
@@ -577,6 +719,7 @@ export class CompanyApp extends LitElement {
           creditsUsed: toNumber(metrics.creditsUsed),
           designsExported: toNumber(metrics.designExports ?? metrics.designsExported),
           prsMerged: toNumber(metrics.prsMerged),
+          prsCreated: toNumber(metrics.prsCreated),
           events: toNumber(metrics.events),
           users: toNumber(metrics.users),
           spaceIds: spaceIds,
@@ -612,6 +755,7 @@ export class CompanyApp extends LitElement {
           creditsUsed: toNumber(metrics.creditsUsed),
           designsExported: toNumber(metrics.designExports ?? metrics.designsExported),
           prsMerged: toNumber(metrics.prsMerged),
+          prsCreated: toNumber(metrics.prsCreated),
           events: toNumber(metrics.events),
           users: toNumber(metrics.users),
           spaces: metrics.spaces || [],
@@ -644,6 +788,7 @@ export class CompanyApp extends LitElement {
       this.featureMetrics = null;
       this.userModelMetrics = null;
       this.designVsPromptMetrics = null;
+      this.designMetrics = null;
       return;
     }
 
@@ -671,71 +816,117 @@ export class CompanyApp extends LitElement {
       this.currentEventPage = 1;
       this.totalEventPages = 1;
     } else {
-      // Fetch all events with pagination
-      let hasMore = true;
-      let page = 1;
+      // Fetch all events with concurrent pagination (8 at a time)
       const limit = 1000;
+      const concurrency = 8;
 
       console.log("Fetching events data with pagination");
       this.isFetchingEventPages = true;
       this.currentEventPage = 1;
       this.totalEventPages = 1;
 
-      while (hasMore) {
-        try {
-          if (!isLatestRequest()) {
-            return;
-          }
-
-          this.currentEventPage = page;
-          const url = buildEventsUrl(startDate, endDate, page, limit);
-          const headers = {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${company.privateKey}`,
-          };
-
-          const response = await fetch(url, {
-            method: "GET",
-            headers: headers,
-          });
-
-          if (!isLatestRequest()) {
-            return;
-          }
-
-          if (!response.ok) {
-            console.error("Failed to fetch events, stopping pagination:", response.status);
-            break;
-          }
-
-          const data = await response.json();
-
-          if (!isLatestRequest()) {
-            return;
-          }
-
-          const events = data.data || [];
-          allEvents = allEvents.concat(events);
-
-          const pagination = data.pagination || {};
-          this.totalEventPages = Number(pagination.totalPages) || page;
-          hasMore = pagination.hasNext ?? page < this.totalEventPages;
-          page += 1;
-
-          console.log(`Fetched page ${page - 1}, total events so far: ${allEvents.length}`);
-        } catch (error) {
-          console.error("Error fetching events page:", error);
-          break;
+      // Fetch first page to get total pages
+      try {
+        if (!isLatestRequest()) {
+          return;
         }
+
+        const firstPageUrl = buildEventsUrl(startDate, endDate, 1, limit);
+        const headers = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${company.privateKey}`,
+        };
+
+        const firstResponse = await fetch(firstPageUrl, {
+          method: "GET",
+          headers: headers,
+        });
+
+        if (!isLatestRequest()) {
+          return;
+        }
+
+        if (!firstResponse.ok) {
+          console.error("Failed to fetch first page of events:", firstResponse.status);
+          this.isFetchingEventPages = false;
+          this.currentEventPage = 1;
+          this.totalEventPages = 1;
+          return;
+        }
+
+        const firstData = await firstResponse.json();
+        const firstPageEvents = firstData.data || [];
+        allEvents = allEvents.concat(firstPageEvents);
+
+        const pagination = firstData.pagination || {};
+        const totalPages = Number(pagination.totalPages) || 1;
+        this.totalEventPages = totalPages;
+
+        console.log(
+          `Fetched page 1, total pages: ${totalPages}, total events so far: ${allEvents.length}`,
+        );
+
+        // Fetch remaining pages in batches of 4
+        if (totalPages > 1) {
+          for (let batchStart = 2; batchStart <= totalPages; batchStart += concurrency) {
+            if (!isLatestRequest()) {
+              return;
+            }
+
+            // Create batch of up to 4 page requests
+            const batchEnd = Math.min(batchStart + concurrency - 1, totalPages);
+            const pagePromises = [];
+
+            for (let page = batchStart; page <= batchEnd; page++) {
+              const pageUrl = buildEventsUrl(startDate, endDate, page, limit);
+              pagePromises.push(
+                fetch(pageUrl, {
+                  method: "GET",
+                  headers: headers,
+                }).then((response) => {
+                  if (!response.ok) {
+                    console.error(`Failed to fetch page ${page}:`, response.status);
+                    return null;
+                  }
+                  return response.json();
+                }),
+              );
+            }
+
+            // Wait for all requests in this batch to complete
+            const batchResults = await Promise.all(pagePromises);
+
+            if (!isLatestRequest()) {
+              return;
+            }
+
+            // Process batch results
+            for (const data of batchResults) {
+              if (data) {
+                const events = data.data || [];
+                allEvents = allEvents.concat(events);
+              }
+            }
+
+            this.currentEventPage = Math.min(batchEnd, totalPages);
+            console.log(
+              `Fetched pages ${batchStart}-${batchEnd}, total events so far: ${allEvents.length}`,
+            );
+          }
+        }
+
+        this.isFetchingEventPages = false;
+        this.currentEventPage = 1;
+      } catch (error) {
+        console.error("Error fetching events:", error);
+        this.isFetchingEventPages = false;
+        this.currentEventPage = 1;
+        this.totalEventPages = 1;
       }
 
       if (!isLatestRequest()) {
         return;
       }
-
-      this.isFetchingEventPages = false;
-      this.currentEventPage = 1;
-      this.totalEventPages = 1;
 
       if (allEvents.length === 0) {
         console.warn("No events found for the selected date range");
@@ -922,11 +1113,153 @@ export class CompanyApp extends LitElement {
       },
     ];
 
+    // Aggregate design metrics
+    const designMap = new Map<string, DesignRecord[]>();
+
+    allEvents.forEach((event: any) => {
+      const designExportId = event.designExportId || event.metadata?.designExportId;
+
+      if (designExportId) {
+        const creditsUsed = Number(event.metadata?.creditsUsed ?? event.creditsUsed) || 0;
+        const tokensUsed = Number(event.metadata?.tokensUsed ?? event.tokensUsed) || 0;
+        const model = event.metadata?.model || event.model || "Unknown";
+        const userEmail = String(
+          event.userEmail ||
+            event.metadata?.userEmail ||
+            event.userId ||
+            event.metadata?.userId ||
+            "Unknown",
+        );
+        const timestamp = event.timestamp || new Date().toISOString();
+
+        if (!designMap.has(designExportId)) {
+          designMap.set(designExportId, []);
+        }
+
+        designMap.get(designExportId)!.push({
+          userEmail,
+          timestamp,
+          creditsUsed,
+          tokensUsed,
+          model,
+        });
+      }
+    });
+
+    // Group records within 5-minute windows for same user and model
+    const groupRecordsByWindow = (records: DesignRecord[]): DesignRecord[] => {
+      // Sort by timestamp ascending
+      const sortedRecords = records.sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+      );
+
+      const groupedRecords: DesignRecord[] = [];
+      const fiveMinutesInMs = 5 * 60 * 1000;
+
+      for (const record of sortedRecords) {
+        // Find if there's a recent group for the same user and model
+        const lastMatchingGroup = groupedRecords.reverse().find((r) => {
+          if (r.userEmail !== record.userEmail || r.model !== record.model) {
+            return false;
+          }
+          const timeDiff = new Date(record.timestamp).getTime() - new Date(r.timestamp).getTime();
+          return timeDiff <= fiveMinutesInMs;
+        });
+        groupedRecords.reverse();
+
+        if (lastMatchingGroup) {
+          // Combine with existing group
+          lastMatchingGroup.creditsUsed += record.creditsUsed;
+          lastMatchingGroup.tokensUsed += record.tokensUsed;
+          // Update timestamp to the latest one
+          lastMatchingGroup.timestamp = record.timestamp;
+          // Ensure earliestTimestamp is set (use the group's timestamp if not already set)
+          if (!lastMatchingGroup.earliestTimestamp) {
+            lastMatchingGroup.earliestTimestamp = lastMatchingGroup.timestamp;
+          }
+        } else {
+          // Add as new record
+          const newRecord: DesignRecord = { ...record };
+          newRecord.earliestTimestamp = record.timestamp;
+          groupedRecords.push(newRecord);
+        }
+      }
+
+      return groupedRecords;
+    };
+
+    this.designMetrics = Array.from(designMap.entries())
+      .map(([designDocumentId, records]) => ({
+        designDocumentId,
+        records: groupRecordsByWindow(records).sort(
+          (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+        ),
+      }))
+      .sort((a, b) => b.records.length - a.records.length);
+
     console.log("Aggregated model metrics:", this.modelMetrics);
     console.log("Aggregated project metrics:", this.projectMetrics);
     console.log("Aggregated feature metrics:", this.featureMetrics);
     console.log("Aggregated user model metrics:", this.userModelMetrics);
     console.log("Design vs Prompt metrics:", this.designVsPromptMetrics);
+    console.log("Design metrics:", this.designMetrics);
+  }
+
+  private async fetchProjectsData() {
+    const company = this.selectedCompany;
+
+    if (!company.privateKey) {
+      console.log("Skipping projects fetch - no private key");
+      this.projectsApiData = null;
+      return;
+    }
+
+    const { startDate, endDate } = this.getMetricsDateRange();
+
+    // Check cache first
+    const cachedData = await getCachedProjects(
+      company.publicKey,
+      company.privateKey,
+      startDate,
+      endDate,
+    );
+
+    if (cachedData) {
+      console.log("Using cached projects data");
+      this.projectsApiData = (cachedData as ProjectApiData[]) || null;
+      return;
+    }
+
+    const url = buildProjectsUrl(startDate, endDate);
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${company.privateKey}`,
+    };
+
+    try {
+      console.log("Fetching projects data from:", url.toString());
+      const response = await fetch(url, {
+        method: "GET",
+        headers: headers,
+      });
+
+      if (!response.ok) {
+        console.error("Failed to fetch projects data:", response.status);
+        this.projectsApiData = null;
+        return;
+      }
+
+      const responseData = await response.json();
+      const projectsArray = Array.isArray(responseData) ? responseData : responseData.data || [];
+
+      await cacheProjects(company.publicKey, company.privateKey, startDate, endDate, projectsArray);
+
+      this.projectsApiData = projectsArray;
+      console.log("Projects data fetched and cached:", projectsArray);
+    } catch (error) {
+      console.error("Error fetching projects data:", error);
+      this.projectsApiData = null;
+    }
   }
 
   private async fetchMetrics() {
@@ -1198,12 +1531,14 @@ export class CompanyApp extends LitElement {
           .isExportingPdf=${this.isExportingPdf}
           .isExportingPng=${this.isExportingPng}
           .isExportingCsv=${this.isExportingCsv}
+          .isExportingHtml=${this.isExportingHtml}
           @company-change=${this.handleCompanyChange}
           @add-company=${this.addCompany}
           @edit-company=${this.openDialog}
           @export-png=${this.handleExportPng}
           @export-pdf=${this.handleExportPdf}
           @export-csv=${this.handleExportCsv}
+          @export-html=${this.handleExportHtml}
           @refresh-data=${this.handleRefresh}
         ></company-header>
 
@@ -1220,6 +1555,8 @@ export class CompanyApp extends LitElement {
           .featureMetrics=${this.featureMetrics}
           .userModelMetrics=${this.userModelMetrics}
           .designVsPromptMetrics=${this.designVsPromptMetrics}
+          .designMetrics=${this.designMetrics}
+          .projectsApiData=${this.projectsApiData}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}
         ></company-summary>

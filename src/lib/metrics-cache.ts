@@ -5,10 +5,11 @@ export type CachedMetrics = {
   timestamp: number;
 };
 
-const CACHE_DURATION_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_DURATION_MS = 365 * 24 * 60 * 60 * 1000; // 365 days
 const CACHE_PREFIX = "metrics-cache:";
 const USERS_CACHE_PREFIX = "users-cache:";
 const EVENTS_CACHE_PREFIX = "events-cache:";
+const PROJECTS_CACHE_PREFIX = "projects-cache:";
 
 /**
  * Generate a cache key based on company credentials and date range
@@ -239,7 +240,82 @@ export async function cacheEvents(
 }
 
 /**
- * Clear API call caches (metrics, events, users) but preserve company list
+ * Generate a cache key for projects data
+ */
+function generateProjectsCacheKey(
+  publicKey: string,
+  privateKey: string,
+  startDate: string,
+  endDate: string,
+): string {
+  const combined = `${publicKey}|${privateKey}|${startDate}|${endDate}`;
+  let hash = 0;
+  for (let i = 0; i < combined.length; i++) {
+    const char = combined.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash = hash & hash;
+  }
+  return `${PROJECTS_CACHE_PREFIX}${Math.abs(hash).toString(36)}`;
+}
+
+/**
+ * Get cached projects data if available and fresh
+ */
+export async function getCachedProjects(
+  publicKey: string,
+  privateKey: string,
+  startDate: string,
+  endDate: string,
+): Promise<unknown[] | null> {
+  try {
+    const cacheKey = generateProjectsCacheKey(publicKey, privateKey, startDate, endDate);
+    const cached = await get<CachedMetrics>(cacheKey);
+
+    if (!cached || !Array.isArray(cached.data)) {
+      return null;
+    }
+
+    const now = Date.now();
+    const age = now - cached.timestamp;
+
+    if (age < CACHE_DURATION_MS) {
+      console.log(`Using cached projects data (${Math.round(age / 1000)}s old)`);
+      return cached.data;
+    }
+
+    console.log("Cached projects data expired, fetching fresh data");
+    return null;
+  } catch (error) {
+    console.error("Error reading from projects cache:", error);
+    return null;
+  }
+}
+
+/**
+ * Store projects data in cache
+ */
+export async function cacheProjects(
+  publicKey: string,
+  privateKey: string,
+  startDate: string,
+  endDate: string,
+  data: unknown[],
+): Promise<void> {
+  try {
+    const cacheKey = generateProjectsCacheKey(publicKey, privateKey, startDate, endDate);
+    const cached: CachedMetrics = {
+      data,
+      timestamp: Date.now(),
+    };
+    await set(cacheKey, cached);
+    console.log("Projects data cached successfully");
+  } catch (error) {
+    console.error("Error writing to projects cache:", error);
+  }
+}
+
+/**
+ * Clear API call caches (metrics, events, users, projects) but preserve company list
  */
 export async function clearAllCaches(): Promise<void> {
   try {
@@ -268,8 +344,13 @@ export async function clearAllCaches(): Promise<void> {
       })
       .catch(() => []);
 
-    // Delete only cache keys (metrics, events, users), preserve company list
-    const cacheKeyPrefixes = [CACHE_PREFIX, EVENTS_CACHE_PREFIX, USERS_CACHE_PREFIX];
+    // Delete only cache keys (metrics, events, users, projects), preserve company list
+    const cacheKeyPrefixes = [
+      CACHE_PREFIX,
+      EVENTS_CACHE_PREFIX,
+      USERS_CACHE_PREFIX,
+      PROJECTS_CACHE_PREFIX,
+    ];
     if (allKeys && Array.isArray(allKeys)) {
       const deletePromises = allKeys
         .filter((key: string) => cacheKeyPrefixes.some((prefix) => key.startsWith(prefix)))
