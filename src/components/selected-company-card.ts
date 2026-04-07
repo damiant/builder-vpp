@@ -9,6 +9,7 @@ type MetricsItem = {
   creditsUsed: number;
   designsExported: number;
   prsMerged: number;
+  prsCreated: number;
   events: number;
   users: number;
   spaceIds: string[];
@@ -106,6 +107,7 @@ export class SelectedCompanyCard extends LitElement {
         creditsUsed: acc.creditsUsed + item.metrics.creditsUsed,
         designsExported: acc.designsExported + item.metrics.designsExported,
         prsMerged: acc.prsMerged + item.metrics.prsMerged,
+        prsCreated: acc.prsCreated + item.metrics.prsCreated,
         events: acc.events + item.metrics.events,
         users: Math.max(acc.users, item.metrics.users),
       }),
@@ -115,6 +117,7 @@ export class SelectedCompanyCard extends LitElement {
         creditsUsed: 0,
         designsExported: 0,
         prsMerged: 0,
+        prsCreated: 0,
         events: 0,
         users: 0,
       },
@@ -237,6 +240,19 @@ export class SelectedCompanyCard extends LitElement {
                   </p>
                   <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
                     ${stats.totals.prsMerged.toLocaleString()}
+                  </p>
+                </div>
+
+                <div
+                  class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                >
+                  <p
+                    class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                  >
+                    Total PRs created
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                    ${stats.totals.prsCreated.toLocaleString()}
                   </p>
                 </div>
 
