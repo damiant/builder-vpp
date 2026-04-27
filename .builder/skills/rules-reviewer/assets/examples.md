@@ -47,6 +47,7 @@ type-safe database queries and makes migrations easy to manage.
 # Project: E-commerce Platform
 
 ## Technology Stack
+
 - Framework: Next.js 14 (App Router)
 - Language: TypeScript (strict mode)
 - Styling: Tailwind CSS
@@ -54,12 +55,14 @@ type-safe database queries and makes migrations easy to manage.
 - Testing: Vitest + Testing Library
 
 ## Code Style
+
 - Use ES modules (import/export)
 - Functional components with hooks only
 - TypeScript for all files (no .js)
 - 2-space indentation
 
 ## File Organization
+
 - Components: `src/components/{feature}/`
 - Pages: `src/app/` (App Router)
 - API routes: `src/app/api/`
@@ -67,12 +70,14 @@ type-safe database queries and makes migrations easy to manage.
 - Types: `src/types/`
 
 ## Naming Conventions
+
 - Components: PascalCase (`UserProfile.tsx`)
 - Hooks: camelCase with use prefix (`useAuth.ts`)
 - Utils: camelCase (`formatDate.ts`)
 - Constants: SCREAMING_SNAKE_CASE
 
 ## Commands
+
 - `pnpm dev` - Start development server
 - `pnpm build` - Build for production
 - `pnpm test` - Run test suite
@@ -115,7 +120,7 @@ components typically contain business logic specific to that feature...
 
 ### Good: Proper Frontmatter, Concise with Examples
 
-```markdown
+````markdown
 ---
 description: React component structure and organization patterns
 globs:
@@ -127,10 +132,12 @@ alwaysApply: false
 # Component Structure Rules
 
 ## File Location
+
 - Shared components: `src/components/ui/`
 - Feature components: `src/components/{feature}/`
 
 ## Component Pattern
+
 ```typescript
 interface ComponentNameProps {
   // Props definition
@@ -142,23 +149,28 @@ export default function ComponentName({ ...props }: ComponentNameProps) {
   );
 }
 ```
+````
 
 ## Exports
+
 - Default export: The component itself
 - Named exports: Types and utilities
 - Index file: `export { default as ComponentName } from './ComponentName'`
 
 ## Props
+
 - Always use TypeScript interfaces
 - Define interface above component
 - Use descriptive prop names
 - Document complex props with JSDoc
 
 ## File Size
+
 - Components under 200 lines
 - Split large components into sub-components
 - Extract hooks to `hooks/` directory
-```
+
+````
 
 ---
 
@@ -176,11 +188,11 @@ alwaysApply: true  # BAD: applies to ALL files, even non-test files
 
 All code must have tests. Write tests for everything. Use good testing
 practices. Tests should be comprehensive and cover all edge cases...
-```
+````
 
 ### Good: Properly Scoped
 
-```markdown
+````markdown
 ---
 description: Testing standards and patterns for unit and integration tests
 globs:
@@ -194,9 +206,11 @@ alwaysApply: false
 # Testing Standards
 
 ## Test Location
+
 Co-locate with source: `Component.tsx` → `Component.test.tsx`
 
 ## Test Structure
+
 ```typescript
 import { render, screen, userEvent } from '@/test/utils';
 import { ComponentName } from './ComponentName';
@@ -215,13 +229,16 @@ describe('ComponentName', () => {
   });
 });
 ```
+````
 
 ## Requirements
+
 - Test behavior, not implementation
 - Mock external APIs with msw
 - Minimum 80% coverage for new code
 - All user interactions must be tested
-```
+
+````
 
 ---
 
@@ -241,11 +258,11 @@ alwaysApply: true  # BAD: unnecessary for API-specific rules
 
 Use good API design. Follow REST conventions. Handle errors properly.
 Make sure your endpoints are secure and performant.
-```
+````
 
 ### Good: Specific with Examples
 
-```markdown
+````markdown
 ---
 description: API route patterns and conventions
 globs:
@@ -257,37 +274,43 @@ alwaysApply: false
 # API Route Patterns
 
 ## REST Conventions
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/api/users` | List users |
-| GET | `/api/users/:id` | Get user |
-| POST | `/api/users` | Create user |
-| PUT | `/api/users/:id` | Update user |
+
+| Method | Path             | Purpose     |
+| ------ | ---------------- | ----------- |
+| GET    | `/api/users`     | List users  |
+| GET    | `/api/users/:id` | Get user    |
+| POST   | `/api/users`     | Create user |
+| PUT    | `/api/users/:id` | Update user |
 | DELETE | `/api/users/:id` | Delete user |
 
 ## Response Format
+
 ```typescript
 // Success
 return NextResponse.json({ data: result }, { status: 200 });
 
 // Error
 return NextResponse.json(
-  { error: { code: 'NOT_FOUND', message: 'User not found' } },
-  { status: 404 }
+  { error: { code: "NOT_FOUND", message: "User not found" } },
+  { status: 404 },
 );
 ```
+````
 
 ## Error Handling
+
 - Always use try/catch
 - Return appropriate HTTP status codes
 - Include error codes for client handling
 - Log errors server-side
 
 ## Validation
+
 - Validate all inputs with Zod
 - Return 400 for validation errors
 - Include field-level error details
-```
+
+````
 
 ---
 
@@ -302,11 +325,11 @@ Use Tailwind CSS for styling.
 Don't use inline styles.
 Use CSS modules when needed.  # Contradicts Tailwind-only approach
 Custom CSS is fine for complex layouts.  # Vague, contradicts above
-```
+````
 
 ### Good: Clear and Consistent
 
-```markdown
+````markdown
 ---
 description: Tailwind CSS styling conventions and design tokens
 globs:
@@ -318,44 +341,57 @@ alwaysApply: false
 # Styling Guidelines
 
 ## Approach
+
 Use Tailwind CSS exclusively. No CSS modules or custom stylesheets.
 
 ## Spacing
+
 Use Tailwind spacing scale:
+
 - `p-2` (8px), `p-4` (16px), `p-6` (24px)
 - Never use arbitrary values like `p-[13px]`
 
 ## Colors
+
 Use semantic color classes:
+
 - `text-primary`, `bg-surface`, `border-muted`
 - `text-success`, `text-error`, `text-warning`
 - Never use arbitrary colors like `text-[#ff0000]`
 
 ## Responsive Design
+
 Mobile-first approach:
+
 ```html
 <div class="p-4 md:p-6 lg:p-8">
   <h1 class="text-lg md:text-xl lg:text-2xl">Title</h1>
 </div>
 ```
+````
 
 ## Component Styling Pattern
+
 ```tsx
-<button className={cn(
-  "px-4 py-2 rounded-lg font-medium",
-  "bg-primary text-white",
-  "hover:bg-primary/90 focus:ring-2",
-  disabled && "opacity-50 cursor-not-allowed"
-)}>
+<button
+  className={cn(
+    "px-4 py-2 rounded-lg font-medium",
+    "bg-primary text-white",
+    "hover:bg-primary/90 focus:ring-2",
+    disabled && "opacity-50 cursor-not-allowed",
+  )}
+>
   Click me
 </button>
 ```
 
 ## Do NOT
+
 - Use inline `style` props
 - Create custom CSS files
 - Use arbitrary Tailwind values
 - Override design system colors
+
 ```
 
 ---
@@ -373,3 +409,4 @@ Mobile-first approach:
 | **Examples** | Include code blocks |
 | **Organization** | Clear headers and sections |
 | **Consistency** | No contradictions across files |
+```

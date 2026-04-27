@@ -98,18 +98,23 @@ Use this structure:
 
 ```markdown
 ## Lit best-practice findings
+
 - Severity — finding — `path:line`
 
 ## Repo-convention notes
+
 - Observation — `path:line`
 
 ## Dead code from Fallow
+
 - Finding — command output summary
 
 ## Duplicate code from Fallow
+
 - Finding — command output summary
 
 ## Recommended next steps
+
 - Smallest safe fixes first
 ```
 
@@ -140,19 +145,24 @@ Be explicit about confidence level when Fallow output may contain false positive
 I reviewed the Lit components and ran Fallow for dead-code and duplicate-code reporting.
 
 ## Lit best-practice findings
+
 - Medium — `CompanyApp` owns API orchestration, export logic, and reporting, which makes it harder to test and evolve — `src/components/company-app.ts:112`
 - Medium — manual DOM synchronization through `querySelector` increases drift risk compared with state-driven bindings — `src/components/company-dialog.ts:24`
 
 ## Repo-convention notes
+
 - Light DOM and guarded custom element registration are consistent project conventions, not issues.
 
 ## Dead code from Fallow
+
 - [summarize verified findings only]
 
 ## Duplicate code from Fallow
+
 - [summarize verified findings only]
 
 ## Recommended next steps
+
 1. Split the highest-complexity component by responsibility.
 2. Tighten typing around component state and event payloads.
 3. Remove only dead code that has been manually verified.

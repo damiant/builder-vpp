@@ -10,6 +10,7 @@ Use this template structure when presenting AI rules review results.
 # AI Rules Review
 
 ## Summary
+
 - **Files analyzed**: X
 - **Total lines**: Y
 - **Critical issues**: Z
@@ -18,6 +19,7 @@ Use this template structure when presenting AI rules review results.
 ## File Analysis
 
 ### [filename]
+
 - **Size**: X lines / Y chars [OK/WARNING/CRITICAL]
 - **Frontmatter**: [Present/Missing/Incomplete]
 - **alwaysApply**: [true/false]
@@ -31,19 +33,23 @@ Use this template structure when presenting AI rules review results.
 ## Global Issues
 
 ### Issue: [Name]
+
 **Impact**: [Description of how this affects AI]
 **Fix**: [Specific action to take]
 
 ## Recommended Actions
 
 ### Immediate (Critical)
+
 1. [Action 1]
 2. [Action 2]
 
 ### Soon (High Priority)
+
 1. [Action 1]
 
 ### Consider (Medium Priority)
+
 1. [Action 1]
 
 ## Suggested Restructure
@@ -61,6 +67,7 @@ Use when rules are well-structured with no significant issues:
 # AI Rules Review
 
 ## Summary
+
 - **Files analyzed**: X
 - **Total lines**: Y
 - **Status**: Good
@@ -68,6 +75,7 @@ Use when rules are well-structured with no significant issues:
 ## Highlights
 
 Your rules files follow best practices:
+
 - File sizes within limits
 - Proper frontmatter on .mdc files
 - Good use of glob scoping
@@ -86,8 +94,8 @@ Your current rules structure is effective. Continue monitoring AI behavior and u
 
 ## Size Thresholds Reference
 
-| Status | Lines | Characters |
-|--------|-------|------------|
-| **OK** | < 150 | < 5,000 |
-| **WARNING** | 150-200 | 5,000-6,000 |
-| **CRITICAL** | > 200 | > 6,000 |
+| Status       | Lines   | Characters  |
+| ------------ | ------- | ----------- |
+| **OK**       | < 150   | < 5,000     |
+| **WARNING**  | 150-200 | 5,000-6,000 |
+| **CRITICAL** | > 200   | > 6,000     |

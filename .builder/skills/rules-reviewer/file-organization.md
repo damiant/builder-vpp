@@ -24,6 +24,7 @@ your-project/
 **Purpose:** High-level, project-wide conventions
 
 **Should contain:**
+
 - Technology stack declaration
 - Cross-cutting concerns that apply everywhere
 - Core code style rules
@@ -32,23 +33,28 @@ your-project/
 **Target size:** 100-150 lines maximum
 
 **Example structure:**
+
 ```markdown
 # Project: [Name]
 
 ## Technology Stack
+
 - Framework: [...]
 - Language: [...]
 - Styling: [...]
 
 ## Code Style
+
 - [Essential rule 1]
 - [Essential rule 2]
 
 ## File Organization
+
 - Components: `src/components/`
 - Utils: `src/lib/`
 
 ## Commands
+
 - `npm run dev` - Start development
 - `npm run build` - Build production
 - `npm run test` - Run tests
@@ -59,6 +65,7 @@ your-project/
 **Purpose:** Specific, focused rules scoped to file patterns
 
 **Should contain:**
+
 - One concern per file
 - Detailed patterns for specific file types
 - Examples relevant to that concern
@@ -67,6 +74,7 @@ your-project/
 **Target size:** 100-150 lines per file
 
 **Naming convention:** `{concern}.mdc`
+
 - `component-structure.mdc`
 - `testing-standards.mdc`
 - `api-patterns.mdc`
@@ -79,6 +87,7 @@ your-project/
 **Purpose:** AI agent configuration and context
 
 **Should contain:**
+
 - Project overview for AI context
 - References to other rule files
 - Agent-specific instructions
@@ -99,6 +108,7 @@ Rules in nested directories take precedence over parent directories:
 ```
 
 **Precedence order (highest to lowest):**
+
 1. `.builderrules` in current directory
 2. `.builder/rules/*.mdc` with matching globs
 3. Parent directory `.builderrules`
@@ -110,6 +120,7 @@ Rules in nested directories take precedence over parent directories:
 
 ```markdown
 # .builderrules (400 lines)
+
 - Technology stack
 - Code style
 - Component patterns
@@ -157,6 +168,7 @@ Rules in nested directories take precedence over parent directories:
 ## Glob Pattern Examples
 
 ### Component Rules
+
 ```yaml
 globs:
   - "src/components/**/*.tsx"
@@ -164,6 +176,7 @@ globs:
 ```
 
 ### Test Rules
+
 ```yaml
 globs:
   - "**/*.test.ts"
@@ -173,6 +186,7 @@ globs:
 ```
 
 ### API Route Rules
+
 ```yaml
 globs:
   - "src/app/api/**/*.ts"
@@ -180,6 +194,7 @@ globs:
 ```
 
 ### Style Rules
+
 ```yaml
 globs:
   - "**/*.css"
@@ -188,6 +203,7 @@ globs:
 ```
 
 ### Configuration Rules
+
 ```yaml
 globs:
   - "*.config.ts"
@@ -219,6 +235,7 @@ monorepo/
 ## Common Patterns by Project Type
 
 ### Next.js App
+
 ```
 .builderrules
 .builder/rules/
@@ -229,6 +246,7 @@ monorepo/
 ```
 
 ### React SPA
+
 ```
 .builderrules
 .builder/rules/
@@ -239,6 +257,7 @@ monorepo/
 ```
 
 ### Node.js API
+
 ```
 .builderrules
 .builder/rules/
@@ -258,6 +277,7 @@ When restructuring existing rules:
 ### 1. Audit Current State
 
 Identify all rules files in the project:
+
 - `.builderrules` (root and nested)
 - `.builder/rules/*.mdc`
 - `agents.md`
@@ -267,6 +287,7 @@ Check each file's size (lines and characters).
 ### 2. Categorize Content
 
 Read through existing rules and categorize:
+
 - **Core** (keep in root): Tech stack, essential style
 - **Component** (split out): Component patterns
 - **Testing** (split out): Test conventions
