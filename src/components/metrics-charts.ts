@@ -24,6 +24,22 @@ type MetricsData = {
   metrics: MetricsItem;
 }[];
 
+type PullRequestRecord = {
+  prId: string;
+  eventType: string;
+  userEmail: string;
+  timestamp: string;
+  pullRequestUrl: string | null;
+  projectUrl: string | null;
+};
+
+type PullRequestProject = {
+  projectId: string;
+  projectName: string;
+  repoUrl?: string;
+  records: PullRequestRecord[];
+};
+
 export class MetricsCharts extends LitElement {
   static properties = {
     data: { attribute: false },
@@ -38,6 +54,7 @@ export class MetricsCharts extends LitElement {
     userModelMetrics: { attribute: false },
     designVsPromptMetrics: { attribute: false },
     designMetrics: { attribute: false },
+    eventsData: { attribute: false },
     projectsApiData: { attribute: false },
   };
 
@@ -91,9 +108,11 @@ export class MetricsCharts extends LitElement {
       model: string;
     }>;
   }> | null;
+  declare eventsData: Array<any> | null;
   declare projectsApiData: Array<{
     projectId: string;
     projectName: string;
+    repoUrl?: string;
     metrics: {
       linesAdded: number;
       linesRemoved: number;
@@ -122,6 +141,7 @@ export class MetricsCharts extends LitElement {
     this.userModelMetrics = null;
     this.designVsPromptMetrics = null;
     this.designMetrics = null;
+    this.eventsData = null;
     this.projectsApiData = null;
   }
 
@@ -335,6 +355,68 @@ export class MetricsCharts extends LitElement {
     return Array.from(spaceMap.values()).sort((a, b) => b.creditsUsed - a.creditsUsed);
   }
 
+  private getPullRequestProjects(): PullRequestProject[] {
+    if (!this.eventsData || this.eventsData.length === 0) {
+      return [];
+    }
+
+    const projectsById = new Map(
+      (this.projectsApiData ?? []).map((project) => [String(project.projectId), project]),
+    );
+    const pullRequestProjects = new Map<string, PullRequestProject>();
+
+    this.eventsData.forEach((event) => {
+      if (event.eventType !== "prMerged") {
+        return;
+      }
+
+      const metadata = event.metadata ?? {};
+      const eventSpaceId = String(event.spaceId ?? metadata.spaceId ?? "");
+
+      if (this.selectedSpaceId !== "all" && eventSpaceId !== this.selectedSpaceId) {
+        return;
+      }
+
+      const projectId = String(event.projectId ?? metadata.projectId ?? "");
+      const projectInfo = projectId ? projectsById.get(projectId) : undefined;
+      const projectName = String(
+        projectInfo?.projectName ?? event.projectName ?? metadata.projectName ?? "Unknown project",
+      );
+      const projectKey = projectId || projectName;
+      const repoUrl = projectInfo?.repoUrl;
+
+      if (!pullRequestProjects.has(projectKey)) {
+        pullRequestProjects.set(projectKey, {
+          projectId,
+          projectName,
+          repoUrl,
+          records: [],
+        });
+      }
+
+      const prId = String(
+        metadata.prNumber ?? metadata.prId ?? metadata.pullRequestId ?? "Unknown",
+      );
+      const repoBaseUrl = repoUrl?.replace(/\/$/, "");
+
+      pullRequestProjects.get(projectKey)!.records.push({
+        prId,
+        eventType: String(event.eventType),
+        userEmail: String(event.userEmail ?? metadata.userEmail ?? event.userId ?? "Unknown"),
+        timestamp: String(event.timestamp ?? ""),
+        pullRequestUrl: repoBaseUrl && prId !== "Unknown" ? `${repoBaseUrl}/pulls/${prId}` : null,
+        projectUrl: projectId ? `http://builder.io/app/projects/${projectId}` : null,
+      });
+    });
+
+    return Array.from(pullRequestProjects.values())
+      .map((project) => ({
+        ...project,
+        records: project.records.sort((a, b) => a.prId.localeCompare(b.prId)),
+      }))
+      .sort((a, b) => a.projectName.localeCompare(b.projectName));
+  }
+
   private formatDateLabel(dateString: string): string {
     try {
       const date = new Date(dateString);
@@ -438,6 +520,8 @@ export class MetricsCharts extends LitElement {
     const shouldShowProjectsTable = this.projectsApiData && this.projectsApiData.length > 0;
     const shouldShowFeaturesTable = this.featureMetrics && this.featureMetrics.length > 0;
     const shouldShowDesignsTable = this.designMetrics && this.designMetrics.length > 0;
+    const pullRequestProjects = this.getPullRequestProjects();
+    const shouldShowPullRequestsSection = pullRequestProjects.length > 0;
     const shouldShowUserModelBreakdown = this.userModelMetrics && this.userModelMetrics.length > 0;
 
     return html`
@@ -1232,6 +1316,129 @@ export class MetricsCharts extends LitElement {
                   })}
                 </div>
               </details>
+            `
+          : ""}
+        ${shouldShowPullRequestsSection
+          ? html`
+              <div>
+                <h3 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+                  Pull Requests
+                </h3>
+              </div>
+
+              <div
+                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+              >
+                <div class="space-y-4">
+                  ${pullRequestProjects.map((project) => {
+                    return html`
+                      <div
+                        class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-4"
+                      >
+                        <div
+                          class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border-subtle)] px-4 pb-3"
+                        >
+                          <h4 class="text-base font-semibold text-[var(--color-text-primary)]">
+                            ${project.projectName}
+                          </h4>
+                          ${project.repoUrl
+                            ? html`
+                                <a
+                                  class="text-sm font-medium text-[var(--color-brand-strong)] underline-offset-4 hover:underline"
+                                  href=${project.repoUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  repo
+                                </a>
+                              `
+                            : html`
+                                <span class="text-sm text-[var(--color-text-tertiary)]">
+                                  repo unavailable
+                                </span>
+                              `}
+                        </div>
+                        <div class="overflow-x-auto">
+                          <table class="w-full text-sm">
+                            <thead>
+                              <tr class="border-b border-[var(--color-border-subtle)]">
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  PR ID
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Event Type
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  User Email
+                                </th>
+                                <th
+                                  class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                >
+                                  Project
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              ${project.records.map((record) => {
+                                return html`
+                                  <tr
+                                    class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-elevated)]"
+                                  >
+                                    <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                                      ${record.pullRequestUrl
+                                        ? html`
+                                            <a
+                                              class="font-medium text-[var(--color-brand-strong)] underline-offset-4 hover:underline"
+                                              href=${record.pullRequestUrl}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                            >
+                                              ${record.prId}
+                                            </a>
+                                          `
+                                        : record.prId}
+                                    </td>
+                                    <td class="px-4 py-3 text-[var(--color-text-secondary)]">
+                                      ${record.eventType}
+                                    </td>
+                                    <td class="px-4 py-3 text-[var(--color-text-secondary)]">
+                                      ${record.userEmail}
+                                    </td>
+                                    <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                                      ${record.projectUrl
+                                        ? html`
+                                            <a
+                                              class="font-medium text-[var(--color-brand-strong)] underline-offset-4 hover:underline"
+                                              href=${record.projectUrl}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                            >
+                                              project
+                                            </a>
+                                          `
+                                        : html`
+                                            <span class="text-[var(--color-text-tertiary)]">
+                                              unavailable
+                                            </span>
+                                          `}
+                                    </td>
+                                  </tr>
+                                `;
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    `;
+                  })}
+                </div>
+              </div>
             `
           : ""}
         ${shouldShowUserModelBreakdown

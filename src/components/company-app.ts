@@ -97,6 +97,7 @@ type DesignMetric = {
 type ProjectApiData = {
   projectId: string;
   projectName: string;
+  repoUrl?: string;
   metrics: {
     linesAdded: number;
     linesRemoved: number;
@@ -1556,6 +1557,7 @@ export class CompanyApp extends LitElement {
           .userModelMetrics=${this.userModelMetrics}
           .designVsPromptMetrics=${this.designVsPromptMetrics}
           .designMetrics=${this.designMetrics}
+          .eventsData=${this.eventsData}
           .projectsApiData=${this.projectsApiData}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}
