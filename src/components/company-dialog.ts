@@ -151,6 +151,9 @@ export class CompanyDialog extends LitElement {
       <dialog
         id="company-dialog"
         class="w-[min(92vw,36rem)] rounded-[var(--radius-xl)] border border-[var(--color-border-subtle)] bg-[var(--color-surface)] p-0 shadow-[var(--shadow-md)]"
+        data-lpignore="true"
+        data-1p-ignore="true"
+        data-bwignore="true"
         @close=${this.handleNativeClose}
       >
         <div class="p-6 sm:p-8">
@@ -184,8 +187,16 @@ export class CompanyDialog extends LitElement {
                 id="company-name"
                 class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 type="text"
+                name="organization-display-name"
+                inputmode="text"
                 placeholder="Enter company name"
                 autocomplete="off"
+                autocapitalize="words"
+                autocorrect="off"
+                spellcheck="false"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
                 value=${company.name}
               />
             </label>
@@ -197,9 +208,16 @@ export class CompanyDialog extends LitElement {
               <input
                 id="company-private-key"
                 class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
-                type="password"
+                type="text"
+                name="builder-api-token"
                 placeholder="Enter private key"
                 autocomplete="off"
+                autocapitalize="off"
+                autocorrect="off"
+                spellcheck="false"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-bwignore="true"
                 value=${company.privateKey}
               />
             </label>
