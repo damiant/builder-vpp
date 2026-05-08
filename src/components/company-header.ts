@@ -78,30 +78,37 @@ export class CompanyHeader extends LitElement {
   };
 
   private handleRefresh = () => {
+    this.menuOpen = false;
     this.dispatchEvent(new CustomEvent("refresh-data", { bubbles: true, composed: true }));
   };
 
   private handleExportPdf = () => {
+    this.menuOpen = false;
     this.dispatchEvent(new CustomEvent("export-pdf", { bubbles: true, composed: true }));
   };
 
   private handleExportPng = () => {
+    this.menuOpen = false;
     this.dispatchEvent(new CustomEvent("export-png", { bubbles: true, composed: true }));
   };
 
   private handleExportCsv = () => {
+    this.menuOpen = false;
     this.dispatchEvent(new CustomEvent("export-csv", { bubbles: true, composed: true }));
   };
 
   private handleExportHtml = () => {
+    this.menuOpen = false;
     this.dispatchEvent(new CustomEvent("export-html", { bubbles: true, composed: true }));
   };
 
   private handleDownloadCompanies = () => {
+    this.menuOpen = false;
     this.dispatchEvent(new CustomEvent("download-companies", { bubbles: true, composed: true }));
   };
 
   private handleUploadCompaniesClick = () => {
+    this.menuOpen = false;
     this.querySelector<HTMLInputElement>("#company-json-upload")?.click();
   };
 
@@ -160,6 +167,24 @@ export class CompanyHeader extends LitElement {
           </div>
 
           <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="rounded-[var(--radius-sm)] text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+              @click=${this.handleEditCompany}
+              ?disabled=${this.isExportingPdf ||
+              this.isExportingPng ||
+              this.isExportingCsv ||
+              this.isExportingHtml}
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              class="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-[var(--color-text-inverse)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--color-brand-strong)]"
+              @click=${this.addCompany}
+            >
+              Add
+            </button>
             <div class="relative">
               <button
                 type="button"
@@ -173,46 +198,85 @@ export class CompanyHeader extends LitElement {
               ${this.menuOpen
                 ? html`
                     <div
-                      class="absolute right-0 z-20 mt-2 min-w-32 rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-1 shadow-[var(--shadow-md)]"
+                      class="absolute right-0 z-20 mt-2 min-w-40 rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-1 shadow-[var(--shadow-md)]"
                       role="menu"
                     >
                       <button
                         type="button"
+                        class="w-full rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
+                        @click=${this.handleDownloadCompanies}
+                        role="menuitem"
+                      >
+                        Download Keys
+                      </button>
+                      <button
+                        type="button"
+                        class="w-full rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
+                        @click=${this.handleUploadCompaniesClick}
+                        role="menuitem"
+                      >
+                        Upload Keys
+                      </button>
+                      <button
+                        type="button"
                         class="w-full rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-                        @click=${this.handleEditCompany}
+                        @click=${this.handleExportPng}
+                        ?disabled=${this.isExportingPng ||
+                        this.isExportingPdf ||
+                        this.isExportingCsv ||
+                        this.isExportingHtml}
+                        role="menuitem"
+                      >
+                        ${this.isExportingPng ? "Generating PNG..." : "PNG"}
+                      </button>
+                      <button
+                        type="button"
+                        class="w-full rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+                        @click=${this.handleExportPdf}
                         ?disabled=${this.isExportingPdf ||
                         this.isExportingPng ||
                         this.isExportingCsv ||
                         this.isExportingHtml}
                         role="menuitem"
                       >
-                        Edit
+                        ${this.isExportingPdf ? "Generating PDF..." : "PDF"}
+                      </button>
+                      <button
+                        type="button"
+                        class="w-full rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+                        @click=${this.handleExportCsv}
+                        ?disabled=${this.isExportingCsv ||
+                        this.isExportingPdf ||
+                        this.isExportingPng ||
+                        this.isExportingHtml}
+                        role="menuitem"
+                      >
+                        ${this.isExportingCsv ? "Generating CSV..." : "CSV"}
+                      </button>
+                      <button
+                        type="button"
+                        class="w-full rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+                        @click=${this.handleExportHtml}
+                        ?disabled=${this.isExportingHtml ||
+                        this.isExportingPdf ||
+                        this.isExportingPng ||
+                        this.isExportingCsv}
+                        role="menuitem"
+                      >
+                        ${this.isExportingHtml ? "Generating HTML..." : "HTML"}
+                      </button>
+                      <button
+                        type="button"
+                        class="w-full rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
+                        @click=${this.handleRefresh}
+                        role="menuitem"
+                      >
+                        Refresh
                       </button>
                     </div>
                   `
                 : ""}
             </div>
-            <button
-              type="button"
-              class="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-[var(--color-text-inverse)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--color-brand-strong)]"
-              @click=${this.addCompany}
-            >
-              Add
-            </button>
-            <button
-              type="button"
-              class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
-              @click=${this.handleDownloadCompanies}
-            >
-              Download Keys
-            </button>
-            <button
-              type="button"
-              class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
-              @click=${this.handleUploadCompaniesClick}
-            >
-              Upload Keys
-            </button>
             <input
               id="company-json-upload"
               class="hidden"
@@ -220,70 +284,6 @@ export class CompanyHeader extends LitElement {
               accept="application/json,.json"
               @change=${this.handleUploadCompanies}
             />
-            <button
-              type="button"
-              class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-              @click=${this.handleExportPng}
-              ?disabled=${this.isExportingPng ||
-              this.isExportingPdf ||
-              this.isExportingCsv ||
-              this.isExportingHtml}
-            >
-              ${this.isExportingPng ? "Generating PNG..." : "PNG"}
-            </button>
-            <button
-              type="button"
-              class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-              @click=${this.handleExportPdf}
-              ?disabled=${this.isExportingPdf ||
-              this.isExportingPng ||
-              this.isExportingCsv ||
-              this.isExportingHtml}
-            >
-              ${this.isExportingPdf ? "Generating PDF..." : "PDF"}
-            </button>
-            <button
-              type="button"
-              class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-              @click=${this.handleExportCsv}
-              ?disabled=${this.isExportingCsv ||
-              this.isExportingPdf ||
-              this.isExportingPng ||
-              this.isExportingHtml}
-            >
-              ${this.isExportingCsv ? "Generating CSV..." : "CSV"}
-            </button>
-            <button
-              type="button"
-              class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-              @click=${this.handleExportHtml}
-              ?disabled=${this.isExportingHtml ||
-              this.isExportingPdf ||
-              this.isExportingPng ||
-              this.isExportingCsv}
-            >
-              ${this.isExportingHtml ? "Generating HTML..." : "HTML"}
-            </button>
-            <button
-              type="button"
-              class="rounded-[var(--radius-sm)] p-4 text-[var(--color-text-secondary)] transition hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text-primary)]"
-              @click=${this.handleRefresh}
-              title="Refresh data"
-            >
-              <svg
-                width="28"
-                height="28"
-                viewBox="5 -5 33 28"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="23 4 23 10 17 10"></polyline>
-                <path d="M20.49 15a9 9 0 1 1 2.12-9.36L23 10"></path>
-              </svg>
-            </button>
           </div>
         </div>
       </header>
