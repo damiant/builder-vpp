@@ -6,15 +6,18 @@ export class CompanyDialog extends LitElement {
   static properties = {
     company: { attribute: false },
     open: { type: Boolean, attribute: false },
+    privateKeyEditing: { type: Boolean, attribute: false },
   };
 
   declare company: CompanyConfig | null;
   declare open: boolean;
+  declare privateKeyEditing: boolean;
 
   constructor() {
     super();
     this.company = null;
     this.open = false;
+    this.privateKeyEditing = false;
   }
 
   createRenderRoot() {
@@ -24,6 +27,7 @@ export class CompanyDialog extends LitElement {
   protected updated(changedProperties: PropertyValues<this>) {
     // Sync input values when company or open state changes
     if (changedProperties.has("company") || changedProperties.has("open")) {
+      this.privateKeyEditing = !this.company?.privateKey;
       const company = this.company ?? {
         id: "company",
         name: "Company",
@@ -75,8 +79,9 @@ export class CompanyDialog extends LitElement {
     return this.querySelector<HTMLInputElement>("#company-secret-value");
   }
 
-  private enablePrivateKeyEditing = (event: Event) => {
-    (event.target as HTMLInputElement).removeAttribute("readonly");
+  private showPrivateKeyInput = () => {
+    this.privateKeyEditing = true;
+    void this.updateComplete.then(() => this.companyPrivateKeyInput?.focus());
   };
 
   private readCompany() {
@@ -91,7 +96,7 @@ export class CompanyDialog extends LitElement {
       ...baseCompany,
       name: this.companyNameInput?.value.trim() || "Company",
       publicKey: this.companyPublicKeyInput?.value.trim() || "",
-      privateKey: this.companyPrivateKeyInput?.value.trim() || "",
+      privateKey: this.companyPrivateKeyInput?.value.trim() ?? baseCompany.privateKey,
     };
   }
 
@@ -211,28 +216,43 @@ export class CompanyDialog extends LitElement {
 
             <input id="company-public-key" type="hidden" value=${company.publicKey} />
 
-            <label class="grid gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
+            <div class="grid gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
               <span>Private Key</span>
-              <input
-                id="company-secret-value"
-                class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
-                type="password"
-                name="organization-secret-value"
-                placeholder="Enter credential value"
-                autocomplete="new-password"
-                autocapitalize="off"
-                autocorrect="off"
-                spellcheck="false"
-                readonly
-                data-lpignore="true"
-                data-1p-ignore="true"
-                data-bwignore="true"
-                data-form-type="other"
-                data-keeper-lock="true"
-                @focus=${this.enablePrivateKeyEditing}
-                value=${company.privateKey}
-              />
-            </label>
+              ${company.privateKey && !this.privateKeyEditing
+                ? html`
+                    <div
+                      class="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3"
+                    >
+                      <span class="text-sm text-[var(--color-text-muted)]">Private key saved</span>
+                      <button
+                        type="button"
+                        class="text-sm font-medium text-[var(--color-brand-strong)] underline-offset-4 hover:underline"
+                        @click=${this.showPrivateKeyInput}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  `
+                : html`
+                    <input
+                      id="company-secret-value"
+                      class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
+                      type="text"
+                      name="organization-secret-value"
+                      placeholder="Enter credential value"
+                      autocomplete="new-password"
+                      autocapitalize="off"
+                      autocorrect="off"
+                      spellcheck="false"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-bwignore="true"
+                      data-form-type="other"
+                      data-keeper-lock="true"
+                      value=${company.privateKey}
+                    />
+                  `}
+            </div>
           </div>
 
           <p class="mt-4 text-xs leading-5 text-[var(--color-text-muted)]">
