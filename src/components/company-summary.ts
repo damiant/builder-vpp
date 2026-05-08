@@ -20,6 +20,7 @@ export class CompanySummary extends LitElement {
     userModelMetrics: { attribute: false },
     designVsPromptMetrics: { attribute: false },
     designMetrics: { attribute: false },
+    eventsData: { attribute: false },
     projectsApiData: { attribute: false },
   };
 
@@ -74,9 +75,11 @@ export class CompanySummary extends LitElement {
       model: string;
     }>;
   }> | null;
+  declare eventsData: Array<any> | null;
   declare projectsApiData: Array<{
     projectId: string;
     projectName: string;
+    repoUrl?: string;
     metrics: {
       linesAdded: number;
       linesRemoved: number;
@@ -102,6 +105,7 @@ export class CompanySummary extends LitElement {
     this.userModelMetrics = null;
     this.designVsPromptMetrics = null;
     this.designMetrics = null;
+    this.eventsData = null;
     this.projectsApiData = null;
   }
 
@@ -160,6 +164,7 @@ export class CompanySummary extends LitElement {
                   .userModelMetrics=${this.userModelMetrics}
                   .designVsPromptMetrics=${this.designVsPromptMetrics}
                   .designMetrics=${this.designMetrics}
+                  .eventsData=${this.eventsData}
                   .projectsApiData=${this.projectsApiData}
                 ></metrics-charts>
               </section>

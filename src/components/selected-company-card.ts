@@ -159,7 +159,7 @@ export class SelectedCompanyCard extends LitElement {
           <div class="flex-1">
             <div class="flex flex-col gap-3 border-b border-[var(--color-border-subtle)] pb-6">
               <p class="brand-heading text-sm font-medium text-[var(--color-brand-strong)]">
-                Selected company
+                Company Name
               </p>
               <h2 class="text-3xl font-semibold tracking-tight text-[var(--color-text-primary)]">
                 ${company.name}

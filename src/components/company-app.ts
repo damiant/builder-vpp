@@ -97,6 +97,7 @@ type DesignMetric = {
 type ProjectApiData = {
   projectId: string;
   projectName: string;
+  repoUrl?: string;
   metrics: {
     linesAdded: number;
     linesRemoved: number;
@@ -309,6 +310,77 @@ export class CompanyApp extends LitElement {
     void this.fetchMetrics();
     void this.fetchEventsData();
     void this.fetchProjectsData();
+  };
+
+  private handleDownloadCompanies = () => {
+    const data = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      selectedCompanyId: this.selectedCompanyId,
+      companies: this.companies,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "company-keys.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  private handleUploadCompanies = async (event: CustomEvent<{ file: File }>) => {
+    try {
+      const importedData = JSON.parse(await event.detail.file.text());
+      const companies = Array.isArray(importedData)
+        ? importedData
+        : Array.isArray(importedData?.companies)
+          ? importedData.companies
+          : null;
+
+      if (!companies) {
+        throw new Error("JSON must contain a companies array");
+      }
+
+      const importedCompanies: CompanyConfig[] = companies.map((company: any) => {
+        if (!company || typeof company !== "object") {
+          throw new Error("Each company must be an object");
+        }
+
+        const id = String(
+          company.id || globalThis.crypto?.randomUUID?.() || `company-${Date.now()}`,
+        );
+        const name = String(company.name || "Company").trim();
+        const publicKey = String(company.publicKey || "").trim();
+        const privateKey = String(company.privateKey || "").trim();
+
+        if (!name) {
+          throw new Error("Each company must have a name");
+        }
+
+        return { id, name, publicKey, privateKey };
+      });
+
+      if (importedCompanies.length === 0) {
+        throw new Error("JSON must include at least one company");
+      }
+
+      this.companies = importedCompanies;
+      this.selectedCompanyId = importedCompanies.some(
+        (company) => company.id === importedData?.selectedCompanyId,
+      )
+        ? importedData.selectedCompanyId
+        : importedCompanies[0].id;
+      this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
+      await this.persistCompanies();
+      void this.fetchMetrics();
+      void this.fetchEventsData();
+      void this.fetchProjectsData();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      window.alert(`Unable to import company keys: ${message}`);
+    }
   };
 
   private handleExportPdf = async () => {
@@ -854,12 +926,37 @@ export class CompanyApp extends LitElement {
           return;
         }
 
+        const getEventsFromResponse = (data: any): any[] => {
+          if (Array.isArray(data)) {
+            return data.flatMap((item) => getEventsFromResponse(item));
+          }
+
+          if (!data || typeof data !== "object") {
+            return [];
+          }
+
+          const isEventLike =
+            "eventId" in data ||
+            "eventType" in data ||
+            "timestamp" in data ||
+            "metadata" in data ||
+            "projectId" in data;
+
+          if (isEventLike) {
+            return [data];
+          }
+
+          const candidate = data.data ?? data.events ?? data.results ?? data.items ?? [];
+
+          return getEventsFromResponse(candidate);
+        };
+
         const firstData = await firstResponse.json();
-        const firstPageEvents = firstData.data || [];
+        const firstPageEvents = getEventsFromResponse(firstData);
         allEvents = allEvents.concat(firstPageEvents);
 
         const pagination = firstData.pagination || {};
-        const totalPages = Number(pagination.totalPages) || 1;
+        const totalPages = Number(pagination.totalPages ?? pagination.total_pages) || 1;
         this.totalEventPages = totalPages;
 
         console.log(
@@ -903,8 +1000,7 @@ export class CompanyApp extends LitElement {
             // Process batch results
             for (const data of batchResults) {
               if (data) {
-                const events = data.data || [];
-                allEvents = allEvents.concat(events);
+                allEvents = allEvents.concat(getEventsFromResponse(data));
               }
             }
 
@@ -1539,6 +1635,8 @@ export class CompanyApp extends LitElement {
           @export-pdf=${this.handleExportPdf}
           @export-csv=${this.handleExportCsv}
           @export-html=${this.handleExportHtml}
+          @download-companies=${this.handleDownloadCompanies}
+          @upload-companies=${this.handleUploadCompanies}
           @refresh-data=${this.handleRefresh}
         ></company-header>
 
@@ -1556,6 +1654,7 @@ export class CompanyApp extends LitElement {
           .userModelMetrics=${this.userModelMetrics}
           .designVsPromptMetrics=${this.designVsPromptMetrics}
           .designMetrics=${this.designMetrics}
+          .eventsData=${this.eventsData}
           .projectsApiData=${this.projectsApiData}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}

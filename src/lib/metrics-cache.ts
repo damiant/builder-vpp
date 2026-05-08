@@ -8,7 +8,7 @@ export type CachedMetrics = {
 const CACHE_DURATION_MS = 365 * 24 * 60 * 60 * 1000; // 365 days
 const CACHE_PREFIX = "metrics-cache:";
 const USERS_CACHE_PREFIX = "users-cache:";
-const EVENTS_CACHE_PREFIX = "events-cache:";
+const EVENTS_CACHE_PREFIX = "events-cache-v3:";
 const PROJECTS_CACHE_PREFIX = "projects-cache:";
 
 /**
