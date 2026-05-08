@@ -368,8 +368,26 @@ export class MetricsCharts extends LitElement {
     this.eventsData.forEach((event) => {
       const metadata = event.metadata ?? {};
       const eventType = String(event.eventType ?? metadata.eventType ?? event.type ?? "");
+      const normalizedEventType = eventType.toLowerCase().replace(/[^a-z]/g, "");
+      const prId = String(
+        metadata.prNumber ??
+          metadata.prId ??
+          metadata.pullRequestId ??
+          metadata.pullRequestNumber ??
+          metadata.pr_number ??
+          event.prNumber ??
+          event.prId ??
+          event.pullRequestId ??
+          "",
+      );
+      const isPullRequestEvent =
+        normalizedEventType === "prmerged" ||
+        normalizedEventType === "prcreated" ||
+        normalizedEventType === "pullrequestmerged" ||
+        normalizedEventType === "pullrequestcreated" ||
+        Boolean(prId && normalizedEventType.includes("pr"));
 
-      if (eventType !== "prMerged") {
+      if (!isPullRequestEvent) {
         return;
       }
       const eventSpaceId = String(event.spaceId ?? metadata.spaceId ?? "");
@@ -378,10 +396,17 @@ export class MetricsCharts extends LitElement {
         return;
       }
 
-      const projectId = String(event.projectId ?? metadata.projectId ?? "");
+      const projectId = String(
+        event.projectId ?? metadata.projectId ?? metadata.project?.id ?? event.project?.id ?? "",
+      );
       const projectInfo = projectId ? projectsById.get(projectId) : undefined;
       const projectName = String(
-        projectInfo?.projectName ?? event.projectName ?? metadata.projectName ?? "Unknown project",
+        projectInfo?.projectName ??
+          event.projectName ??
+          metadata.projectName ??
+          metadata.project?.name ??
+          event.project?.name ??
+          "Unknown project",
       );
       const projectKey = projectId || projectName;
       const repoUrl = projectInfo?.repoUrl ?? metadata.repoUrl;
@@ -395,17 +420,18 @@ export class MetricsCharts extends LitElement {
         });
       }
 
-      const prId = String(
-        metadata.prNumber ?? metadata.prId ?? metadata.pullRequestId ?? "Unknown",
-      );
+      const displayPrId = prId || "Unknown";
       const repoBaseUrl = repoUrl?.replace(/\/$/, "");
 
       pullRequestProjects.get(projectKey)!.records.push({
-        prId,
+        prId: displayPrId,
         eventType,
-        userEmail: String(event.userEmail ?? metadata.userEmail ?? event.userId ?? "Unknown"),
+        userEmail: String(
+          event.userEmail ?? metadata.userEmail ?? event.userId ?? metadata.userId ?? "Unknown",
+        ),
         timestamp: String(event.timestamp ?? ""),
-        pullRequestUrl: repoBaseUrl && prId !== "Unknown" ? `${repoBaseUrl}/pulls/${prId}` : null,
+        pullRequestUrl:
+          repoBaseUrl && displayPrId !== "Unknown" ? `${repoBaseUrl}/pulls/${displayPrId}` : null,
         projectUrl: projectId ? `http://builder.io/app/projects/${projectId}` : null,
       });
     });
@@ -522,6 +548,9 @@ export class MetricsCharts extends LitElement {
     const shouldShowFeaturesTable = this.featureMetrics && this.featureMetrics.length > 0;
     const shouldShowDesignsTable = this.designMetrics && this.designMetrics.length > 0;
     const pullRequestProjects = this.getPullRequestProjects();
+    const projectsWithPrCounts = (this.projectsApiData ?? []).filter(
+      (project) => (project.metrics.prsMerged ?? 0) + (project.metrics.prsCreated ?? 0) > 0,
+    );
     const shouldShowPullRequestsSection = Boolean(this.eventsData || this.projectsApiData);
     const shouldShowUserModelBreakdown = this.userModelMetrics && this.userModelMetrics.length > 0;
 
@@ -1332,11 +1361,88 @@ export class MetricsCharts extends LitElement {
               >
                 <div class="space-y-4">
                   ${pullRequestProjects.length === 0
-                    ? html`
-                        <p class="px-4 py-3 text-sm text-[var(--color-text-secondary)]">
-                          No pull request events found for this date range and space.
-                        </p>
-                      `
+                    ? projectsWithPrCounts.length > 0
+                      ? html`
+                          <div class="px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+                            <p>
+                              Project metrics report pull request activity, but matching PR event
+                              details were not found in the events data for this date range and
+                              space.
+                            </p>
+                            <div class="mt-3 overflow-x-auto">
+                              <table class="w-full text-sm">
+                                <thead>
+                                  <tr class="border-b border-[var(--color-border-subtle)]">
+                                    <th
+                                      class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                    >
+                                      Project Name
+                                    </th>
+                                    <th
+                                      class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                    >
+                                      PRs Merged
+                                    </th>
+                                    <th
+                                      class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
+                                    >
+                                      PRs Created
+                                    </th>
+                                    <th
+                                      class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
+                                    >
+                                      Repo
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  ${projectsWithPrCounts.map((project) => {
+                                    return html`
+                                      <tr class="border-b border-[var(--color-border-subtle)]">
+                                        <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                                          ${project.projectName}
+                                        </td>
+                                        <td
+                                          class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                        >
+                                          ${(project.metrics.prsMerged ?? 0).toLocaleString()}
+                                        </td>
+                                        <td
+                                          class="px-4 py-3 text-right text-[var(--color-text-secondary)]"
+                                        >
+                                          ${(project.metrics.prsCreated ?? 0).toLocaleString()}
+                                        </td>
+                                        <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                                          ${project.repoUrl
+                                            ? html`
+                                                <a
+                                                  class="font-medium text-[var(--color-brand-strong)] underline-offset-4 hover:underline"
+                                                  href=${project.repoUrl}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                >
+                                                  repo
+                                                </a>
+                                              `
+                                            : html`
+                                                <span class="text-[var(--color-text-tertiary)]">
+                                                  unavailable
+                                                </span>
+                                              `}
+                                        </td>
+                                      </tr>
+                                    `;
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        `
+                      : html`
+                          <p class="px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+                            No pull request events found for this date range and space.
+                          </p>
+                        `
                     : pullRequestProjects.map((project) => {
                         return html`
                           <div

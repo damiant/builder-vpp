@@ -855,12 +855,20 @@ export class CompanyApp extends LitElement {
           return;
         }
 
+        const getEventsFromResponse = (data: any): any[] => {
+          if (Array.isArray(data)) {
+            return data;
+          }
+
+          return data?.data ?? data?.events ?? data?.results ?? data?.items ?? [];
+        };
+
         const firstData = await firstResponse.json();
-        const firstPageEvents = firstData.data || [];
+        const firstPageEvents = getEventsFromResponse(firstData);
         allEvents = allEvents.concat(firstPageEvents);
 
         const pagination = firstData.pagination || {};
-        const totalPages = Number(pagination.totalPages) || 1;
+        const totalPages = Number(pagination.totalPages ?? pagination.total_pages) || 1;
         this.totalEventPages = totalPages;
 
         console.log(
@@ -904,8 +912,7 @@ export class CompanyApp extends LitElement {
             // Process batch results
             for (const data of batchResults) {
               if (data) {
-                const events = data.data || [];
-                allEvents = allEvents.concat(events);
+                allEvents = allEvents.concat(getEventsFromResponse(data));
               }
             }
 
