@@ -160,7 +160,11 @@ export class CompanyDialog extends LitElement {
         data-bwignore="true"
         @close=${this.handleNativeClose}
       >
-        <div class="p-6 sm:p-8">
+        <form
+          class="p-6 sm:p-8"
+          autocomplete="off"
+          @submit=${(event: Event) => event.preventDefault()}
+        >
           <div class="flex items-start justify-between gap-4">
             <div>
               <p
@@ -262,7 +266,7 @@ export class CompanyDialog extends LitElement {
               </button>
             </div>
           </div>
-        </div>
+        </form>
       </dialog>
     `;
   }
