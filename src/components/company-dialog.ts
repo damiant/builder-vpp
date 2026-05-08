@@ -208,7 +208,7 @@ export class CompanyDialog extends LitElement {
               <input
                 id="company-private-key"
                 class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
-                type="text"
+                type="password"
                 name="builder-api-token"
                 placeholder="Enter private key"
                 autocomplete="off"
