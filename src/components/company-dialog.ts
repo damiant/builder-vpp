@@ -72,8 +72,12 @@ export class CompanyDialog extends LitElement {
   }
 
   private get companyPrivateKeyInput() {
-    return this.querySelector<HTMLInputElement>("#company-private-key");
+    return this.querySelector<HTMLInputElement>("#company-secret-value");
   }
+
+  private enablePrivateKeyEditing = (event: Event) => {
+    (event.target as HTMLInputElement).removeAttribute("readonly");
+  };
 
   private readCompany() {
     const baseCompany = this.company ?? {
@@ -206,18 +210,22 @@ export class CompanyDialog extends LitElement {
             <label class="grid gap-2 text-sm font-medium text-[var(--color-text-secondary)]">
               <span>Private Key</span>
               <input
-                id="company-private-key"
+                id="company-secret-value"
                 class="rounded-[var(--radius-md)] border border-[var(--color-border-default)] bg-[var(--color-surface-elevated)] px-4 py-3 text-sm text-[var(--color-text-primary)] outline-none transition focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand-ring)]"
                 type="password"
-                name="builder-api-token"
-                placeholder="Enter private key"
-                autocomplete="off"
+                name="organization-secret-value"
+                placeholder="Enter credential value"
+                autocomplete="new-password"
                 autocapitalize="off"
                 autocorrect="off"
                 spellcheck="false"
+                readonly
                 data-lpignore="true"
                 data-1p-ignore="true"
                 data-bwignore="true"
+                data-form-type="other"
+                data-keeper-lock="true"
+                @focus=${this.enablePrivateKeyEditing}
                 value=${company.privateKey}
               />
             </label>
