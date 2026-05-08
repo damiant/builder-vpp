@@ -857,10 +857,27 @@ export class CompanyApp extends LitElement {
 
         const getEventsFromResponse = (data: any): any[] => {
           if (Array.isArray(data)) {
-            return data;
+            return data.flatMap((item) => getEventsFromResponse(item));
           }
 
-          return data?.data ?? data?.events ?? data?.results ?? data?.items ?? [];
+          if (!data || typeof data !== "object") {
+            return [];
+          }
+
+          const isEventLike =
+            "eventId" in data ||
+            "eventType" in data ||
+            "timestamp" in data ||
+            "metadata" in data ||
+            "projectId" in data;
+
+          if (isEventLike) {
+            return [data];
+          }
+
+          const candidate = data.data ?? data.events ?? data.results ?? data.items ?? [];
+
+          return getEventsFromResponse(candidate);
         };
 
         const firstData = await firstResponse.json();

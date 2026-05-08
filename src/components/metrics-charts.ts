@@ -365,19 +365,42 @@ export class MetricsCharts extends LitElement {
     );
     const pullRequestProjects = new Map<string, PullRequestProject>();
 
-    this.eventsData.forEach((event) => {
-      const metadata = event.metadata ?? {};
-      const eventType = String(event.eventType ?? metadata.eventType ?? event.type ?? "");
+    this.eventsData.forEach((rawEvent) => {
+      const event = rawEvent.event ?? rawEvent;
+      const rawMetadata = event.metadata ?? rawEvent.metadata ?? {};
+      let metadata = rawMetadata;
+
+      if (typeof rawMetadata === "string") {
+        try {
+          metadata = JSON.parse(rawMetadata);
+        } catch {
+          metadata = {};
+        }
+      }
+
+      const eventType = String(
+        event.eventType ??
+          rawEvent.eventType ??
+          metadata.eventType ??
+          event.type ??
+          rawEvent.type ??
+          "",
+      );
       const normalizedEventType = eventType.toLowerCase().replace(/[^a-z]/g, "");
       const prId = String(
         metadata.prNumber ??
           metadata.prId ??
           metadata.pullRequestId ??
           metadata.pullRequestNumber ??
+          metadata.pullRequest?.number ??
+          metadata.pullRequest?.id ??
+          metadata.pr?.number ??
+          metadata.pr?.id ??
           metadata.pr_number ??
           event.prNumber ??
           event.prId ??
           event.pullRequestId ??
+          event.pullRequest?.number ??
           "",
       );
       const isPullRequestEvent =
@@ -385,31 +408,44 @@ export class MetricsCharts extends LitElement {
         normalizedEventType === "prcreated" ||
         normalizedEventType === "pullrequestmerged" ||
         normalizedEventType === "pullrequestcreated" ||
-        Boolean(prId && normalizedEventType.includes("pr"));
+        Boolean(prId);
 
       if (!isPullRequestEvent) {
         return;
       }
-      const eventSpaceId = String(event.spaceId ?? metadata.spaceId ?? "");
+      const eventSpaceId = String(event.spaceId ?? rawEvent.spaceId ?? metadata.spaceId ?? "");
 
-      if (this.selectedSpaceId !== "all" && eventSpaceId !== this.selectedSpaceId) {
+      if (this.selectedSpaceId !== "all" && eventSpaceId && eventSpaceId !== this.selectedSpaceId) {
         return;
       }
 
       const projectId = String(
-        event.projectId ?? metadata.projectId ?? metadata.project?.id ?? event.project?.id ?? "",
+        event.projectId ??
+          rawEvent.projectId ??
+          metadata.projectId ??
+          metadata.project?.id ??
+          event.project?.id ??
+          rawEvent.project?.id ??
+          "",
       );
       const projectInfo = projectId ? projectsById.get(projectId) : undefined;
       const projectName = String(
         projectInfo?.projectName ??
           event.projectName ??
+          rawEvent.projectName ??
           metadata.projectName ??
           metadata.project?.name ??
           event.project?.name ??
+          rawEvent.project?.name ??
           "Unknown project",
       );
       const projectKey = projectId || projectName;
-      const repoUrl = projectInfo?.repoUrl ?? metadata.repoUrl;
+      const repoUrl =
+        projectInfo?.repoUrl ??
+        metadata.repoUrl ??
+        metadata.repository?.url ??
+        event.repoUrl ??
+        rawEvent.repoUrl;
 
       if (!pullRequestProjects.has(projectKey)) {
         pullRequestProjects.set(projectKey, {
@@ -425,11 +461,17 @@ export class MetricsCharts extends LitElement {
 
       pullRequestProjects.get(projectKey)!.records.push({
         prId: displayPrId,
-        eventType,
+        eventType: eventType || "pullRequest",
         userEmail: String(
-          event.userEmail ?? metadata.userEmail ?? event.userId ?? metadata.userId ?? "Unknown",
+          event.userEmail ??
+            rawEvent.userEmail ??
+            metadata.userEmail ??
+            event.userId ??
+            rawEvent.userId ??
+            metadata.userId ??
+            "Unknown",
         ),
-        timestamp: String(event.timestamp ?? ""),
+        timestamp: String(event.timestamp ?? rawEvent.timestamp ?? ""),
         pullRequestUrl:
           repoBaseUrl && displayPrId !== "Unknown" ? `${repoBaseUrl}/pulls/${displayPrId}` : null,
         projectUrl: projectId ? `http://builder.io/app/projects/${projectId}` : null,
