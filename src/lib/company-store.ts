@@ -102,6 +102,7 @@ export function buildEventsUrl(
   url.searchParams.set("endDate", endDate);
   url.searchParams.set("page", String(page));
   url.searchParams.set("limit", String(limit));
+  url.searchParams.set("eventType", "prCreated,prMerged,codeGeneration");
 
   return url;
 }
