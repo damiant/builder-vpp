@@ -10,6 +10,7 @@ export class CompanyHeader extends LitElement {
     isExportingPng: { type: Boolean, attribute: false },
     isExportingCsv: { type: Boolean, attribute: false },
     isExportingHtml: { type: Boolean, attribute: false },
+    menuOpen: { type: Boolean, attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -18,6 +19,7 @@ export class CompanyHeader extends LitElement {
   declare isExportingPng: boolean;
   declare isExportingCsv: boolean;
   declare isExportingHtml: boolean;
+  declare menuOpen: boolean;
 
   constructor() {
     super();
@@ -27,6 +29,7 @@ export class CompanyHeader extends LitElement {
     this.isExportingPng = false;
     this.isExportingCsv = false;
     this.isExportingHtml = false;
+    this.menuOpen = false;
   }
 
   createRenderRoot() {
@@ -65,7 +68,12 @@ export class CompanyHeader extends LitElement {
     );
   };
 
+  private toggleMenu = () => {
+    this.menuOpen = !this.menuOpen;
+  };
+
   private handleEditCompany = () => {
+    this.menuOpen = false;
     this.dispatchEvent(new CustomEvent("edit-company", { bubbles: true, composed: true }));
   };
 
@@ -152,17 +160,38 @@ export class CompanyHeader extends LitElement {
           </div>
 
           <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="rounded-[var(--radius-sm)] text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-              @click=${this.handleEditCompany}
-              ?disabled=${this.isExportingPdf ||
-              this.isExportingPng ||
-              this.isExportingCsv ||
-              this.isExportingHtml}
-            >
-              Edit
-            </button>
+            <div class="relative">
+              <button
+                type="button"
+                class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
+                @click=${this.toggleMenu}
+                aria-haspopup="menu"
+                aria-expanded=${this.menuOpen ? "true" : "false"}
+              >
+                ...
+              </button>
+              ${this.menuOpen
+                ? html`
+                    <div
+                      class="absolute right-0 z-20 mt-2 min-w-32 rounded-[var(--radius-sm)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-1 shadow-[var(--shadow-md)]"
+                      role="menu"
+                    >
+                      <button
+                        type="button"
+                        class="w-full rounded-[var(--radius-sm)] px-3 py-2 text-left text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+                        @click=${this.handleEditCompany}
+                        ?disabled=${this.isExportingPdf ||
+                        this.isExportingPng ||
+                        this.isExportingCsv ||
+                        this.isExportingHtml}
+                        role="menuitem"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  `
+                : ""}
+            </div>
             <button
               type="button"
               class="rounded-[var(--radius-sm)] bg-[var(--color-brand)] px-4 py-2 text-sm font-medium text-[var(--color-text-inverse)] shadow-[var(--shadow-sm)] transition hover:bg-[var(--color-brand-strong)]"
