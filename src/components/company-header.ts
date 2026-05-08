@@ -89,6 +89,32 @@ export class CompanyHeader extends LitElement {
     this.dispatchEvent(new CustomEvent("export-html", { bubbles: true, composed: true }));
   };
 
+  private handleDownloadCompanies = () => {
+    this.dispatchEvent(new CustomEvent("download-companies", { bubbles: true, composed: true }));
+  };
+
+  private handleUploadCompaniesClick = () => {
+    this.querySelector<HTMLInputElement>("#company-json-upload")?.click();
+  };
+
+  private handleUploadCompanies = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    this.dispatchEvent(
+      new CustomEvent<{ file: File }>("upload-companies", {
+        detail: { file },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+    input.value = "";
+  };
+
   render() {
     return html`
       <header
@@ -144,6 +170,27 @@ export class CompanyHeader extends LitElement {
             >
               Add
             </button>
+            <button
+              type="button"
+              class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
+              @click=${this.handleDownloadCompanies}
+            >
+              Download Keys
+            </button>
+            <button
+              type="button"
+              class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)]"
+              @click=${this.handleUploadCompaniesClick}
+            >
+              Upload Keys
+            </button>
+            <input
+              id="company-json-upload"
+              class="hidden"
+              type="file"
+              accept="application/json,.json"
+              @change=${this.handleUploadCompanies}
+            />
             <button
               type="button"
               class="rounded-[var(--radius-sm)] px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] transition hover:bg-[var(--color-surface-muted)] disabled:cursor-not-allowed disabled:opacity-60"

@@ -312,6 +312,77 @@ export class CompanyApp extends LitElement {
     void this.fetchProjectsData();
   };
 
+  private handleDownloadCompanies = () => {
+    const data = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      selectedCompanyId: this.selectedCompanyId,
+      companies: this.companies,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "company-keys.json";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  private handleUploadCompanies = async (event: CustomEvent<{ file: File }>) => {
+    try {
+      const importedData = JSON.parse(await event.detail.file.text());
+      const companies = Array.isArray(importedData)
+        ? importedData
+        : Array.isArray(importedData?.companies)
+          ? importedData.companies
+          : null;
+
+      if (!companies) {
+        throw new Error("JSON must contain a companies array");
+      }
+
+      const importedCompanies: CompanyConfig[] = companies.map((company: any) => {
+        if (!company || typeof company !== "object") {
+          throw new Error("Each company must be an object");
+        }
+
+        const id = String(
+          company.id || globalThis.crypto?.randomUUID?.() || `company-${Date.now()}`,
+        );
+        const name = String(company.name || "Company").trim();
+        const publicKey = String(company.publicKey || "").trim();
+        const privateKey = String(company.privateKey || "").trim();
+
+        if (!name) {
+          throw new Error("Each company must have a name");
+        }
+
+        return { id, name, publicKey, privateKey };
+      });
+
+      if (importedCompanies.length === 0) {
+        throw new Error("JSON must include at least one company");
+      }
+
+      this.companies = importedCompanies;
+      this.selectedCompanyId = importedCompanies.some(
+        (company) => company.id === importedData?.selectedCompanyId,
+      )
+        ? importedData.selectedCompanyId
+        : importedCompanies[0].id;
+      this.saveSelectedCompanyIdToStorage(this.selectedCompanyId);
+      await this.persistCompanies();
+      void this.fetchMetrics();
+      void this.fetchEventsData();
+      void this.fetchProjectsData();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      window.alert(`Unable to import company keys: ${message}`);
+    }
+  };
+
   private handleExportPdf = async () => {
     if (this.isExportingPdf || this.isExportingPng) return;
 
@@ -1564,6 +1635,8 @@ export class CompanyApp extends LitElement {
           @export-pdf=${this.handleExportPdf}
           @export-csv=${this.handleExportCsv}
           @export-html=${this.handleExportHtml}
+          @download-companies=${this.handleDownloadCompanies}
+          @upload-companies=${this.handleUploadCompanies}
           @refresh-data=${this.handleRefresh}
         ></company-header>
 
