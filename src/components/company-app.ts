@@ -803,10 +803,14 @@ export class CompanyApp extends LitElement {
   }
 
   private transformMetricsData(dataArray: any[]): any[] {
+    if (!dataArray || dataArray.length === 0) {
+      return [];
+    }
+
     const firstItem = dataArray[0];
 
     // Check if already in correct format
-    if (firstItem.period && firstItem.metrics) {
+    if (firstItem && firstItem.period && firstItem.metrics) {
       // Still need to normalize spaces to extract spaceIds
       return this.normalizeSpaces(dataArray);
     }
