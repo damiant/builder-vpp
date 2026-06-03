@@ -56,6 +56,7 @@ export class MetricsCharts extends LitElement {
     designMetrics: { attribute: false },
     eventsData: { attribute: false },
     projectsApiData: { attribute: false },
+    refreshTrigger: { type: Number, attribute: false },
   };
 
   declare data: MetricsData | null;
@@ -64,6 +65,7 @@ export class MetricsCharts extends LitElement {
   declare selectedMonth: number;
   declare selectedYear: number;
   declare usersData: Array<any> | null;
+  declare refreshTrigger: number;
   declare modelMetrics: Array<{
     model: string;
     totalLines: number;
@@ -161,7 +163,8 @@ export class MetricsCharts extends LitElement {
     const usersContextChanged =
       changedProperties.has("company") ||
       changedProperties.has("selectedMonth") ||
-      changedProperties.has("selectedYear");
+      changedProperties.has("selectedYear") ||
+      changedProperties.has("refreshTrigger");
 
     // Only recreate charts when data changes
     if (dataChanged) {

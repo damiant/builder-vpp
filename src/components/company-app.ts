@@ -139,6 +139,7 @@ export class CompanyApp extends LitElement {
     designMetrics: { attribute: false },
     eventsData: { attribute: false },
     projectsApiData: { attribute: false },
+    refreshTrigger: { type: Number, attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -168,6 +169,7 @@ export class CompanyApp extends LitElement {
   declare designMetrics: DesignMetric[] | null;
   declare eventsData: any[] | null;
   declare projectsApiData: ProjectApiData[] | null;
+  declare refreshTrigger: number;
 
   private eventsFetchRequestId = 0;
 
@@ -200,6 +202,7 @@ export class CompanyApp extends LitElement {
     this.designMetrics = null;
     this.eventsData = null;
     this.projectsApiData = null;
+    this.refreshTrigger = 0;
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
@@ -310,6 +313,7 @@ export class CompanyApp extends LitElement {
     void this.fetchMetrics();
     void this.fetchEventsData();
     void this.fetchProjectsData();
+    this.refreshTrigger++;
   };
 
   private handleDownloadCompanies = () => {
@@ -1646,6 +1650,7 @@ export class CompanyApp extends LitElement {
 
         <company-summary
           .company=${this.selectedCompany}
+          .refreshTrigger=${this.refreshTrigger}
           .metricsData=${this.filteredMetricsData}
           .metricsError=${this.metricsError}
           .selectedMonth=${this.selectedMonth}

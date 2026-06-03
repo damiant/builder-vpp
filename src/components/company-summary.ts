@@ -22,6 +22,7 @@ export class CompanySummary extends LitElement {
     designMetrics: { attribute: false },
     eventsData: { attribute: false },
     projectsApiData: { attribute: false },
+    refreshTrigger: { type: Number, attribute: false },
   };
 
   declare company: CompanyConfig | null;
@@ -76,6 +77,7 @@ export class CompanySummary extends LitElement {
     }>;
   }> | null;
   declare eventsData: Array<any> | null;
+  declare refreshTrigger: number;
   declare projectsApiData: Array<{
     projectId: string;
     projectName: string;
@@ -166,6 +168,7 @@ export class CompanySummary extends LitElement {
                   .designMetrics=${this.designMetrics}
                   .eventsData=${this.eventsData}
                   .projectsApiData=${this.projectsApiData}
+                  .refreshTrigger=${this.refreshTrigger}
                 ></metrics-charts>
               </section>
             `
