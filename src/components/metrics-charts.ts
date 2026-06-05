@@ -1231,7 +1231,14 @@ export class MetricsCharts extends LitElement {
                       >
                         <div class="border-b border-[var(--color-border-subtle)] px-4 pb-3">
                           <h4 class="text-base font-semibold text-[var(--color-text-primary)]">
-                            ${design.designDocumentId}
+                            <a
+                              href="https://ai-services.internal.builder.io/vcp-imports/${design.designDocumentId}#tab=%22preview%22&designContentView=%22screenshot%22"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="text-[var(--color-brand-strong)] underline-offset-4 hover:underline"
+                            >
+                              ${design.designDocumentId}
+                            </a>
                           </h4>
                         </div>
                         <div class="overflow-x-auto">
