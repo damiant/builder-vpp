@@ -1323,17 +1323,7 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
                         >
-                          Start
-                        </th>
-                        <th
-                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
-                        >
-                          End
-                        </th>
-                        <th
-                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
-                        >
-                          Duration
+                          Timestamp
                         </th>
                         <th
                           class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
@@ -1374,26 +1364,26 @@ export class MetricsCharts extends LitElement {
                     </thead>
                     <tbody>
                       ${this.sessionTableData.map((session) => {
-                        const formatTime = (iso: string) => {
-                          if (!iso) return "—";
-                          const d = new Date(iso);
-                          return (
-                            d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
-                            ", " +
-                            d
-                              .toLocaleTimeString("en-US", {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                                hour12: true,
-                              })
-                              .toLowerCase()
-                          );
-                        };
-                        const formatDuration = (ms: number) => {
-                          if (ms <= 0) return "—";
-                          const mins = Math.floor(ms / 60000);
-                          const secs = Math.floor((ms % 60000) / 1000);
-                          return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+                        const toTimeStr = (iso: string) =>
+                          new Date(iso)
+                            .toLocaleTimeString("en-US", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              hour12: true,
+                            })
+                            .toLowerCase();
+                        const formatTimestamp = (start: string, end: string) => {
+                          if (!start) return "—";
+                          const startDate = new Date(start);
+                          const dateStr = startDate.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          });
+                          const startStr = toTimeStr(start);
+                          const endStr = end && end !== start ? toTimeStr(end) : "";
+                          return endStr
+                            ? `${dateStr}, ${startStr}-${endStr}`
+                            : `${dateStr}, ${startStr}`;
                         };
                         const shortId =
                           session.sessionId.length > 12
@@ -1409,14 +1399,8 @@ export class MetricsCharts extends LitElement {
                             >
                               ${shortId}
                             </td>
-                            <td class="px-4 py-3 text-[var(--color-text-secondary)]">
-                              ${formatTime(session.startTime)}
-                            </td>
-                            <td class="px-4 py-3 text-[var(--color-text-secondary)]">
-                              ${formatTime(session.endTime)}
-                            </td>
-                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${formatDuration(session.totalTimeMs)}
+                            <td class="px-4 py-3 text-left text-[var(--color-text-secondary)]">
+                              ${formatTimestamp(session.startTime, session.endTime)}
                             </td>
                             <td class="px-4 py-3 text-[var(--color-text-primary)]">
                               ${session.userEmail}
