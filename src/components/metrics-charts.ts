@@ -1374,8 +1374,21 @@ export class MetricsCharts extends LitElement {
                           });
                           const startStr = toTimeStr(start);
                           const endStr = end && end !== start ? toTimeStr(end) : "";
+                          const durationMs =
+                            end && end !== start
+                              ? new Date(end).getTime() - new Date(start).getTime()
+                              : 0;
+                          const durationStr = (() => {
+                            if (durationMs <= 0) return "";
+                            const totalMins = Math.floor(durationMs / 60000);
+                            const hrs = Math.floor(totalMins / 60);
+                            const mins = totalMins % 60;
+                            return hrs > 0
+                              ? ` (${hrs}:${String(mins).padStart(2, "0")})`
+                              : ` (${mins}m)`;
+                          })();
                           return endStr
-                            ? `${dateStr}, ${startStr}-${endStr}`
+                            ? `${dateStr}, ${startStr}-${endStr}${durationStr}`
                             : `${dateStr}, ${startStr}`;
                         };
                         const shortId = session.sessionId;
