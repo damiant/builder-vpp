@@ -210,9 +210,23 @@ export class CompanySummary extends LitElement {
                     class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
                   >
                     <div class="border-b border-[var(--color-border-subtle)] px-4 pb-3">
-                      <h4 class="font-mono text-sm font-semibold text-[var(--color-text-primary)]">
-                        ${session.sessionId}
-                      </h4>
+                      <div class="flex items-start justify-between gap-4">
+                        <h4
+                          class="font-mono text-sm font-semibold text-[var(--color-text-primary)]"
+                        >
+                          ${session.sessionId}
+                        </h4>
+                        <div class="text-right">
+                          <p class="text-sm font-semibold text-[var(--color-text-primary)]">
+                            $${session.events
+                              .reduce((sum: number, ev: any) => sum + ev.creditsUsed * 0.05, 0)
+                              .toFixed(2)}
+                          </p>
+                          <p class="text-xs text-[var(--color-text-tertiary)]">
+                            ${session.events.length} event${session.events.length === 1 ? "" : "s"}
+                          </p>
+                        </div>
+                      </div>
                       <p class="mt-0.5 text-xs text-[var(--color-text-secondary)]">
                         ${formatSessionTitle(session.startTime, session.endTime)}
                       </p>
