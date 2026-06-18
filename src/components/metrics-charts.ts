@@ -1318,12 +1318,7 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
                         >
-                          Session ID
-                        </th>
-                        <th
-                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
-                        >
-                          Timestamp
+                          Session
                         </th>
                         <th
                           class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
@@ -1393,14 +1388,15 @@ export class MetricsCharts extends LitElement {
                           <tr
                             class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-elevated)]"
                           >
-                            <td
-                              class="px-4 py-3 font-mono text-xs text-[var(--color-text-secondary)]"
-                              title=${session.sessionId}
-                            >
-                              ${shortId}
-                            </td>
-                            <td class="px-4 py-3 text-left text-[var(--color-text-secondary)]">
-                              ${formatTimestamp(session.startTime, session.endTime)}
+                            <td class="px-4 py-3">
+                              <span
+                                class="block font-mono text-xs text-[var(--color-text-secondary)]"
+                                title=${session.sessionId}
+                                >${shortId}</span
+                              >
+                              <span class="block text-xs text-[var(--color-text-tertiary)]">
+                                ${formatTimestamp(session.startTime, session.endTime)}
+                              </span>
                             </td>
                             <td class="px-4 py-3 text-[var(--color-text-primary)]">
                               ${session.userEmail}
