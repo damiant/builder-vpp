@@ -42,6 +42,20 @@ type ConnectionResult = {
   headers?: Record<string, string>;
 };
 
+type SessionRecord = {
+  sessionId: string;
+  startTime: string;
+  endTime: string;
+  totalTimeMs: number;
+  userEmail: string;
+  projectName: string;
+  count: number;
+  designs: number;
+  creditsUsed: number;
+  linesOfCode: number;
+  model: string;
+};
+
 type ModelMetric = {
   model: string;
   totalLines: number;
@@ -139,6 +153,7 @@ export class CompanyApp extends LitElement {
     designMetrics: { attribute: false },
     eventsData: { attribute: false },
     sessionMetrics: { attribute: false },
+    sessionTableData: { attribute: false },
     projectsApiData: { attribute: false },
     refreshTrigger: { type: Number, attribute: false },
   };
@@ -170,6 +185,7 @@ export class CompanyApp extends LitElement {
   declare designMetrics: DesignMetric[] | null;
   declare eventsData: any[] | null;
   declare sessionMetrics: Map<string, number> | null;
+  declare sessionTableData: SessionRecord[] | null;
   declare projectsApiData: ProjectApiData[] | null;
   declare refreshTrigger: number;
 
@@ -204,6 +220,7 @@ export class CompanyApp extends LitElement {
     this.designMetrics = null;
     this.eventsData = null;
     this.sessionMetrics = null;
+    this.sessionTableData = null;
     this.projectsApiData = null;
     this.refreshTrigger = 0;
     const today = new Date();
@@ -867,6 +884,7 @@ export class CompanyApp extends LitElement {
       this.totalEventPages = 1;
       this.eventsData = null;
       this.sessionMetrics = null;
+      this.sessionTableData = null;
       this.modelMetrics = null;
       this.projectMetrics = null;
       this.featureMetrics = null;
@@ -1307,18 +1325,102 @@ export class CompanyApp extends LitElement {
 
     // Compute unique sessions per day from sessionId on events
     const sessionsByDay = new Map<string, Set<string>>();
+
+    // Compute session table data: group all events by sessionId
+    const sessionMap = new Map<
+      string,
+      {
+        timestamps: string[];
+        userEmail: string;
+        projectName: string;
+        designs: Set<string>;
+        creditsUsed: number;
+        linesOfCode: number;
+        models: Map<string, number>;
+        count: number;
+      }
+    >();
+
     allEvents.forEach((event: any) => {
       const sessionId = event.sessionId || event.metadata?.sessionId;
       if (!sessionId) return;
+      const sid = String(sessionId);
       const timestamp = event.timestamp || event.createdAt || "";
       const date = timestamp.split("T")[0];
-      if (!date) return;
-      if (!sessionsByDay.has(date)) sessionsByDay.set(date, new Set());
-      sessionsByDay.get(date)!.add(String(sessionId));
+      if (date) {
+        if (!sessionsByDay.has(date)) sessionsByDay.set(date, new Set());
+        sessionsByDay.get(date)!.add(sid);
+      }
+
+      const metadata = event.metadata || {};
+      const creditsUsed = Number(metadata.creditsUsed ?? event.creditsUsed) || 0;
+      const linesOfCode = Number(metadata.linesOfCode ?? event.linesOfCode) || 0;
+      const model = String(metadata.model || event.model || "");
+      const userEmail = String(
+        event.userEmail || metadata.userEmail || event.userId || metadata.userId || "Unknown",
+      );
+      const projectName = String(metadata.projectName || event.projectName || "Unknown");
+      const designExportId = event.designExportId || metadata.designExportId;
+
+      if (!sessionMap.has(sid)) {
+        sessionMap.set(sid, {
+          timestamps: [],
+          userEmail,
+          projectName,
+          designs: new Set(),
+          creditsUsed: 0,
+          linesOfCode: 0,
+          models: new Map(),
+          count: 0,
+        });
+      }
+      const s = sessionMap.get(sid)!;
+      if (timestamp) s.timestamps.push(timestamp);
+      s.creditsUsed += creditsUsed;
+      s.linesOfCode += linesOfCode;
+      s.count += 1;
+      if (designExportId) s.designs.add(String(designExportId));
+      if (model) s.models.set(model, (s.models.get(model) ?? 0) + 1);
+      // Use the most detailed user/project info available
+      if (userEmail !== "Unknown") s.userEmail = userEmail;
+      if (projectName !== "Unknown") s.projectName = projectName;
     });
+
     this.sessionMetrics = new Map(
       Array.from(sessionsByDay.entries()).map(([date, sessions]) => [date, sessions.size]),
     );
+
+    this.sessionTableData = Array.from(sessionMap.entries())
+      .map(([sessionId, s]) => {
+        const sorted = [...s.timestamps].sort();
+        const startTime = sorted[0] ?? "";
+        const endTime = sorted[sorted.length - 1] ?? "";
+        const totalTimeMs =
+          startTime && endTime ? new Date(endTime).getTime() - new Date(startTime).getTime() : 0;
+        // Pick the most-used model
+        let topModel = "";
+        let topCount = 0;
+        s.models.forEach((cnt, m) => {
+          if (cnt > topCount) {
+            topCount = cnt;
+            topModel = m;
+          }
+        });
+        return {
+          sessionId,
+          startTime,
+          endTime,
+          totalTimeMs,
+          userEmail: s.userEmail,
+          projectName: s.projectName,
+          count: s.count,
+          designs: s.designs.size,
+          creditsUsed: s.creditsUsed,
+          linesOfCode: s.linesOfCode,
+          model: topModel,
+        };
+      })
+      .sort((a, b) => b.startTime.localeCompare(a.startTime));
 
     console.log("Aggregated model metrics:", this.modelMetrics);
     console.log("Aggregated project metrics:", this.projectMetrics);
@@ -1684,6 +1786,7 @@ export class CompanyApp extends LitElement {
           .designMetrics=${this.designMetrics}
           .eventsData=${this.eventsData}
           .sessionMetrics=${this.sessionMetrics}
+          .sessionTableData=${this.sessionTableData}
           .projectsApiData=${this.projectsApiData}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}

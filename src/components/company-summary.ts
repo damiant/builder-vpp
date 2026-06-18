@@ -22,6 +22,7 @@ export class CompanySummary extends LitElement {
     designMetrics: { attribute: false },
     eventsData: { attribute: false },
     sessionMetrics: { attribute: false },
+    sessionTableData: { attribute: false },
     projectsApiData: { attribute: false },
     refreshTrigger: { type: Number, attribute: false },
   };
@@ -79,6 +80,7 @@ export class CompanySummary extends LitElement {
   }> | null;
   declare eventsData: Array<any> | null;
   declare sessionMetrics: Map<string, number> | null;
+  declare sessionTableData: Array<any> | null;
   declare refreshTrigger: number;
   declare projectsApiData: Array<{
     projectId: string;
@@ -111,6 +113,7 @@ export class CompanySummary extends LitElement {
     this.designMetrics = null;
     this.eventsData = null;
     this.sessionMetrics = null;
+    this.sessionTableData = null;
     this.projectsApiData = null;
   }
 
@@ -171,6 +174,7 @@ export class CompanySummary extends LitElement {
                   .designMetrics=${this.designMetrics}
                   .eventsData=${this.eventsData}
                   .sessionMetrics=${this.sessionMetrics}
+                  .sessionTableData=${this.sessionTableData}
                   .projectsApiData=${this.projectsApiData}
                   .refreshTrigger=${this.refreshTrigger}
                 ></metrics-charts>
