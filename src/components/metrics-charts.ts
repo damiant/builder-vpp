@@ -1378,10 +1378,7 @@ export class MetricsCharts extends LitElement {
                             ? `${dateStr}, ${startStr}-${endStr}`
                             : `${dateStr}, ${startStr}`;
                         };
-                        const shortId =
-                          session.sessionId.length > 12
-                            ? session.sessionId.slice(0, 8) + "…"
-                            : session.sessionId;
+                        const shortId = session.sessionId;
                         return html`
                           <tr
                             class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-elevated)]"
@@ -1389,7 +1386,6 @@ export class MetricsCharts extends LitElement {
                             <td class="px-4 py-3">
                               <span
                                 class="block font-mono text-xs text-[var(--color-text-secondary)]"
-                                title=${session.sessionId}
                                 >${shortId}</span
                               >
                               <span class="block text-xs text-[var(--color-text-tertiary)]">
