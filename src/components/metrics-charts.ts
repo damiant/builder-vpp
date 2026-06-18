@@ -55,6 +55,7 @@ export class MetricsCharts extends LitElement {
     designVsPromptMetrics: { attribute: false },
     designMetrics: { attribute: false },
     eventsData: { attribute: false },
+    sessionMetrics: { attribute: false },
     projectsApiData: { attribute: false },
     refreshTrigger: { type: Number, attribute: false },
   };
@@ -111,6 +112,7 @@ export class MetricsCharts extends LitElement {
     }>;
   }> | null;
   declare eventsData: Array<any> | null;
+  declare sessionMetrics: Map<string, number> | null;
   declare projectsApiData: Array<{
     projectId: string;
     projectName: string;
@@ -144,6 +146,7 @@ export class MetricsCharts extends LitElement {
     this.designVsPromptMetrics = null;
     this.designMetrics = null;
     this.eventsData = null;
+    this.sessionMetrics = null;
     this.projectsApiData = null;
   }
 
@@ -166,6 +169,8 @@ export class MetricsCharts extends LitElement {
       changedProperties.has("selectedYear") ||
       changedProperties.has("refreshTrigger");
 
+    const sessionMetricsChanged = changedProperties.has("sessionMetrics");
+
     // Only recreate charts when data changes
     if (dataChanged) {
       if (!this.data) return;
@@ -177,6 +182,11 @@ export class MetricsCharts extends LitElement {
     if (usersContextChanged && this.company && this.company.privateKey) {
       this.usersData = null;
       void this.fetchUsersData();
+    }
+
+    if (sessionMetricsChanged && !dataChanged) {
+      setTimeout(() => this.createSessionsChart(), 0);
+      return;
     }
 
     if (!dataChanged) return;
@@ -229,6 +239,63 @@ export class MetricsCharts extends LitElement {
     chartConfigs.forEach((config) => {
       setTimeout(() => this.createChart(config), 0);
     });
+    setTimeout(() => this.createSessionsChart(), 0);
+  }
+
+  private createSessionsChart() {
+    const canvas = this.querySelector<HTMLCanvasElement>("#chart-sessions");
+    if (!canvas || !this.data) return;
+
+    const existingChart = this.charts.get("sessions");
+    if (existingChart) existingChart.destroy();
+
+    const dates = this.data.map((d) => d.period);
+    const formattedDates = dates.map((d) => this.formatDateLabel(d));
+    const values = dates.map((d) => this.sessionMetrics?.get(d) ?? 0);
+
+    const chart = new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: formattedDates,
+        datasets: [
+          {
+            label: "Sessions",
+            data: values,
+            backgroundColor: "#f59e0b",
+            borderColor: "#f59e0b",
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: true,
+            labels: {
+              color: "#111111",
+              font: { family: '"Inter", system-ui, sans-serif', size: 12 },
+            },
+          },
+          filler: { propagate: true },
+        },
+        backgroundColor: "#ffffff",
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: "#4b5563", font: { family: '"Inter", system-ui, sans-serif' } },
+            grid: { color: "rgba(0, 0, 0, 0.06)" },
+          },
+          x: {
+            ticks: { color: "#4b5563", font: { family: '"Inter", system-ui, sans-serif' } },
+            grid: { color: "rgba(0, 0, 0, 0.06)" },
+          },
+        },
+      },
+    });
+
+    this.charts.set("sessions", chart);
   }
 
   private async fetchUsersData() {
@@ -642,6 +709,12 @@ export class MetricsCharts extends LitElement {
             class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
           >
             <canvas id="chart-events"></canvas>
+          </div>
+
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
+            <canvas id="chart-sessions"></canvas>
           </div>
         </div>
 

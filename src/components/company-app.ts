@@ -138,6 +138,7 @@ export class CompanyApp extends LitElement {
     designVsPromptMetrics: { attribute: false },
     designMetrics: { attribute: false },
     eventsData: { attribute: false },
+    sessionMetrics: { attribute: false },
     projectsApiData: { attribute: false },
     refreshTrigger: { type: Number, attribute: false },
   };
@@ -168,6 +169,7 @@ export class CompanyApp extends LitElement {
   declare designVsPromptMetrics: DesignVsPromptMetric[] | null;
   declare designMetrics: DesignMetric[] | null;
   declare eventsData: any[] | null;
+  declare sessionMetrics: Map<string, number> | null;
   declare projectsApiData: ProjectApiData[] | null;
   declare refreshTrigger: number;
 
@@ -201,6 +203,7 @@ export class CompanyApp extends LitElement {
     this.designVsPromptMetrics = null;
     this.designMetrics = null;
     this.eventsData = null;
+    this.sessionMetrics = null;
     this.projectsApiData = null;
     this.refreshTrigger = 0;
     const today = new Date();
@@ -863,6 +866,7 @@ export class CompanyApp extends LitElement {
       this.currentEventPage = 1;
       this.totalEventPages = 1;
       this.eventsData = null;
+      this.sessionMetrics = null;
       this.modelMetrics = null;
       this.projectMetrics = null;
       this.featureMetrics = null;
@@ -1301,6 +1305,21 @@ export class CompanyApp extends LitElement {
       }))
       .sort((a, b) => b.records.length - a.records.length);
 
+    // Compute unique sessions per day from sessionId on events
+    const sessionsByDay = new Map<string, Set<string>>();
+    allEvents.forEach((event: any) => {
+      const sessionId = event.sessionId || event.metadata?.sessionId;
+      if (!sessionId) return;
+      const timestamp = event.timestamp || event.createdAt || "";
+      const date = timestamp.split("T")[0];
+      if (!date) return;
+      if (!sessionsByDay.has(date)) sessionsByDay.set(date, new Set());
+      sessionsByDay.get(date)!.add(String(sessionId));
+    });
+    this.sessionMetrics = new Map(
+      Array.from(sessionsByDay.entries()).map(([date, sessions]) => [date, sessions.size]),
+    );
+
     console.log("Aggregated model metrics:", this.modelMetrics);
     console.log("Aggregated project metrics:", this.projectMetrics);
     console.log("Aggregated feature metrics:", this.featureMetrics);
@@ -1664,6 +1683,7 @@ export class CompanyApp extends LitElement {
           .designVsPromptMetrics=${this.designVsPromptMetrics}
           .designMetrics=${this.designMetrics}
           .eventsData=${this.eventsData}
+          .sessionMetrics=${this.sessionMetrics}
           .projectsApiData=${this.projectsApiData}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}
