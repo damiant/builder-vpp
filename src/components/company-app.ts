@@ -42,6 +42,23 @@ type ConnectionResult = {
   headers?: Record<string, string>;
 };
 
+type UserSessionEvent = {
+  timestamp: string;
+  feature: string;
+  creditsUsed: number;
+  linesOfCode: number;
+  model: string;
+};
+
+type UserSession = {
+  sessionId: string;
+  startTime: string;
+  endTime: string;
+  spaceName: string;
+  projectName: string;
+  events: UserSessionEvent[];
+};
+
 type SessionRecord = {
   sessionId: string;
   startTime: string;
@@ -154,6 +171,7 @@ export class CompanyApp extends LitElement {
     eventsData: { attribute: false },
     sessionMetrics: { attribute: false },
     sessionTableData: { attribute: false },
+    userSessionData: { attribute: false },
     projectsApiData: { attribute: false },
     refreshTrigger: { type: Number, attribute: false },
   };
@@ -186,6 +204,7 @@ export class CompanyApp extends LitElement {
   declare eventsData: any[] | null;
   declare sessionMetrics: Map<string, number> | null;
   declare sessionTableData: SessionRecord[] | null;
+  declare userSessionData: Map<string, UserSession[]> | null;
   declare projectsApiData: ProjectApiData[] | null;
   declare refreshTrigger: number;
 
@@ -221,6 +240,7 @@ export class CompanyApp extends LitElement {
     this.eventsData = null;
     this.sessionMetrics = null;
     this.sessionTableData = null;
+    this.userSessionData = null;
     this.projectsApiData = null;
     this.refreshTrigger = 0;
     const today = new Date();
@@ -885,6 +905,7 @@ export class CompanyApp extends LitElement {
       this.eventsData = null;
       this.sessionMetrics = null;
       this.sessionTableData = null;
+      this.userSessionData = null;
       this.modelMetrics = null;
       this.projectMetrics = null;
       this.featureMetrics = null;
@@ -1390,6 +1411,73 @@ export class CompanyApp extends LitElement {
       Array.from(sessionsByDay.entries()).map(([date, sessions]) => [date, sessions.size]),
     );
 
+    // Build spaceId → spaceName lookup from metricsData
+    const spaceNameMap = new Map<string, string>();
+    if (this.metricsData && Array.isArray(this.metricsData)) {
+      (this.metricsData as any[]).forEach((item: any) => {
+        const spaces = item.metrics?.spaces || [];
+        spaces.forEach((sp: any) => {
+          if (sp.id && sp.name) spaceNameMap.set(sp.id, sp.name);
+        });
+      });
+    }
+
+    // Compute per-user session data (each session → individual events)
+    const userSessionMap = new Map<string, Map<string, UserSession>>();
+
+    allEvents.forEach((event: any) => {
+      const sessionId = event.sessionId || event.metadata?.sessionId;
+      if (!sessionId) return;
+      const sid = String(sessionId);
+      const metadata = event.metadata || {};
+      const userEmail = String(
+        event.userEmail || metadata.userEmail || event.userId || metadata.userId || "Unknown",
+      );
+      if (userEmail === "Unknown") return;
+      const timestamp = event.timestamp || event.createdAt || "";
+      const creditsUsed = Number(metadata.creditsUsed ?? event.creditsUsed) || 0;
+      const linesOfCode = Number(metadata.linesOfCode ?? event.linesOfCode) || 0;
+      const model = String(metadata.model || event.model || "");
+      const feature = String(event.feature || metadata.feature || "");
+      const projectName = String(metadata.projectName || event.projectName || "Unknown");
+      const spaceId = String(event.spaceId || metadata.spaceId || "");
+      const spaceName = spaceNameMap.get(spaceId) || spaceId || "Unknown";
+
+      if (!userSessionMap.has(userEmail)) userSessionMap.set(userEmail, new Map());
+      const userSessions = userSessionMap.get(userEmail)!;
+
+      if (!userSessions.has(sid)) {
+        userSessions.set(sid, {
+          sessionId: sid,
+          startTime: "",
+          endTime: "",
+          spaceName,
+          projectName,
+          events: [],
+        });
+      }
+      const sess = userSessions.get(sid)!;
+      if (timestamp) {
+        if (!sess.startTime || timestamp < sess.startTime) sess.startTime = timestamp;
+        if (!sess.endTime || timestamp > sess.endTime) sess.endTime = timestamp;
+      }
+      if (spaceName !== "Unknown") sess.spaceName = spaceName;
+      if (projectName !== "Unknown") sess.projectName = projectName;
+      sess.events.push({ timestamp, feature, creditsUsed, linesOfCode, model });
+    });
+
+    this.userSessionData = new Map(
+      Array.from(userSessionMap.entries()).map(([email, sessMap]) => [
+        email,
+        Array.from(sessMap.values())
+          .map((s) => ({
+            ...s,
+            events: s.events.sort((a, b) => a.timestamp.localeCompare(b.timestamp)),
+          }))
+          .sort((a, b) => b.startTime.localeCompare(a.startTime)),
+      ]),
+    );
+
     this.sessionTableData = Array.from(sessionMap.entries())
       .map(([sessionId, s]) => {
         const sorted = [...s.timestamps].sort();
@@ -1397,7 +1485,6 @@ export class CompanyApp extends LitElement {
         const endTime = sorted[sorted.length - 1] ?? "";
         const totalTimeMs =
           startTime && endTime ? new Date(endTime).getTime() - new Date(startTime).getTime() : 0;
-        // Pick the most-used model
         let topModel = "";
         let topCount = 0;
         s.models.forEach((cnt, m) => {
@@ -1787,6 +1874,7 @@ export class CompanyApp extends LitElement {
           .eventsData=${this.eventsData}
           .sessionMetrics=${this.sessionMetrics}
           .sessionTableData=${this.sessionTableData}
+          .userSessionData=${this.userSessionData}
           .projectsApiData=${this.projectsApiData}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}

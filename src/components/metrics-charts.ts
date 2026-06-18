@@ -57,6 +57,7 @@ export class MetricsCharts extends LitElement {
     eventsData: { attribute: false },
     sessionMetrics: { attribute: false },
     sessionTableData: { attribute: false },
+    userSessionData: { attribute: false },
     projectsApiData: { attribute: false },
     refreshTrigger: { type: Number, attribute: false },
     view: { attribute: false },
@@ -115,6 +116,7 @@ export class MetricsCharts extends LitElement {
   }> | null;
   declare eventsData: Array<any> | null;
   declare sessionMetrics: Map<string, number> | null;
+  declare userSessionData: Map<string, Array<any>> | null;
   declare view: "main" | "sessions";
   declare sessionTableData: Array<{
     sessionId: string;
@@ -164,6 +166,7 @@ export class MetricsCharts extends LitElement {
     this.eventsData = null;
     this.sessionMetrics = null;
     this.sessionTableData = null;
+    this.userSessionData = null;
     this.projectsApiData = null;
     this.view = "main";
   }
@@ -1365,8 +1368,20 @@ export class MetricsCharts extends LitElement {
                             <tr
                               class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
                             >
-                              <td class="px-4 py-3 text-[var(--color-text-primary)]">
-                                ${user.userEmail}
+                              <td class="px-4 py-3">
+                                <button
+                                  class="text-left font-medium text-[var(--color-brand-strong)] underline-offset-4 hover:underline"
+                                  @click=${() =>
+                                    this.dispatchEvent(
+                                      new CustomEvent("user-selected", {
+                                        detail: { userEmail: user.userEmail },
+                                        bubbles: true,
+                                        composed: true,
+                                      }),
+                                    )}
+                                >
+                                  ${user.userEmail}
+                                </button>
                               </td>
                               <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                                 ${user.metrics.totalLines.toLocaleString()}

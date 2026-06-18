@@ -23,7 +23,9 @@ export class CompanySummary extends LitElement {
     eventsData: { attribute: false },
     sessionMetrics: { attribute: false },
     sessionTableData: { attribute: false },
+    userSessionData: { attribute: false },
     showSessions: { type: Boolean, attribute: false },
+    selectedUserEmail: { attribute: false },
     projectsApiData: { attribute: false },
     refreshTrigger: { type: Number, attribute: false },
   };
@@ -82,7 +84,9 @@ export class CompanySummary extends LitElement {
   declare eventsData: Array<any> | null;
   declare sessionMetrics: Map<string, number> | null;
   declare sessionTableData: Array<any> | null;
+  declare userSessionData: Map<string, Array<any>> | null;
   declare showSessions: boolean;
+  declare selectedUserEmail: string;
   declare refreshTrigger: number;
   declare projectsApiData: Array<{
     projectId: string;
@@ -116,7 +120,9 @@ export class CompanySummary extends LitElement {
     this.eventsData = null;
     this.sessionMetrics = null;
     this.sessionTableData = null;
+    this.userSessionData = null;
     this.showSessions = false;
+    this.selectedUserEmail = "";
     this.projectsApiData = null;
   }
 
@@ -146,7 +152,154 @@ export class CompanySummary extends LitElement {
     );
   };
 
+  private handleUserSelected = (e: CustomEvent<{ userEmail: string }>) => {
+    this.selectedUserEmail = e.detail.userEmail;
+  };
+
   render() {
+    if (this.selectedUserEmail) {
+      const sessions = this.userSessionData?.get(this.selectedUserEmail) ?? [];
+      const toTimeStr = (iso: string) =>
+        iso
+          ? new Date(iso)
+              .toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })
+              .toLowerCase()
+          : "";
+      const formatSessionTitle = (start: string, end: string) => {
+        if (!start) return "";
+        const dateStr = new Date(start).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+        const startStr = toTimeStr(start);
+        const endStr = end && end !== start ? toTimeStr(end) : "";
+        const durationMs =
+          end && end !== start ? new Date(end).getTime() - new Date(start).getTime() : 0;
+        const durationStr = (() => {
+          if (durationMs <= 0) return "";
+          const totalMins = Math.floor(durationMs / 60000);
+          const hrs = Math.floor(totalMins / 60);
+          const mins = totalMins % 60;
+          return hrs > 0 ? ` (${hrs}:${String(mins).padStart(2, "0")})` : ` (${mins}m)`;
+        })();
+        return endStr
+          ? `${dateStr}, ${startStr}-${endStr}${durationStr}`
+          : `${dateStr}, ${startStr}`;
+      };
+      return html`
+        <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-6 px-6 py-12">
+          <div class="flex items-center gap-4">
+            <button
+              class="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]"
+              @click=${() => {
+                this.selectedUserEmail = "";
+              }}
+            >
+              ← Back
+            </button>
+            <h2 class="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+              ${this.selectedUserEmail}
+            </h2>
+          </div>
+
+          ${sessions.length === 0
+            ? html`<p class="text-sm text-[var(--color-text-secondary)]">No sessions found.</p>`
+            : sessions.map(
+                (session) => html`
+                  <div
+                    class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                  >
+                    <div class="border-b border-[var(--color-border-subtle)] px-4 pb-3">
+                      <h4 class="font-mono text-sm font-semibold text-[var(--color-text-primary)]">
+                        ${session.sessionId}
+                      </h4>
+                      <p class="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+                        ${formatSessionTitle(session.startTime, session.endTime)}
+                      </p>
+                      <p class="mt-1 text-xs text-[var(--color-text-tertiary)]">
+                        ${session.spaceName} · ${session.projectName}
+                      </p>
+                    </div>
+                    <div class="mt-3 overflow-x-auto">
+                      <table class="w-full text-sm">
+                        <thead>
+                          <tr class="border-b border-[var(--color-border-subtle)]">
+                            <th
+                              class="px-4 py-2 text-left font-semibold text-[var(--color-text-primary)]"
+                            >
+                              Timestamp
+                            </th>
+                            <th
+                              class="px-4 py-2 text-left font-semibold text-[var(--color-text-primary)]"
+                            >
+                              Feature
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right font-semibold text-[var(--color-text-primary)]"
+                            >
+                              Credits
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right font-semibold text-[var(--color-text-primary)]"
+                            >
+                              Amount
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right font-semibold text-[var(--color-text-primary)]"
+                            >
+                              Lines
+                            </th>
+                            <th
+                              class="px-4 py-2 text-left font-semibold text-[var(--color-text-primary)]"
+                            >
+                              Model
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${session.events.map(
+                            (ev: any) => html`
+                              <tr
+                                class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                              >
+                                <td class="px-4 py-2 text-xs text-[var(--color-text-secondary)]">
+                                  ${ev.timestamp
+                                    ? new Date(ev.timestamp).toLocaleTimeString("en-US", {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                        second: "2-digit",
+                                        hour12: true,
+                                      })
+                                    : "—"}
+                                </td>
+                                <td class="px-4 py-2 text-[var(--color-text-secondary)]">
+                                  ${ev.feature || "—"}
+                                </td>
+                                <td class="px-4 py-2 text-right text-[var(--color-text-secondary)]">
+                                  ${Math.round(ev.creditsUsed).toLocaleString()}
+                                </td>
+                                <td class="px-4 py-2 text-right text-[var(--color-text-secondary)]">
+                                  $${(ev.creditsUsed * 0.05).toFixed(3)}
+                                </td>
+                                <td class="px-4 py-2 text-right text-[var(--color-text-secondary)]">
+                                  ${ev.linesOfCode.toLocaleString()}
+                                </td>
+                                <td class="px-4 py-2 text-[var(--color-text-primary)]">
+                                  ${ev.model || "—"}
+                                </td>
+                              </tr>
+                            `,
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                `,
+              )}
+        </main>
+      `;
+    }
+
     if (this.showSessions) {
       return html`
         <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-6 px-6 py-12">
@@ -155,6 +308,7 @@ export class CompanySummary extends LitElement {
               class="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]"
               @click=${() => {
                 this.showSessions = false;
+                this.selectedUserEmail = "";
               }}
             >
               ← Back
@@ -173,7 +327,9 @@ export class CompanySummary extends LitElement {
               .selectedMonth=${this.selectedMonth}
               .selectedYear=${this.selectedYear}
               .sessionTableData=${this.sessionTableData}
+              .userSessionData=${this.userSessionData}
               .view=${"sessions"}
+              @user-selected=${this.handleUserSelected}
             ></metrics-charts>
           </div>
         </main>
@@ -232,7 +388,9 @@ export class CompanySummary extends LitElement {
                   .eventsData=${this.eventsData}
                   .sessionMetrics=${this.sessionMetrics}
                   .sessionTableData=${this.sessionTableData}
+                  .userSessionData=${this.userSessionData}
                   .projectsApiData=${this.projectsApiData}
+                  @user-selected=${this.handleUserSelected}
                   .refreshTrigger=${this.refreshTrigger}
                 ></metrics-charts>
               </section>
