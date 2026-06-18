@@ -59,6 +59,7 @@ export class MetricsCharts extends LitElement {
     sessionTableData: { attribute: false },
     projectsApiData: { attribute: false },
     refreshTrigger: { type: Number, attribute: false },
+    view: { attribute: false },
   };
 
   declare data: MetricsData | null;
@@ -114,6 +115,7 @@ export class MetricsCharts extends LitElement {
   }> | null;
   declare eventsData: Array<any> | null;
   declare sessionMetrics: Map<string, number> | null;
+  declare view: "main" | "sessions";
   declare sessionTableData: Array<{
     sessionId: string;
     startTime: string;
@@ -163,6 +165,7 @@ export class MetricsCharts extends LitElement {
     this.sessionMetrics = null;
     this.sessionTableData = null;
     this.projectsApiData = null;
+    this.view = "main";
   }
 
   createRenderRoot() {
@@ -661,7 +664,115 @@ export class MetricsCharts extends LitElement {
     this.charts.set(config.id, chart);
   }
 
+  private renderSessionsTable() {
+    if (!this.sessionTableData || this.sessionTableData.length === 0) {
+      return html`<p class="text-sm text-[var(--color-text-secondary)]">
+        No session data available.
+      </p>`;
+    }
+    const toTimeStr = (iso: string) =>
+      new Date(iso)
+        .toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })
+        .toLowerCase();
+    const formatTimestamp = (start: string, end: string) => {
+      if (!start) return "—";
+      const dateStr = new Date(start).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      const startStr = toTimeStr(start);
+      const endStr = end && end !== start ? toTimeStr(end) : "";
+      const durationMs =
+        end && end !== start ? new Date(end).getTime() - new Date(start).getTime() : 0;
+      const durationStr = (() => {
+        if (durationMs <= 0) return "";
+        const totalMins = Math.floor(durationMs / 60000);
+        const hrs = Math.floor(totalMins / 60);
+        const mins = totalMins % 60;
+        return hrs > 0 ? ` (${hrs}:${String(mins).padStart(2, "0")})` : ` (${mins}m)`;
+      })();
+      return endStr ? `${dateStr}, ${startStr}-${endStr}${durationStr}` : `${dateStr}, ${startStr}`;
+    };
+    return html`
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-[var(--color-border-subtle)]">
+              <th class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]">
+                Session
+              </th>
+              <th class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]">
+                <span class="block">User</span>
+                <span class="block text-xs font-normal text-[var(--color-text-tertiary)]"
+                  >Project</span
+                >
+              </th>
+              <th class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]">
+                Prompts
+              </th>
+              <th class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]">
+                Designs
+              </th>
+              <th class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]">
+                Credits
+              </th>
+              <th class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]">
+                Lines
+              </th>
+              <th class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]">
+                Model
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            ${this.sessionTableData.map(
+              (session) => html`
+                <tr
+                  class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-elevated)]"
+                >
+                  <td class="px-4 py-3">
+                    <span class="block font-mono text-xs text-[var(--color-text-secondary)]"
+                      >${session.sessionId}</span
+                    >
+                    <span class="block text-xs text-[var(--color-text-tertiary)]"
+                      >${formatTimestamp(session.startTime, session.endTime)}</span
+                    >
+                  </td>
+                  <td class="px-4 py-3">
+                    <span class="block text-[var(--color-text-primary)]">${session.userEmail}</span>
+                    <span class="block text-xs text-[var(--color-text-tertiary)]"
+                      >${session.projectName}</span
+                    >
+                  </td>
+                  <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                    ${session.count.toLocaleString()}
+                  </td>
+                  <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                    ${session.designs.toLocaleString()}
+                  </td>
+                  <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                    ${Math.round(session.creditsUsed).toLocaleString()}
+                  </td>
+                  <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                    ${session.linesOfCode.toLocaleString()}
+                  </td>
+                  <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                    ${session.model || "—"}
+                  </td>
+                </tr>
+              `,
+            )}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
   render() {
+    if (this.view === "sessions") {
+      return this.renderSessionsTable();
+    }
+
     if (!this.data || this.data.length === 0) {
       return html``;
     }
@@ -1291,150 +1402,6 @@ export class MetricsCharts extends LitElement {
                   </table>
                 </div>
               </div>
-            `
-          : ""}
-        ${this.sessionTableData && this.sessionTableData.length > 0
-          ? html`
-              <details
-                class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
-              >
-                <summary class="cursor-pointer list-none">
-                  <div class="flex items-center justify-between gap-4">
-                    <h3
-                      class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]"
-                    >
-                      Sessions
-                    </h3>
-                    <span class="text-sm font-medium text-[var(--color-text-secondary)]">
-                      Expand
-                    </span>
-                  </div>
-                </summary>
-
-                <div class="mt-4 overflow-x-auto">
-                  <table class="w-full text-sm">
-                    <thead>
-                      <tr class="border-b border-[var(--color-border-subtle)]">
-                        <th
-                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
-                        >
-                          Session
-                        </th>
-                        <th
-                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
-                        >
-                          <span class="block">User</span>
-                          <span class="block text-xs font-normal text-[var(--color-text-tertiary)]"
-                            >Project</span
-                          >
-                        </th>
-                        <th
-                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
-                        >
-                          Prompts
-                        </th>
-                        <th
-                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
-                        >
-                          Designs
-                        </th>
-                        <th
-                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
-                        >
-                          Credits
-                        </th>
-                        <th
-                          class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
-                        >
-                          Lines
-                        </th>
-                        <th
-                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
-                        >
-                          Model
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${this.sessionTableData.map((session) => {
-                        const toTimeStr = (iso: string) =>
-                          new Date(iso)
-                            .toLocaleTimeString("en-US", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              hour12: true,
-                            })
-                            .toLowerCase();
-                        const formatTimestamp = (start: string, end: string) => {
-                          if (!start) return "—";
-                          const startDate = new Date(start);
-                          const dateStr = startDate.toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          });
-                          const startStr = toTimeStr(start);
-                          const endStr = end && end !== start ? toTimeStr(end) : "";
-                          const durationMs =
-                            end && end !== start
-                              ? new Date(end).getTime() - new Date(start).getTime()
-                              : 0;
-                          const durationStr = (() => {
-                            if (durationMs <= 0) return "";
-                            const totalMins = Math.floor(durationMs / 60000);
-                            const hrs = Math.floor(totalMins / 60);
-                            const mins = totalMins % 60;
-                            return hrs > 0
-                              ? ` (${hrs}:${String(mins).padStart(2, "0")})`
-                              : ` (${mins}m)`;
-                          })();
-                          return endStr
-                            ? `${dateStr}, ${startStr}-${endStr}${durationStr}`
-                            : `${dateStr}, ${startStr}`;
-                        };
-                        const shortId = session.sessionId;
-                        return html`
-                          <tr
-                            class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-elevated)]"
-                          >
-                            <td class="px-4 py-3">
-                              <span
-                                class="block font-mono text-xs text-[var(--color-text-secondary)]"
-                                >${shortId}</span
-                              >
-                              <span class="block text-xs text-[var(--color-text-tertiary)]">
-                                ${formatTimestamp(session.startTime, session.endTime)}
-                              </span>
-                            </td>
-                            <td class="px-4 py-3">
-                              <span class="block text-[var(--color-text-primary)]"
-                                >${session.userEmail}</span
-                              >
-                              <span class="block text-xs text-[var(--color-text-tertiary)]"
-                                >${session.projectName}</span
-                              >
-                            </td>
-                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${session.count.toLocaleString()}
-                            </td>
-                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${session.designs.toLocaleString()}
-                            </td>
-                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${Math.round(session.creditsUsed).toLocaleString()}
-                            </td>
-                            <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
-                              ${session.linesOfCode.toLocaleString()}
-                            </td>
-                            <td class="px-4 py-3 text-[var(--color-text-primary)]">
-                              ${session.model || "—"}
-                            </td>
-                          </tr>
-                        `;
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </details>
             `
           : ""}
         ${shouldShowDesignsTable

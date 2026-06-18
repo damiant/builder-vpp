@@ -23,6 +23,7 @@ export class CompanySummary extends LitElement {
     eventsData: { attribute: false },
     sessionMetrics: { attribute: false },
     sessionTableData: { attribute: false },
+    showSessions: { type: Boolean, attribute: false },
     projectsApiData: { attribute: false },
     refreshTrigger: { type: Number, attribute: false },
   };
@@ -81,6 +82,7 @@ export class CompanySummary extends LitElement {
   declare eventsData: Array<any> | null;
   declare sessionMetrics: Map<string, number> | null;
   declare sessionTableData: Array<any> | null;
+  declare showSessions: boolean;
   declare refreshTrigger: number;
   declare projectsApiData: Array<{
     projectId: string;
@@ -114,6 +116,7 @@ export class CompanySummary extends LitElement {
     this.eventsData = null;
     this.sessionMetrics = null;
     this.sessionTableData = null;
+    this.showSessions = false;
     this.projectsApiData = null;
   }
 
@@ -144,6 +147,39 @@ export class CompanySummary extends LitElement {
   };
 
   render() {
+    if (this.showSessions) {
+      return html`
+        <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-6 px-6 py-12">
+          <div class="flex items-center gap-4">
+            <button
+              class="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]"
+              @click=${() => {
+                this.showSessions = false;
+              }}
+            >
+              ← Back
+            </button>
+            <h2 class="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+              Sessions
+            </h2>
+          </div>
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
+            <metrics-charts
+              .data=${this.metricsData}
+              .selectedSpaceId=${this.selectedSpaceId}
+              .company=${this.company}
+              .selectedMonth=${this.selectedMonth}
+              .selectedYear=${this.selectedYear}
+              .sessionTableData=${this.sessionTableData}
+              .view=${"sessions"}
+            ></metrics-charts>
+          </div>
+        </main>
+      `;
+    }
+
     return html`
       <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-8 px-6 py-12">
         <selected-company-card
@@ -157,6 +193,27 @@ export class CompanySummary extends LitElement {
           @space-change=${this.handleSpaceChange}
         ></selected-company-card>
 
+        ${this.sessionTableData && this.sessionTableData.length > 0
+          ? html`
+              <div>
+                <button
+                  class="flex w-full items-center justify-between rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-6 py-4 text-left hover:bg-[var(--color-surface)]"
+                  @click=${() => {
+                    this.showSessions = true;
+                  }}
+                >
+                  <div>
+                    <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">Sessions</h3>
+                    <p class="mt-0.5 text-sm text-[var(--color-text-secondary)]">
+                      ${this.sessionTableData.length}
+                      session${this.sessionTableData.length === 1 ? "" : "s"} this period
+                    </p>
+                  </div>
+                  <span class="text-sm font-medium text-[var(--color-text-secondary)]">View →</span>
+                </button>
+              </div>
+            `
+          : ""}
         ${this.metricsData && Array.isArray(this.metricsData) && this.metricsData.length > 0
           ? html`
               <section class="w-full">
