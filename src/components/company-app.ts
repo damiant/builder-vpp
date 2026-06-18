@@ -48,6 +48,7 @@ type UserSessionEvent = {
   creditsUsed: number;
   linesOfCode: number;
   model: string;
+  isDesign: boolean;
 };
 
 type UserSession = {
@@ -1463,7 +1464,15 @@ export class CompanyApp extends LitElement {
       }
       if (spaceName !== "Unknown") sess.spaceName = spaceName;
       if (projectName !== "Unknown") sess.projectName = projectName;
-      sess.events.push({ timestamp, feature, creditsUsed, linesOfCode, model });
+      const designExportId = event.designExportId || metadata.designExportId;
+      sess.events.push({
+        timestamp,
+        feature,
+        creditsUsed,
+        linesOfCode,
+        model,
+        isDesign: Boolean(designExportId),
+      });
     });
 
     this.userSessionData = new Map(

@@ -177,10 +177,11 @@ export class CompanySummary extends LitElement {
           end && end !== start ? new Date(end).getTime() - new Date(start).getTime() : 0;
         const durationStr = (() => {
           if (durationMs <= 0) return "";
-          const totalMins = Math.floor(durationMs / 60000);
-          const hrs = Math.floor(totalMins / 60);
-          const mins = totalMins % 60;
-          return hrs > 0 ? ` (${hrs}:${String(mins).padStart(2, "0")})` : ` (${mins}m)`;
+          const totalSecs = Math.floor(durationMs / 1000);
+          const hrs = Math.floor(totalSecs / 3600);
+          const mins = Math.floor((totalSecs % 3600) / 60);
+          const secs = totalSecs % 60;
+          return ` (${hrs}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")})`;
         })();
         return endStr
           ? `${dateStr}, ${startStr}-${endStr}${durationStr}`
@@ -224,6 +225,12 @@ export class CompanySummary extends LitElement {
                           </p>
                           <p class="text-xs text-[var(--color-text-tertiary)]">
                             ${session.events.length} event${session.events.length === 1 ? "" : "s"}
+                          </p>
+                          <p class="text-xs text-[var(--color-text-tertiary)]">
+                            ${session.events.filter((ev: any) => ev.isDesign).length}
+                            design${session.events.filter((ev: any) => ev.isDesign).length === 1
+                              ? ""
+                              : "s"}
                           </p>
                         </div>
                       </div>
