@@ -206,10 +206,10 @@ export class CompanySummary extends LitElement {
             ? html`<p class="text-sm text-[var(--color-text-secondary)]">No sessions found.</p>`
             : sessions.map(
                 (session) => html`
-                  <div
+                  <details
                     class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
                   >
-                    <div class="border-b border-[var(--color-border-subtle)] px-4 pb-3">
+                    <summary class="cursor-pointer list-none">
                       <div class="flex items-start justify-between gap-4">
                         <h4
                           class="font-mono text-sm font-semibold text-[var(--color-text-primary)]"
@@ -233,7 +233,7 @@ export class CompanySummary extends LitElement {
                       <p class="mt-1 text-xs text-[var(--color-text-tertiary)]">
                         ${session.spaceName} · ${session.projectName}
                       </p>
-                    </div>
+                    </summary>
                     <div class="mt-3 overflow-x-auto">
                       <table class="w-full text-sm">
                         <thead>
@@ -307,7 +307,7 @@ export class CompanySummary extends LitElement {
                         </tbody>
                       </table>
                     </div>
-                  </div>
+                  </details>
                 `,
               )}
         </main>
