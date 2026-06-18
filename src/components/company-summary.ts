@@ -285,12 +285,18 @@ export class CompanySummary extends LitElement {
                               >
                                 <td class="px-4 py-2 text-xs text-[var(--color-text-secondary)]">
                                   ${ev.timestamp
-                                    ? new Date(ev.timestamp).toLocaleTimeString("en-US", {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                        second: "2-digit",
-                                        hour12: true,
-                                      })
+                                    ? new Date(ev.timestamp).toLocaleDateString("en-US", {
+                                        month: "short",
+                                        day: "numeric",
+                                      }) +
+                                      ", " +
+                                      new Date(ev.timestamp)
+                                        .toLocaleTimeString("en-US", {
+                                          hour: "numeric",
+                                          minute: "2-digit",
+                                          hour12: true,
+                                        })
+                                        .toLowerCase()
                                     : "—"}
                                 </td>
                                 <td class="px-4 py-2 text-[var(--color-text-secondary)]">
