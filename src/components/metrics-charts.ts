@@ -1323,12 +1323,10 @@ export class MetricsCharts extends LitElement {
                         <th
                           class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
                         >
-                          User
-                        </th>
-                        <th
-                          class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]"
-                        >
-                          Project
+                          <span class="block">User</span>
+                          <span class="block text-xs font-normal text-[var(--color-text-tertiary)]"
+                            >Project</span
+                          >
                         </th>
                         <th
                           class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]"
@@ -1398,11 +1396,13 @@ export class MetricsCharts extends LitElement {
                                 ${formatTimestamp(session.startTime, session.endTime)}
                               </span>
                             </td>
-                            <td class="px-4 py-3 text-[var(--color-text-primary)]">
-                              ${session.userEmail}
-                            </td>
-                            <td class="px-4 py-3 text-[var(--color-text-secondary)]">
-                              ${session.projectName}
+                            <td class="px-4 py-3">
+                              <span class="block text-[var(--color-text-primary)]"
+                                >${session.userEmail}</span
+                              >
+                              <span class="block text-xs text-[var(--color-text-tertiary)]"
+                                >${session.projectName}</span
+                              >
                             </td>
                             <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                               ${session.count.toLocaleString()}
