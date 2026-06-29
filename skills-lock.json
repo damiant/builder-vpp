@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "skill-creator": {
+      "source": "BuilderIO/builder-agent-skills",
+      "sourceType": "github",
+      "skillPath": "skill-creator/SKILL.md",
+      "computedHash": "cf08918c68755495f1d70a7c09de5aed2a48f3b761b7c15b019826d19c40c7e3"
+    }
+  }
+}
