@@ -244,9 +244,51 @@ export class CompanyApp extends LitElement {
     this.userSessionData = null;
     this.projectsApiData = null;
     this.refreshTrigger = 0;
+    this.loadDateFromStorage();
+  }
+
+  private loadDateFromStorage() {
+    try {
+      const savedMonth = localStorage.getItem("selectedMonth");
+      const savedYear = localStorage.getItem("selectedYear");
+
+      if (savedMonth !== null && savedYear !== null) {
+        const month = parseInt(savedMonth, 10);
+        const year = parseInt(savedYear, 10);
+
+        // Validate the values are reasonable
+        if (
+          !isNaN(month) &&
+          !isNaN(year) &&
+          month >= 0 &&
+          month <= 11 &&
+          year > 1900 &&
+          year < 2100
+        ) {
+          this.selectedMonth = month;
+          this.selectedYear = year;
+          console.log(`Loaded date from storage: ${month}/${year}`);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Error loading date from storage:", error);
+    }
+
+    // Fallback to current date
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
+  }
+
+  private saveDateToStorage() {
+    try {
+      localStorage.setItem("selectedMonth", String(this.selectedMonth));
+      localStorage.setItem("selectedYear", String(this.selectedYear));
+      console.log(`Saved date to storage: ${this.selectedMonth}/${this.selectedYear}`);
+    } catch (error) {
+      console.error("Error saving date to storage:", error);
+    }
   }
 
   createRenderRoot() {
@@ -339,6 +381,7 @@ export class CompanyApp extends LitElement {
     console.log("Date changed to:", event.detail.month, event.detail.year);
     this.selectedMonth = event.detail.month;
     this.selectedYear = event.detail.year;
+    this.saveDateToStorage();
     void this.fetchMetrics();
     void this.fetchEventsData();
     void this.fetchProjectsData();
