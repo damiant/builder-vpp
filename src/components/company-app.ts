@@ -975,18 +975,25 @@ export class CompanyApp extends LitElement {
           const statusText = firstResponse.statusText || "Unknown";
           const url = firstResponse.url || "unknown URL";
 
-          console.error("Events API Error:", {
-            status: firstResponse.status,
-            statusText: statusText,
-            url: url,
-            errorData: errorData,
-            details:
-              firstResponse.status === 404
-                ? "Endpoint not found. Credentials may be invalid."
-                : firstResponse.status === 401 || firstResponse.status === 403
-                  ? "Authentication failed. Private key may be incorrect."
-                  : "Request failed.",
-          });
+          console.error(
+            "Events API Error:",
+            JSON.stringify(
+              {
+                status: firstResponse.status,
+                statusText: statusText,
+                url: url,
+                errorData: errorData,
+                details:
+                  firstResponse.status === 404
+                    ? "Endpoint not found. Credentials may be invalid."
+                    : firstResponse.status === 401 || firstResponse.status === 403
+                      ? "Authentication failed. Private key may be incorrect."
+                      : "Request failed.",
+              },
+              null,
+              2,
+            ),
+          );
 
           this.isFetchingEventPages = false;
           this.currentEventPage = 1;
@@ -1051,12 +1058,19 @@ export class CompanyApp extends LitElement {
                 }).then(async (response) => {
                   if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    console.error(`Failed to fetch events page ${page}:`, {
-                      status: response.status,
-                      statusText: response.statusText,
-                      url: response.url,
-                      errorData: errorData,
-                    });
+                    console.error(
+                      `Failed to fetch events page ${page}:`,
+                      JSON.stringify(
+                        {
+                          status: response.status,
+                          statusText: response.statusText,
+                          url: response.url,
+                          errorData: errorData,
+                        },
+                        null,
+                        2,
+                      ),
+                    );
                     return null;
                   }
                   return response.json();
@@ -1681,14 +1695,21 @@ export class CompanyApp extends LitElement {
           message += ` - ${apiMessage}`;
         }
 
-        console.error("API Error Details:", {
-          status: response.status,
-          statusText: statusText,
-          url: url,
-          apiMessage: apiMessage,
-          errorData: errorData,
-        });
-        console.error("Full error response:", errorData);
+        console.error(
+          "API Error Details:",
+          JSON.stringify(
+            {
+              status: response.status,
+              statusText: statusText,
+              url: url,
+              apiMessage: apiMessage,
+              errorData: errorData,
+            },
+            null,
+            2,
+          ),
+        );
+        console.error("Full error response:", JSON.stringify(errorData, null, 2));
 
         this.metricsError = message;
         this.metricsData = null;
