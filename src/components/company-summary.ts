@@ -427,17 +427,24 @@ export class CompanySummary extends LitElement {
                 <section
                   class="w-full rounded-[var(--radius-xl)] border border-red-300 bg-red-50 p-8 shadow-[var(--shadow-md)]"
                 >
-                  <div class="flex flex-col gap-3">
-                    <p class="brand-heading text-sm font-medium text-red-900">
-                      Error fetching metrics
-                    </p>
-                    <h2 class="text-2xl font-semibold tracking-tight text-red-900">
-                      ${this.metricsError}
-                    </h2>
-                    <p class="max-w-2xl text-sm leading-6 text-red-800">
-                      Make sure the selected company has valid credentials configured in the Edit
-                      dialog.
-                    </p>
+                  <div class="flex flex-col gap-4">
+                    <div>
+                      <p class="brand-heading text-sm font-medium text-red-900">
+                        Error fetching metrics
+                      </p>
+                      <h2 class="mt-2 text-lg font-semibold tracking-tight text-red-900">
+                        ${this.metricsError}
+                      </h2>
+                    </div>
+                    <div class="space-y-2 border-t border-red-200 pt-4">
+                      <p class="text-sm font-medium text-red-900">Troubleshooting steps:</p>
+                      <ul class="list-inside list-disc space-y-1 text-sm text-red-800">
+                        <li>Verify the private key is correct in the Edit dialog</li>
+                        <li>Check your internet connection</li>
+                        <li>Try refreshing the page</li>
+                        <li>Check the browser console (F12) for additional error details</li>
+                      </ul>
+                    </div>
                   </div>
                 </section>
               `

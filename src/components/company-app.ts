@@ -971,7 +971,23 @@ export class CompanyApp extends LitElement {
         }
 
         if (!firstResponse.ok) {
-          console.error("Failed to fetch first page of events:", firstResponse.status);
+          const errorData = await firstResponse.json().catch(() => ({}));
+          const statusText = firstResponse.statusText || "Unknown";
+          const url = firstResponse.url || "unknown URL";
+
+          console.error("Events API Error:", {
+            status: firstResponse.status,
+            statusText: statusText,
+            url: url,
+            errorData: errorData,
+            details:
+              firstResponse.status === 404
+                ? "Endpoint not found. Credentials may be invalid."
+                : firstResponse.status === 401 || firstResponse.status === 403
+                  ? "Authentication failed. Private key may be incorrect."
+                  : "Request failed.",
+          });
+
           this.isFetchingEventPages = false;
           this.currentEventPage = 1;
           this.totalEventPages = 1;
@@ -1032,9 +1048,15 @@ export class CompanyApp extends LitElement {
                 fetch(pageUrl, {
                   method: "GET",
                   headers: headers,
-                }).then((response) => {
+                }).then(async (response) => {
                   if (!response.ok) {
-                    console.error(`Failed to fetch page ${page}:`, response.status);
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error(`Failed to fetch events page ${page}:`, {
+                      status: response.status,
+                      statusText: response.statusText,
+                      url: response.url,
+                      errorData: errorData,
+                    });
                     return null;
                   }
                   return response.json();
@@ -1636,11 +1658,38 @@ export class CompanyApp extends LitElement {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const message =
+        const apiMessage =
           errorData && typeof errorData === "object" && "message" in errorData
             ? String((errorData as { message?: unknown }).message)
-            : `Request failed with status ${response.status}`;
-        console.error("API Error:", message);
+            : null;
+
+        const statusText = response.statusText || "Unknown";
+        const url = response.url || "unknown URL";
+
+        let message = "";
+        if (response.status === 404) {
+          message = `API endpoint not found (404). The endpoint may not exist or company credentials may be invalid.`;
+        } else if (response.status === 401 || response.status === 403) {
+          message = `Authentication failed (${response.status}). Please verify the private key is correct.`;
+        } else if (response.status >= 500) {
+          message = `Server error (${response.status}). The API service may be temporarily unavailable.`;
+        } else {
+          message = `API request failed: ${response.status} ${statusText}`;
+        }
+
+        if (apiMessage) {
+          message += ` - ${apiMessage}`;
+        }
+
+        console.error("API Error Details:", {
+          status: response.status,
+          statusText: statusText,
+          url: url,
+          apiMessage: apiMessage,
+          errorData: errorData,
+        });
+        console.error("Full error response:", errorData);
+
         this.metricsError = message;
         this.metricsData = null;
         return;

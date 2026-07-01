@@ -36,13 +36,13 @@ Ask these questions to understand what the user needs. Adapt your language to th
 
 Before creating a skill, confirm it's the right choice:
 
-| What you need | Use this | Why |
-|---------------|----------|-----|
+| What you need                           | Use this                                      | Why                                                                                                       |
+| --------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Any reusable AI instruction or workflow | **Skill** (`.builder/skills/<name>/SKILL.md`) | Loads only when needed — keeps context lean. Supports bundled files, scripts, and progressive disclosure. |
-| Background knowledge + supporting files | **Skill** | Reference docs and scripts alongside instructions, loaded on demand |
-| Instructions the AI should always have | `AGENTS.md` | Loaded into context like a system prompt. Good for essential project-wide conventions. |
-| Quick directory-scoped rules | `.builderrules` or `.builder/rules/*.mdc` | Lightweight rules scoped to a specific directory |
-| Style rules a linter can enforce | Linter config (ESLint, Prettier, etc.) | Don't burn AI context on mechanical checks |
+| Background knowledge + supporting files | **Skill**                                     | Reference docs and scripts alongside instructions, loaded on demand                                       |
+| Instructions the AI should always have  | `AGENTS.md`                                   | Loaded into context like a system prompt. Good for essential project-wide conventions.                    |
+| Quick directory-scoped rules            | `.builderrules` or `.builder/rules/*.mdc`     | Lightweight rules scoped to a specific directory                                                          |
+| Style rules a linter can enforce        | Linter config (ESLint, Prettier, etc.)        | Don't burn AI context on mechanical checks                                                                |
 
 **Skills are the recommended default.** Unlike AGENTS.md which is always loaded into the AI's context, skills only load when relevant. This means you can have many skills without bloating the context window. Reserve AGENTS.md for the small set of instructions the AI truly needs in every conversation.
 
@@ -59,10 +59,12 @@ project/
 ```
 
 **Before writing any files:**
+
 - If `.builder/` or `.builder/skills/` doesn't exist, create the directories
 - If a skill already exists at the target path, read it first and ask the user: update the existing skill, or pick a different name?
 
 **Naming rules:**
+
 - Lowercase letters, numbers, and hyphens only (e.g., `pdf-processor`, `deploy-staging`)
 - No consecutive hyphens, no leading/trailing hyphens
 - Max 64 characters
@@ -95,10 +97,12 @@ For complete field documentation, see [references/frontmatter-reference.md](refe
 The description is the single most important line in your skill. It determines whether the AI loads your skill at the right time. Get this wrong and the skill never triggers; get it right and it activates reliably.
 
 **Use the WHAT + WHEN pattern.** Every description needs both:
+
 - **WHAT** the skill does
 - **WHEN** to use it (specific trigger contexts)
 
 **Bad:**
+
 ```yaml
 description: Helps with documents
 # Too vague — the AI has no activation signal
@@ -111,6 +115,7 @@ description: Use when the user says "create a PDF"
 ```
 
 **Good:**
+
 ```yaml
 description: >
   Extract text and tables from PDF files, fill forms, merge
@@ -125,6 +130,7 @@ description: >
 ```
 
 **Tips for reliable triggering:**
+
 - Write in third person ("Processes files" not "I help you process files")
 - Include file extensions, domain terms, and informal synonyms
 - Add "even if they don't explicitly ask for X" for near-miss triggers
@@ -140,15 +146,19 @@ The markdown body is the skill's instructions. Keep it under 500 lines. Structur
 # Skill Title
 
 ## Quick Start
+
 Immediate, actionable guidance.
 
 ## Instructions
+
 Step-by-step procedures.
 
 ## Gotchas
+
 Common failure points and how to avoid them.
 
 ## Examples
+
 Concrete input/output pairs.
 ```
 
@@ -177,13 +187,14 @@ my-skill/
 
 **Progressive disclosure works in three levels:**
 
-| Level | What loads | When | Size |
-|-------|-----------|------|------|
-| Metadata | `name` + `description` | Always in context | ~100 tokens |
-| Instructions | Full SKILL.md body | When skill triggers | <500 lines |
-| Resources | Reference files, scripts | When the AI needs them | Unlimited |
+| Level        | What loads               | When                   | Size        |
+| ------------ | ------------------------ | ---------------------- | ----------- |
+| Metadata     | `name` + `description`   | Always in context      | ~100 tokens |
+| Instructions | Full SKILL.md body       | When skill triggers    | <500 lines  |
+| Resources    | Reference files, scripts | When the AI needs them | Unlimited   |
 
 **Rules:**
+
 - Keep SKILL.md under 500 lines. If approaching 400, split detailed content to reference files.
 - Link references from SKILL.md: "For API details, see [references/api-docs.md](references/api-docs.md)."
 - Keep references one level deep. Don't have reference files that point to other reference files — the AI may only partially read deeply nested content.
@@ -207,6 +218,7 @@ In SKILL.md, instruct: "If `config.json` does not exist in this skill directory,
 #### Memory and Data Storage
 
 Skills can maintain state:
+
 - Append-only log files (e.g., `standups.log` for a standup skill)
 - JSON data files
 - Even SQLite databases

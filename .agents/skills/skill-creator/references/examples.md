@@ -54,7 +54,7 @@ A deploy workflow skill. The description makes it clear this involves deployment
 .builder/skills/deploy-staging/SKILL.md
 ```
 
-```yaml
+````yaml
 ---
 name: deploy-staging
 description: >
@@ -86,7 +86,8 @@ description: >
 If something goes wrong:
 ```bash
 aws s3 sync s3://staging-backup/ s3://staging-bucket/
-```
+````
+
 ```
 
 **Why this works:** Description clearly communicates this is a deploy action. Has clear rollback instructions. Gotchas capture real incidents.
@@ -98,8 +99,10 @@ aws s3 sync s3://staging-backup/ s3://staging-bucket/
 Project-specific knowledge that the AI should reference when working with your API.
 
 ```
+
 .builder/skills/api-patterns/SKILL.md
-```
+
+````
 
 ```yaml
 ---
@@ -123,17 +126,19 @@ tokens in localStorage — use httpOnly cookies.
 
 ## Route Structure
 
-```
+````
+
 src/api/
 ├── routes/
-│   ├── users.ts       # /api/users/*
-│   ├── projects.ts    # /api/projects/*
-│   └── billing.ts     # /api/billing/*
+│ ├── users.ts # /api/users/_
+│ ├── projects.ts # /api/projects/_
+│ └── billing.ts # /api/billing/\*
 ├── middleware/
-│   ├── auth.ts
-│   └── rate-limit.ts
+│ ├── auth.ts
+│ └── rate-limit.ts
 └── validators/
-    └── schemas.ts     # Zod schemas for request validation
+└── schemas.ts # Zod schemas for request validation
+
 ```
 
 ## Conventions
