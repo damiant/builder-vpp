@@ -918,6 +918,9 @@ export class CompanyApp extends LitElement {
           totalLines: toNumber(metrics.totalLines || metrics.linesAccepted),
           creditsUsed: toNumber(metrics.creditsUsed),
           designsExported: toNumber(metrics.designExports ?? metrics.designsExported),
+          mcpPrototypesPulled: toNumber(
+            metrics.mcpPrototypesPulled ?? metrics.prototypesPulled ?? 0,
+          ),
           prsMerged: toNumber(metrics.prsMerged),
           prsCreated: toNumber(metrics.prsCreated),
           events: toNumber(metrics.events),
@@ -1662,6 +1665,35 @@ export class CompanyApp extends LitElement {
     }
   }
 
+  private enrichMetricsWithPrototypesPulled(metricsData: any[], eventsData: any[]): any[] {
+    if (!metricsData || !eventsData) {
+      return metricsData;
+    }
+
+    const prototypesByDate = new Map<string, number>();
+
+    eventsData.forEach((event: any) => {
+      if (event.eventType === "mcpPrototypePulled") {
+        const timestamp = event.timestamp || new Date().toISOString();
+        const date = new Date(timestamp).toISOString().split("T")[0];
+        prototypesByDate.set(date, (prototypesByDate.get(date) || 0) + 1);
+      }
+    });
+
+    return metricsData.map((item: any) => {
+      const period = item.period || "";
+      const prototypeCount = prototypesByDate.get(period) || 0;
+
+      return {
+        ...item,
+        metrics: {
+          ...item.metrics,
+          mcpPrototypesPulled: prototypeCount || item.metrics.mcpPrototypesPulled || 0,
+        },
+      };
+    });
+  }
+
   private async fetchMetrics() {
     const company = this.selectedCompany;
 
@@ -1687,7 +1719,14 @@ export class CompanyApp extends LitElement {
       console.log("Using cached metrics data");
       try {
         const transformedData = this.transformMetricsData(cachedData);
-        this.metricsData = transformedData;
+        let finalMetricsData = transformedData;
+        if (this.eventsData && this.eventsData.length > 0) {
+          finalMetricsData = this.enrichMetricsWithPrototypesPulled(
+            transformedData,
+            this.eventsData,
+          );
+        }
+        this.metricsData = finalMetricsData;
         this.metricsError = null;
       } catch (error) {
         console.error("Error processing cached metrics:", error);
@@ -1807,7 +1846,15 @@ export class CompanyApp extends LitElement {
 
         console.log("Transformed metrics:", transformedData);
 
-        this.metricsData = transformedData;
+        let finalMetricsData = transformedData;
+        if (this.eventsData && this.eventsData.length > 0) {
+          finalMetricsData = this.enrichMetricsWithPrototypesPulled(
+            transformedData,
+            this.eventsData,
+          );
+        }
+
+        this.metricsData = finalMetricsData;
         this.metricsError = null;
       } catch (transformError) {
         console.error("Error transforming metrics:", transformError);

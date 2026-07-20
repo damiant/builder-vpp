@@ -11,6 +11,7 @@ type MetricsItem = {
   totalLines: number;
   creditsUsed: number;
   designsExported: number;
+  mcpPrototypesPulled?: number;
   prsMerged: number;
   events: number;
   users: number;
@@ -240,6 +241,13 @@ export class MetricsCharts extends LitElement {
         dataKey: "designsExported",
         borderColor: "#8b5cf6",
         backgroundColor: "rgba(139, 92, 246, 0.1)",
+      },
+      {
+        id: "mcpPrototypesPulled",
+        label: "Prototypes Pulled",
+        dataKey: "mcpPrototypesPulled",
+        borderColor: "#f59e0b",
+        backgroundColor: "rgba(245, 158, 11, 0.1)",
       },
       {
         id: "prsMerged",
@@ -826,6 +834,12 @@ export class MetricsCharts extends LitElement {
             class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
           >
             <canvas id="chart-designsExported"></canvas>
+          </div>
+
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
+            <canvas id="chart-mcpPrototypesPulled"></canvas>
           </div>
 
           <div
