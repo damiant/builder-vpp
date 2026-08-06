@@ -14,6 +14,7 @@ type MetricsItem = {
   users: number;
   spaceIds: string[];
   spaces: Array<{ id: string; name: string }>;
+  mcpPrototypesPulled?: number;
 };
 
 type MetricsData = {
@@ -110,6 +111,7 @@ export class SelectedCompanyCard extends LitElement {
         prsCreated: acc.prsCreated + item.metrics.prsCreated,
         events: acc.events + item.metrics.events,
         users: Math.max(acc.users, item.metrics.users),
+        mcpPrototypesPulled: acc.mcpPrototypesPulled + (item.metrics.mcpPrototypesPulled ?? 0),
       }),
       {
         userPrompts: 0,
@@ -120,6 +122,7 @@ export class SelectedCompanyCard extends LitElement {
         prsCreated: 0,
         events: 0,
         users: 0,
+        mcpPrototypesPulled: 0,
       },
     );
 
@@ -253,6 +256,19 @@ export class SelectedCompanyCard extends LitElement {
                   </p>
                   <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
                     ${stats.totals.prsCreated.toLocaleString()}
+                  </p>
+                </div>
+
+                <div
+                  class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                >
+                  <p
+                    class="brand-heading text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-text-muted)]"
+                  >
+                    Prototype handoffs
+                  </p>
+                  <p class="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">
+                    ${stats.totals.mcpPrototypesPulled.toLocaleString()}
                   </p>
                 </div>
 

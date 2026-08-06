@@ -21,7 +21,13 @@ export class CompanySummary extends LitElement {
     designVsPromptMetrics: { attribute: false },
     designMetrics: { attribute: false },
     eventsData: { attribute: false },
+    sessionMetrics: { attribute: false },
+    sessionTableData: { attribute: false },
+    userSessionData: { attribute: false },
+    showSessions: { type: Boolean, attribute: false },
+    selectedUserEmail: { attribute: false },
     projectsApiData: { attribute: false },
+    refreshTrigger: { type: Number, attribute: false },
   };
 
   declare company: CompanyConfig | null;
@@ -76,6 +82,12 @@ export class CompanySummary extends LitElement {
     }>;
   }> | null;
   declare eventsData: Array<any> | null;
+  declare sessionMetrics: Map<string, number> | null;
+  declare sessionTableData: Array<any> | null;
+  declare userSessionData: Map<string, Array<any>> | null;
+  declare showSessions: boolean;
+  declare selectedUserEmail: string;
+  declare refreshTrigger: number;
   declare projectsApiData: Array<{
     projectId: string;
     projectName: string;
@@ -106,6 +118,11 @@ export class CompanySummary extends LitElement {
     this.designVsPromptMetrics = null;
     this.designMetrics = null;
     this.eventsData = null;
+    this.sessionMetrics = null;
+    this.sessionTableData = null;
+    this.userSessionData = null;
+    this.showSessions = false;
+    this.selectedUserEmail = "";
     this.projectsApiData = null;
   }
 
@@ -135,7 +152,217 @@ export class CompanySummary extends LitElement {
     );
   };
 
+  private handleUserSelected = (e: CustomEvent<{ userEmail: string }>) => {
+    this.selectedUserEmail = e.detail.userEmail;
+  };
+
   render() {
+    if (this.selectedUserEmail) {
+      const sessions = this.userSessionData?.get(this.selectedUserEmail) ?? [];
+      const toTimeStr = (iso: string) =>
+        iso
+          ? new Date(iso)
+              .toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })
+              .toLowerCase()
+          : "";
+      const formatSessionTitle = (start: string, end: string) => {
+        if (!start) return "";
+        const dateStr = new Date(start).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+        const startStr = toTimeStr(start);
+        const endStr = end && end !== start ? toTimeStr(end) : "";
+        const durationMs =
+          end && end !== start ? new Date(end).getTime() - new Date(start).getTime() : 0;
+        const durationStr = (() => {
+          if (durationMs <= 0) return "";
+          const totalSecs = Math.floor(durationMs / 1000);
+          const hrs = Math.floor(totalSecs / 3600);
+          const mins = Math.floor((totalSecs % 3600) / 60);
+          const secs = totalSecs % 60;
+          return ` (${hrs}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")})`;
+        })();
+        return endStr
+          ? `${dateStr}, ${startStr}-${endStr}${durationStr}`
+          : `${dateStr}, ${startStr}`;
+      };
+      return html`
+        <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-6 px-6 py-12">
+          <div class="flex items-center gap-4">
+            <button
+              class="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]"
+              @click=${() => {
+                this.selectedUserEmail = "";
+              }}
+            >
+              ← Back
+            </button>
+            <h2 class="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+              ${this.selectedUserEmail}
+            </h2>
+          </div>
+
+          ${sessions.length === 0
+            ? html`<p class="text-sm text-[var(--color-text-secondary)]">No sessions found.</p>`
+            : sessions.map(
+                (session) => html`
+                  <details
+                    class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+                  >
+                    <summary class="cursor-pointer list-none">
+                      <div class="flex items-start justify-between gap-4">
+                        <h4
+                          class="font-mono text-sm font-semibold text-[var(--color-text-primary)]"
+                        >
+                          ${session.sessionId}
+                        </h4>
+                        <div class="text-right">
+                          <p class="text-sm font-semibold text-[var(--color-text-primary)]">
+                            $${session.events
+                              .reduce((sum: number, ev: any) => sum + ev.creditsUsed * 0.05, 0)
+                              .toFixed(2)}
+                          </p>
+                          <p class="text-xs text-[var(--color-text-tertiary)]">
+                            ${session.events.length} event${session.events.length === 1 ? "" : "s"}
+                          </p>
+                          <p class="text-xs text-[var(--color-text-tertiary)]">
+                            ${session.events.filter((ev: any) => ev.isDesign).length}
+                            design${session.events.filter((ev: any) => ev.isDesign).length === 1
+                              ? ""
+                              : "s"}
+                          </p>
+                        </div>
+                      </div>
+                      <p class="mt-0.5 text-xs text-[var(--color-text-secondary)]">
+                        ${formatSessionTitle(session.startTime, session.endTime)}
+                      </p>
+                      <p class="mt-1 text-xs text-[var(--color-text-tertiary)]">
+                        ${session.spaceName} · ${session.projectName}
+                      </p>
+                    </summary>
+                    <div class="mt-3 overflow-x-auto">
+                      <table class="w-full text-sm">
+                        <thead>
+                          <tr class="border-b border-[var(--color-border-subtle)]">
+                            <th
+                              class="px-4 py-2 text-left font-semibold text-[var(--color-text-primary)]"
+                            >
+                              Timestamp
+                            </th>
+                            <th
+                              class="px-4 py-2 text-left font-semibold text-[var(--color-text-primary)]"
+                            >
+                              Feature
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right font-semibold text-[var(--color-text-primary)]"
+                            >
+                              Credits
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right font-semibold text-[var(--color-text-primary)]"
+                            >
+                              Amount
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right font-semibold text-[var(--color-text-primary)]"
+                            >
+                              Lines
+                            </th>
+                            <th
+                              class="px-4 py-2 text-left font-semibold text-[var(--color-text-primary)]"
+                            >
+                              Model
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${session.events.map(
+                            (ev: any) => html`
+                              <tr
+                                class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
+                              >
+                                <td class="px-4 py-2 text-xs text-[var(--color-text-secondary)]">
+                                  ${ev.timestamp
+                                    ? new Date(ev.timestamp).toLocaleDateString("en-US", {
+                                        month: "short",
+                                        day: "numeric",
+                                      }) +
+                                      ", " +
+                                      new Date(ev.timestamp)
+                                        .toLocaleTimeString("en-US", {
+                                          hour: "numeric",
+                                          minute: "2-digit",
+                                          hour12: true,
+                                        })
+                                        .toLowerCase()
+                                    : "—"}
+                                </td>
+                                <td class="px-4 py-2 text-[var(--color-text-secondary)]">
+                                  ${ev.feature || "—"}
+                                </td>
+                                <td class="px-4 py-2 text-right text-[var(--color-text-secondary)]">
+                                  ${Math.round(ev.creditsUsed).toLocaleString()}
+                                </td>
+                                <td class="px-4 py-2 text-right text-[var(--color-text-secondary)]">
+                                  $${(ev.creditsUsed * 0.05).toFixed(3)}
+                                </td>
+                                <td class="px-4 py-2 text-right text-[var(--color-text-secondary)]">
+                                  ${ev.linesOfCode.toLocaleString()}
+                                </td>
+                                <td class="px-4 py-2 text-[var(--color-text-primary)]">
+                                  ${ev.model || "—"}
+                                </td>
+                              </tr>
+                            `,
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </details>
+                `,
+              )}
+        </main>
+      `;
+    }
+
+    if (this.showSessions) {
+      return html`
+        <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-6 px-6 py-12">
+          <div class="flex items-center gap-4">
+            <button
+              class="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-3 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)] hover:text-[var(--color-text-primary)]"
+              @click=${() => {
+                this.showSessions = false;
+                this.selectedUserEmail = "";
+              }}
+            >
+              ← Back
+            </button>
+            <h2 class="text-2xl font-semibold tracking-tight text-[var(--color-text-primary)]">
+              Sessions
+            </h2>
+          </div>
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
+            <metrics-charts
+              .data=${this.metricsData}
+              .selectedSpaceId=${this.selectedSpaceId}
+              .company=${this.company}
+              .selectedMonth=${this.selectedMonth}
+              .selectedYear=${this.selectedYear}
+              .sessionTableData=${this.sessionTableData}
+              .userSessionData=${this.userSessionData}
+              .view=${"sessions"}
+              @user-selected=${this.handleUserSelected}
+            ></metrics-charts>
+          </div>
+        </main>
+      `;
+    }
+
     return html`
       <main class="mx-auto flex max-w-6xl flex-1 flex-col gap-8 px-6 py-12">
         <selected-company-card
@@ -149,6 +376,27 @@ export class CompanySummary extends LitElement {
           @space-change=${this.handleSpaceChange}
         ></selected-company-card>
 
+        ${this.sessionTableData && this.sessionTableData.length > 0
+          ? html`
+              <div>
+                <button
+                  class="flex w-full items-center justify-between rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] px-6 py-4 text-left hover:bg-[var(--color-surface)]"
+                  @click=${() => {
+                    this.showSessions = true;
+                  }}
+                >
+                  <div>
+                    <h3 class="text-lg font-semibold text-[var(--color-text-primary)]">Sessions</h3>
+                    <p class="mt-0.5 text-sm text-[var(--color-text-secondary)]">
+                      ${this.sessionTableData.length}
+                      session${this.sessionTableData.length === 1 ? "" : "s"} this period
+                    </p>
+                  </div>
+                  <span class="text-sm font-medium text-[var(--color-text-secondary)]">View →</span>
+                </button>
+              </div>
+            `
+          : ""}
         ${this.metricsData && Array.isArray(this.metricsData) && this.metricsData.length > 0
           ? html`
               <section class="w-full">
@@ -165,7 +413,12 @@ export class CompanySummary extends LitElement {
                   .designVsPromptMetrics=${this.designVsPromptMetrics}
                   .designMetrics=${this.designMetrics}
                   .eventsData=${this.eventsData}
+                  .sessionMetrics=${this.sessionMetrics}
+                  .sessionTableData=${this.sessionTableData}
+                  .userSessionData=${this.userSessionData}
                   .projectsApiData=${this.projectsApiData}
+                  @user-selected=${this.handleUserSelected}
+                  .refreshTrigger=${this.refreshTrigger}
                 ></metrics-charts>
               </section>
             `
@@ -174,17 +427,24 @@ export class CompanySummary extends LitElement {
                 <section
                   class="w-full rounded-[var(--radius-xl)] border border-red-300 bg-red-50 p-8 shadow-[var(--shadow-md)]"
                 >
-                  <div class="flex flex-col gap-3">
-                    <p class="brand-heading text-sm font-medium text-red-900">
-                      Error fetching metrics
-                    </p>
-                    <h2 class="text-2xl font-semibold tracking-tight text-red-900">
-                      ${this.metricsError}
-                    </h2>
-                    <p class="max-w-2xl text-sm leading-6 text-red-800">
-                      Make sure the selected company has valid credentials configured in the Edit
-                      dialog.
-                    </p>
+                  <div class="flex flex-col gap-4">
+                    <div>
+                      <p class="brand-heading text-sm font-medium text-red-900">
+                        Error fetching metrics
+                      </p>
+                      <h2 class="mt-2 text-lg font-semibold tracking-tight text-red-900">
+                        ${this.metricsError}
+                      </h2>
+                    </div>
+                    <div class="space-y-2 border-t border-red-200 pt-4">
+                      <p class="text-sm font-medium text-red-900">Troubleshooting steps:</p>
+                      <ul class="list-inside list-disc space-y-1 text-sm text-red-800">
+                        <li>Verify the private key is correct in the Edit dialog</li>
+                        <li>Check your internet connection</li>
+                        <li>Try refreshing the page</li>
+                        <li>Check the browser console (F12) for additional error details</li>
+                      </ul>
+                    </div>
                   </div>
                 </section>
               `

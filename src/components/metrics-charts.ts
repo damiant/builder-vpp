@@ -11,6 +11,7 @@ type MetricsItem = {
   totalLines: number;
   creditsUsed: number;
   designsExported: number;
+  mcpPrototypesPulled?: number;
   prsMerged: number;
   events: number;
   users: number;
@@ -55,7 +56,12 @@ export class MetricsCharts extends LitElement {
     designVsPromptMetrics: { attribute: false },
     designMetrics: { attribute: false },
     eventsData: { attribute: false },
+    sessionMetrics: { attribute: false },
+    sessionTableData: { attribute: false },
+    userSessionData: { attribute: false },
     projectsApiData: { attribute: false },
+    refreshTrigger: { type: Number, attribute: false },
+    view: { attribute: false },
   };
 
   declare data: MetricsData | null;
@@ -64,6 +70,7 @@ export class MetricsCharts extends LitElement {
   declare selectedMonth: number;
   declare selectedYear: number;
   declare usersData: Array<any> | null;
+  declare refreshTrigger: number;
   declare modelMetrics: Array<{
     model: string;
     totalLines: number;
@@ -109,6 +116,22 @@ export class MetricsCharts extends LitElement {
     }>;
   }> | null;
   declare eventsData: Array<any> | null;
+  declare sessionMetrics: Map<string, number> | null;
+  declare userSessionData: Map<string, Array<any>> | null;
+  declare view: "main" | "sessions";
+  declare sessionTableData: Array<{
+    sessionId: string;
+    startTime: string;
+    endTime: string;
+    totalTimeMs: number;
+    userEmail: string;
+    projectName: string;
+    count: number;
+    designs: number;
+    creditsUsed: number;
+    linesOfCode: number;
+    model: string;
+  }> | null;
   declare projectsApiData: Array<{
     projectId: string;
     projectName: string;
@@ -142,7 +165,11 @@ export class MetricsCharts extends LitElement {
     this.designVsPromptMetrics = null;
     this.designMetrics = null;
     this.eventsData = null;
+    this.sessionMetrics = null;
+    this.sessionTableData = null;
+    this.userSessionData = null;
     this.projectsApiData = null;
+    this.view = "main";
   }
 
   createRenderRoot() {
@@ -161,7 +188,10 @@ export class MetricsCharts extends LitElement {
     const usersContextChanged =
       changedProperties.has("company") ||
       changedProperties.has("selectedMonth") ||
-      changedProperties.has("selectedYear");
+      changedProperties.has("selectedYear") ||
+      changedProperties.has("refreshTrigger");
+
+    const sessionMetricsChanged = changedProperties.has("sessionMetrics");
 
     // Only recreate charts when data changes
     if (dataChanged) {
@@ -174,6 +204,11 @@ export class MetricsCharts extends LitElement {
     if (usersContextChanged && this.company && this.company.privateKey) {
       this.usersData = null;
       void this.fetchUsersData();
+    }
+
+    if (sessionMetricsChanged && !dataChanged) {
+      setTimeout(() => this.createSessionsChart(), 0);
+      return;
     }
 
     if (!dataChanged) return;
@@ -208,6 +243,13 @@ export class MetricsCharts extends LitElement {
         backgroundColor: "rgba(139, 92, 246, 0.1)",
       },
       {
+        id: "mcpPrototypesPulled",
+        label: "Prototypes Pulled",
+        dataKey: "mcpPrototypesPulled",
+        borderColor: "#f59e0b",
+        backgroundColor: "rgba(245, 158, 11, 0.1)",
+      },
+      {
         id: "prsMerged",
         label: "PRs Merged",
         dataKey: "prsMerged",
@@ -226,6 +268,63 @@ export class MetricsCharts extends LitElement {
     chartConfigs.forEach((config) => {
       setTimeout(() => this.createChart(config), 0);
     });
+    setTimeout(() => this.createSessionsChart(), 0);
+  }
+
+  private createSessionsChart() {
+    const canvas = this.querySelector<HTMLCanvasElement>("#chart-sessions");
+    if (!canvas || !this.data) return;
+
+    const existingChart = this.charts.get("sessions");
+    if (existingChart) existingChart.destroy();
+
+    const dates = this.data.map((d) => d.period);
+    const formattedDates = dates.map((d) => this.formatDateLabel(d));
+    const values = dates.map((d) => this.sessionMetrics?.get(d) ?? 0);
+
+    const chart = new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: formattedDates,
+        datasets: [
+          {
+            label: "Sessions",
+            data: values,
+            backgroundColor: "#f59e0b",
+            borderColor: "#f59e0b",
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            display: true,
+            labels: {
+              color: "#111111",
+              font: { family: '"Inter", system-ui, sans-serif', size: 12 },
+            },
+          },
+          filler: { propagate: true },
+        },
+        backgroundColor: "#ffffff",
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: "#4b5563", font: { family: '"Inter", system-ui, sans-serif' } },
+            grid: { color: "rgba(0, 0, 0, 0.06)" },
+          },
+          x: {
+            ticks: { color: "#4b5563", font: { family: '"Inter", system-ui, sans-serif' } },
+            grid: { color: "rgba(0, 0, 0, 0.06)" },
+          },
+        },
+      },
+    });
+
+    this.charts.set("sessions", chart);
   }
 
   private async fetchUsersData() {
@@ -576,7 +675,115 @@ export class MetricsCharts extends LitElement {
     this.charts.set(config.id, chart);
   }
 
+  private renderSessionsTable() {
+    if (!this.sessionTableData || this.sessionTableData.length === 0) {
+      return html`<p class="text-sm text-[var(--color-text-secondary)]">
+        No session data available.
+      </p>`;
+    }
+    const toTimeStr = (iso: string) =>
+      new Date(iso)
+        .toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true })
+        .toLowerCase();
+    const formatTimestamp = (start: string, end: string) => {
+      if (!start) return "—";
+      const dateStr = new Date(start).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      });
+      const startStr = toTimeStr(start);
+      const endStr = end && end !== start ? toTimeStr(end) : "";
+      const durationMs =
+        end && end !== start ? new Date(end).getTime() - new Date(start).getTime() : 0;
+      const durationStr = (() => {
+        if (durationMs <= 0) return "";
+        const totalMins = Math.floor(durationMs / 60000);
+        const hrs = Math.floor(totalMins / 60);
+        const mins = totalMins % 60;
+        return hrs > 0 ? ` (${hrs}:${String(mins).padStart(2, "0")})` : ` (${mins}m)`;
+      })();
+      return endStr ? `${dateStr}, ${startStr}-${endStr}${durationStr}` : `${dateStr}, ${startStr}`;
+    };
+    return html`
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-[var(--color-border-subtle)]">
+              <th class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]">
+                Session
+              </th>
+              <th class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]">
+                <span class="block">User</span>
+                <span class="block text-xs font-normal text-[var(--color-text-tertiary)]"
+                  >Project</span
+                >
+              </th>
+              <th class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]">
+                Prompts
+              </th>
+              <th class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]">
+                Designs
+              </th>
+              <th class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]">
+                Credits
+              </th>
+              <th class="px-4 py-3 text-right font-semibold text-[var(--color-text-primary)]">
+                Lines
+              </th>
+              <th class="px-4 py-3 text-left font-semibold text-[var(--color-text-primary)]">
+                Model
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            ${this.sessionTableData.map(
+              (session) => html`
+                <tr
+                  class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface-elevated)]"
+                >
+                  <td class="px-4 py-3">
+                    <span class="block font-mono text-xs text-[var(--color-text-secondary)]"
+                      >${session.sessionId}</span
+                    >
+                    <span class="block text-xs text-[var(--color-text-tertiary)]"
+                      >${formatTimestamp(session.startTime, session.endTime)}</span
+                    >
+                  </td>
+                  <td class="px-4 py-3">
+                    <span class="block text-[var(--color-text-primary)]">${session.userEmail}</span>
+                    <span class="block text-xs text-[var(--color-text-tertiary)]"
+                      >${session.projectName}</span
+                    >
+                  </td>
+                  <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                    ${session.count.toLocaleString()}
+                  </td>
+                  <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                    ${session.designs.toLocaleString()}
+                  </td>
+                  <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                    ${Math.round(session.creditsUsed).toLocaleString()}
+                  </td>
+                  <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
+                    ${session.linesOfCode.toLocaleString()}
+                  </td>
+                  <td class="px-4 py-3 text-[var(--color-text-primary)]">
+                    ${session.model || "—"}
+                  </td>
+                </tr>
+              `,
+            )}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
   render() {
+    if (this.view === "sessions") {
+      return this.renderSessionsTable();
+    }
+
     if (!this.data || this.data.length === 0) {
       return html``;
     }
@@ -632,6 +839,12 @@ export class MetricsCharts extends LitElement {
           <div
             class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
           >
+            <canvas id="chart-mcpPrototypesPulled"></canvas>
+          </div>
+
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
             <canvas id="chart-prsMerged"></canvas>
           </div>
 
@@ -639,6 +852,12 @@ export class MetricsCharts extends LitElement {
             class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
           >
             <canvas id="chart-events"></canvas>
+          </div>
+
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-elevated)] p-4"
+          >
+            <canvas id="chart-sessions"></canvas>
           </div>
         </div>
 
@@ -1163,8 +1382,20 @@ export class MetricsCharts extends LitElement {
                             <tr
                               class="border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-surface)]"
                             >
-                              <td class="px-4 py-3 text-[var(--color-text-primary)]">
-                                ${user.userEmail}
+                              <td class="px-4 py-3">
+                                <button
+                                  class="text-left font-medium text-[var(--color-brand-strong)] underline-offset-4 hover:underline"
+                                  @click=${() =>
+                                    this.dispatchEvent(
+                                      new CustomEvent("user-selected", {
+                                        detail: { userEmail: user.userEmail },
+                                        bubbles: true,
+                                        composed: true,
+                                      }),
+                                    )}
+                                >
+                                  ${user.userEmail}
+                                </button>
                               </td>
                               <td class="px-4 py-3 text-right text-[var(--color-text-secondary)]">
                                 ${user.metrics.totalLines.toLocaleString()}
@@ -1228,7 +1459,14 @@ export class MetricsCharts extends LitElement {
                       >
                         <div class="border-b border-[var(--color-border-subtle)] px-4 pb-3">
                           <h4 class="text-base font-semibold text-[var(--color-text-primary)]">
-                            ${design.designDocumentId}
+                            <a
+                              href="https://ai-services.internal.builder.io/vcp-imports/${design.designDocumentId}#tab=%22preview%22&designContentView=%22screenshot%22"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="text-[var(--color-brand-strong)] underline-offset-4 hover:underline"
+                            >
+                              ${design.designDocumentId}
+                            </a>
                           </h4>
                         </div>
                         <div class="overflow-x-auto">

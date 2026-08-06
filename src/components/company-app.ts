@@ -42,6 +42,38 @@ type ConnectionResult = {
   headers?: Record<string, string>;
 };
 
+type UserSessionEvent = {
+  timestamp: string;
+  feature: string;
+  creditsUsed: number;
+  linesOfCode: number;
+  model: string;
+  isDesign: boolean;
+};
+
+type UserSession = {
+  sessionId: string;
+  startTime: string;
+  endTime: string;
+  spaceName: string;
+  projectName: string;
+  events: UserSessionEvent[];
+};
+
+type SessionRecord = {
+  sessionId: string;
+  startTime: string;
+  endTime: string;
+  totalTimeMs: number;
+  userEmail: string;
+  projectName: string;
+  count: number;
+  designs: number;
+  creditsUsed: number;
+  linesOfCode: number;
+  model: string;
+};
+
 type ModelMetric = {
   model: string;
   totalLines: number;
@@ -138,7 +170,11 @@ export class CompanyApp extends LitElement {
     designVsPromptMetrics: { attribute: false },
     designMetrics: { attribute: false },
     eventsData: { attribute: false },
+    sessionMetrics: { attribute: false },
+    sessionTableData: { attribute: false },
+    userSessionData: { attribute: false },
     projectsApiData: { attribute: false },
+    refreshTrigger: { type: Number, attribute: false },
   };
 
   declare companies: CompanyConfig[];
@@ -167,7 +203,11 @@ export class CompanyApp extends LitElement {
   declare designVsPromptMetrics: DesignVsPromptMetric[] | null;
   declare designMetrics: DesignMetric[] | null;
   declare eventsData: any[] | null;
+  declare sessionMetrics: Map<string, number> | null;
+  declare sessionTableData: SessionRecord[] | null;
+  declare userSessionData: Map<string, UserSession[]> | null;
   declare projectsApiData: ProjectApiData[] | null;
+  declare refreshTrigger: number;
 
   private eventsFetchRequestId = 0;
 
@@ -199,10 +239,56 @@ export class CompanyApp extends LitElement {
     this.designVsPromptMetrics = null;
     this.designMetrics = null;
     this.eventsData = null;
+    this.sessionMetrics = null;
+    this.sessionTableData = null;
+    this.userSessionData = null;
     this.projectsApiData = null;
+    this.refreshTrigger = 0;
+    this.loadDateFromStorage();
+  }
+
+  private loadDateFromStorage() {
+    try {
+      const savedMonth = localStorage.getItem("selectedMonth");
+      const savedYear = localStorage.getItem("selectedYear");
+
+      if (savedMonth !== null && savedYear !== null) {
+        const month = parseInt(savedMonth, 10);
+        const year = parseInt(savedYear, 10);
+
+        // Validate the values are reasonable
+        if (
+          !isNaN(month) &&
+          !isNaN(year) &&
+          month >= 0 &&
+          month <= 11 &&
+          year > 1900 &&
+          year < 2100
+        ) {
+          this.selectedMonth = month;
+          this.selectedYear = year;
+          console.log(`Loaded date from storage: ${month}/${year}`);
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Error loading date from storage:", error);
+    }
+
+    // Fallback to current date
     const today = new Date();
     this.selectedMonth = today.getMonth();
     this.selectedYear = today.getFullYear();
+  }
+
+  private saveDateToStorage() {
+    try {
+      localStorage.setItem("selectedMonth", String(this.selectedMonth));
+      localStorage.setItem("selectedYear", String(this.selectedYear));
+      console.log(`Saved date to storage: ${this.selectedMonth}/${this.selectedYear}`);
+    } catch (error) {
+      console.error("Error saving date to storage:", error);
+    }
   }
 
   createRenderRoot() {
@@ -295,6 +381,7 @@ export class CompanyApp extends LitElement {
     console.log("Date changed to:", event.detail.month, event.detail.year);
     this.selectedMonth = event.detail.month;
     this.selectedYear = event.detail.year;
+    this.saveDateToStorage();
     void this.fetchMetrics();
     void this.fetchEventsData();
     void this.fetchProjectsData();
@@ -310,6 +397,7 @@ export class CompanyApp extends LitElement {
     void this.fetchMetrics();
     void this.fetchEventsData();
     void this.fetchProjectsData();
+    this.refreshTrigger++;
   };
 
   private handleDownloadCompanies = () => {
@@ -803,10 +891,14 @@ export class CompanyApp extends LitElement {
   }
 
   private transformMetricsData(dataArray: any[]): any[] {
+    if (!dataArray || dataArray.length === 0) {
+      return [];
+    }
+
     const firstItem = dataArray[0];
 
     // Check if already in correct format
-    if (firstItem.period && firstItem.metrics) {
+    if (firstItem && firstItem.period && firstItem.metrics) {
       // Still need to normalize spaces to extract spaceIds
       return this.normalizeSpaces(dataArray);
     }
@@ -826,6 +918,9 @@ export class CompanyApp extends LitElement {
           totalLines: toNumber(metrics.totalLines || metrics.linesAccepted),
           creditsUsed: toNumber(metrics.creditsUsed),
           designsExported: toNumber(metrics.designExports ?? metrics.designsExported),
+          mcpPrototypesPulled: toNumber(
+            metrics.mcpPrototypesPulled ?? metrics.prototypesPulled ?? 0,
+          ),
           prsMerged: toNumber(metrics.prsMerged),
           prsCreated: toNumber(metrics.prsCreated),
           events: toNumber(metrics.events),
@@ -855,6 +950,9 @@ export class CompanyApp extends LitElement {
       this.currentEventPage = 1;
       this.totalEventPages = 1;
       this.eventsData = null;
+      this.sessionMetrics = null;
+      this.sessionTableData = null;
+      this.userSessionData = null;
       this.modelMetrics = null;
       this.projectMetrics = null;
       this.featureMetrics = null;
@@ -919,7 +1017,30 @@ export class CompanyApp extends LitElement {
         }
 
         if (!firstResponse.ok) {
-          console.error("Failed to fetch first page of events:", firstResponse.status);
+          const errorData = await firstResponse.json().catch(() => ({}));
+          const statusText = firstResponse.statusText || "Unknown";
+          const url = firstResponse.url || "unknown URL";
+
+          console.error(
+            "Events API Error:",
+            JSON.stringify(
+              {
+                status: firstResponse.status,
+                statusText: statusText,
+                url: url,
+                errorData: errorData,
+                details:
+                  firstResponse.status === 404
+                    ? "Endpoint not found. Credentials may be invalid."
+                    : firstResponse.status === 401 || firstResponse.status === 403
+                      ? "Authentication failed. Private key may be incorrect."
+                      : "Request failed.",
+              },
+              null,
+              2,
+            ),
+          );
+
           this.isFetchingEventPages = false;
           this.currentEventPage = 1;
           this.totalEventPages = 1;
@@ -980,9 +1101,22 @@ export class CompanyApp extends LitElement {
                 fetch(pageUrl, {
                   method: "GET",
                   headers: headers,
-                }).then((response) => {
+                }).then(async (response) => {
                   if (!response.ok) {
-                    console.error(`Failed to fetch page ${page}:`, response.status);
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error(
+                      `Failed to fetch events page ${page}:`,
+                      JSON.stringify(
+                        {
+                          status: response.status,
+                          statusText: response.statusText,
+                          url: response.url,
+                          errorData: errorData,
+                        },
+                        null,
+                        2,
+                      ),
+                    );
                     return null;
                   }
                   return response.json();
@@ -1293,6 +1427,179 @@ export class CompanyApp extends LitElement {
       }))
       .sort((a, b) => b.records.length - a.records.length);
 
+    // Compute unique sessions per day from sessionId on events
+    const sessionsByDay = new Map<string, Set<string>>();
+
+    // Compute session table data: group all events by sessionId
+    const sessionMap = new Map<
+      string,
+      {
+        timestamps: string[];
+        userEmail: string;
+        projectName: string;
+        designs: Set<string>;
+        creditsUsed: number;
+        linesOfCode: number;
+        models: Map<string, number>;
+        count: number;
+      }
+    >();
+
+    allEvents.forEach((event: any) => {
+      const sessionId = event.sessionId || event.metadata?.sessionId;
+      if (!sessionId) return;
+      const sid = String(sessionId);
+      const timestamp = event.timestamp || event.createdAt || "";
+      const date = timestamp.split("T")[0];
+      if (date) {
+        if (!sessionsByDay.has(date)) sessionsByDay.set(date, new Set());
+        sessionsByDay.get(date)!.add(sid);
+      }
+
+      const metadata = event.metadata || {};
+      const creditsUsed = Number(metadata.creditsUsed ?? event.creditsUsed) || 0;
+      const linesOfCode = Number(metadata.linesOfCode ?? event.linesOfCode) || 0;
+      const model = String(metadata.model || event.model || "");
+      const userEmail = String(
+        event.userEmail || metadata.userEmail || event.userId || metadata.userId || "Unknown",
+      );
+      const projectName = String(metadata.projectName || event.projectName || "Unknown");
+      const designExportId = event.designExportId || metadata.designExportId;
+
+      if (!sessionMap.has(sid)) {
+        sessionMap.set(sid, {
+          timestamps: [],
+          userEmail,
+          projectName,
+          designs: new Set(),
+          creditsUsed: 0,
+          linesOfCode: 0,
+          models: new Map(),
+          count: 0,
+        });
+      }
+      const s = sessionMap.get(sid)!;
+      if (timestamp) s.timestamps.push(timestamp);
+      s.creditsUsed += creditsUsed;
+      s.linesOfCode += linesOfCode;
+      s.count += 1;
+      if (designExportId) s.designs.add(String(designExportId));
+      if (model) s.models.set(model, (s.models.get(model) ?? 0) + 1);
+      // Use the most detailed user/project info available
+      if (userEmail !== "Unknown") s.userEmail = userEmail;
+      if (projectName !== "Unknown") s.projectName = projectName;
+    });
+
+    this.sessionMetrics = new Map(
+      Array.from(sessionsByDay.entries()).map(([date, sessions]) => [date, sessions.size]),
+    );
+
+    // Build spaceId → spaceName lookup from metricsData
+    const spaceNameMap = new Map<string, string>();
+    if (this.metricsData && Array.isArray(this.metricsData)) {
+      (this.metricsData as any[]).forEach((item: any) => {
+        const spaces = item.metrics?.spaces || [];
+        spaces.forEach((sp: any) => {
+          if (sp.id && sp.name) spaceNameMap.set(sp.id, sp.name);
+        });
+      });
+    }
+
+    // Compute per-user session data (each session → individual events)
+    const userSessionMap = new Map<string, Map<string, UserSession>>();
+
+    allEvents.forEach((event: any) => {
+      const sessionId = event.sessionId || event.metadata?.sessionId;
+      if (!sessionId) return;
+      const sid = String(sessionId);
+      const metadata = event.metadata || {};
+      const userEmail = String(
+        event.userEmail || metadata.userEmail || event.userId || metadata.userId || "Unknown",
+      );
+      if (userEmail === "Unknown") return;
+      const timestamp = event.timestamp || event.createdAt || "";
+      const creditsUsed = Number(metadata.creditsUsed ?? event.creditsUsed) || 0;
+      const linesOfCode = Number(metadata.linesOfCode ?? event.linesOfCode) || 0;
+      const model = String(metadata.model || event.model || "");
+      const feature = String(event.feature || metadata.feature || "");
+      const projectName = String(metadata.projectName || event.projectName || "Unknown");
+      const spaceId = String(event.spaceId || metadata.spaceId || "");
+      const spaceName = spaceNameMap.get(spaceId) || spaceId || "Unknown";
+
+      if (!userSessionMap.has(userEmail)) userSessionMap.set(userEmail, new Map());
+      const userSessions = userSessionMap.get(userEmail)!;
+
+      if (!userSessions.has(sid)) {
+        userSessions.set(sid, {
+          sessionId: sid,
+          startTime: "",
+          endTime: "",
+          spaceName,
+          projectName,
+          events: [],
+        });
+      }
+      const sess = userSessions.get(sid)!;
+      if (timestamp) {
+        if (!sess.startTime || timestamp < sess.startTime) sess.startTime = timestamp;
+        if (!sess.endTime || timestamp > sess.endTime) sess.endTime = timestamp;
+      }
+      if (spaceName !== "Unknown") sess.spaceName = spaceName;
+      if (projectName !== "Unknown") sess.projectName = projectName;
+      const designExportId = event.designExportId || metadata.designExportId;
+      sess.events.push({
+        timestamp,
+        feature,
+        creditsUsed,
+        linesOfCode,
+        model,
+        isDesign: Boolean(designExportId),
+      });
+    });
+
+    this.userSessionData = new Map(
+      Array.from(userSessionMap.entries()).map(([email, sessMap]) => [
+        email,
+        Array.from(sessMap.values())
+          .map((s) => ({
+            ...s,
+            events: s.events.sort((a, b) => a.timestamp.localeCompare(b.timestamp)),
+          }))
+          .sort((a, b) => b.startTime.localeCompare(a.startTime)),
+      ]),
+    );
+
+    this.sessionTableData = Array.from(sessionMap.entries())
+      .map(([sessionId, s]) => {
+        const sorted = [...s.timestamps].sort();
+        const startTime = sorted[0] ?? "";
+        const endTime = sorted[sorted.length - 1] ?? "";
+        const totalTimeMs =
+          startTime && endTime ? new Date(endTime).getTime() - new Date(startTime).getTime() : 0;
+        let topModel = "";
+        let topCount = 0;
+        s.models.forEach((cnt, m) => {
+          if (cnt > topCount) {
+            topCount = cnt;
+            topModel = m;
+          }
+        });
+        return {
+          sessionId,
+          startTime,
+          endTime,
+          totalTimeMs,
+          userEmail: s.userEmail,
+          projectName: s.projectName,
+          count: s.count,
+          designs: s.designs.size,
+          creditsUsed: s.creditsUsed,
+          linesOfCode: s.linesOfCode,
+          model: topModel,
+        };
+      })
+      .sort((a, b) => b.startTime.localeCompare(a.startTime));
+
     console.log("Aggregated model metrics:", this.modelMetrics);
     console.log("Aggregated project metrics:", this.projectMetrics);
     console.log("Aggregated feature metrics:", this.featureMetrics);
@@ -1358,6 +1665,35 @@ export class CompanyApp extends LitElement {
     }
   }
 
+  private enrichMetricsWithPrototypesPulled(metricsData: any[], eventsData: any[]): any[] {
+    if (!metricsData || !eventsData) {
+      return metricsData;
+    }
+
+    const prototypesByDate = new Map<string, number>();
+
+    eventsData.forEach((event: any) => {
+      if (event.eventType === "mcpPrototypePulled") {
+        const timestamp = event.timestamp || new Date().toISOString();
+        const date = new Date(timestamp).toISOString().split("T")[0];
+        prototypesByDate.set(date, (prototypesByDate.get(date) || 0) + 1);
+      }
+    });
+
+    return metricsData.map((item: any) => {
+      const period = item.period || "";
+      const prototypeCount = prototypesByDate.get(period) || 0;
+
+      return {
+        ...item,
+        metrics: {
+          ...item.metrics,
+          mcpPrototypesPulled: prototypeCount || item.metrics.mcpPrototypesPulled || 0,
+        },
+      };
+    });
+  }
+
   private async fetchMetrics() {
     const company = this.selectedCompany;
 
@@ -1383,7 +1719,14 @@ export class CompanyApp extends LitElement {
       console.log("Using cached metrics data");
       try {
         const transformedData = this.transformMetricsData(cachedData);
-        this.metricsData = transformedData;
+        let finalMetricsData = transformedData;
+        if (this.eventsData && this.eventsData.length > 0) {
+          finalMetricsData = this.enrichMetricsWithPrototypesPulled(
+            transformedData,
+            this.eventsData,
+          );
+        }
+        this.metricsData = finalMetricsData;
         this.metricsError = null;
       } catch (error) {
         console.error("Error processing cached metrics:", error);
@@ -1411,11 +1754,45 @@ export class CompanyApp extends LitElement {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        const message =
+        const apiMessage =
           errorData && typeof errorData === "object" && "message" in errorData
             ? String((errorData as { message?: unknown }).message)
-            : `Request failed with status ${response.status}`;
-        console.error("API Error:", message);
+            : null;
+
+        const statusText = response.statusText || "Unknown";
+        const url = response.url || "unknown URL";
+
+        let message = "";
+        if (response.status === 404) {
+          message = `API endpoint not found (404). The endpoint may not exist or company credentials may be invalid.`;
+        } else if (response.status === 401 || response.status === 403) {
+          message = `Authentication failed (${response.status}). Please verify the private key is correct.`;
+        } else if (response.status >= 500) {
+          message = `Server error (${response.status}). The API service may be temporarily unavailable.`;
+        } else {
+          message = `API request failed: ${response.status} ${statusText}`;
+        }
+
+        if (apiMessage) {
+          message += ` - ${apiMessage}`;
+        }
+
+        console.error(
+          "API Error Details:",
+          JSON.stringify(
+            {
+              status: response.status,
+              statusText: statusText,
+              url: url,
+              apiMessage: apiMessage,
+              errorData: errorData,
+            },
+            null,
+            2,
+          ),
+        );
+        console.error("Full error response:", JSON.stringify(errorData, null, 2));
+
         this.metricsError = message;
         this.metricsData = null;
         return;
@@ -1469,7 +1846,15 @@ export class CompanyApp extends LitElement {
 
         console.log("Transformed metrics:", transformedData);
 
-        this.metricsData = transformedData;
+        let finalMetricsData = transformedData;
+        if (this.eventsData && this.eventsData.length > 0) {
+          finalMetricsData = this.enrichMetricsWithPrototypesPulled(
+            transformedData,
+            this.eventsData,
+          );
+        }
+
+        this.metricsData = finalMetricsData;
         this.metricsError = null;
       } catch (transformError) {
         console.error("Error transforming metrics:", transformError);
@@ -1642,6 +2027,7 @@ export class CompanyApp extends LitElement {
 
         <company-summary
           .company=${this.selectedCompany}
+          .refreshTrigger=${this.refreshTrigger}
           .metricsData=${this.filteredMetricsData}
           .metricsError=${this.metricsError}
           .selectedMonth=${this.selectedMonth}
@@ -1655,6 +2041,9 @@ export class CompanyApp extends LitElement {
           .designVsPromptMetrics=${this.designVsPromptMetrics}
           .designMetrics=${this.designMetrics}
           .eventsData=${this.eventsData}
+          .sessionMetrics=${this.sessionMetrics}
+          .sessionTableData=${this.sessionTableData}
+          .userSessionData=${this.userSessionData}
           .projectsApiData=${this.projectsApiData}
           @date-change=${this.handleDateChange}
           @space-change=${this.handleSpaceChange}
